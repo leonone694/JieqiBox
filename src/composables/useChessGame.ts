@@ -459,8 +459,10 @@ export function useChessGame() {
       
       switch (role) {
         case 'king':
-          // Kings cannot directly attack each other
-          return false;
+          // Kings cannot face each other directly (must have pieces between them)
+          if (dRow > 0 && dCol > 0) continue; // Not in same row or column
+          if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) === 0) return true; // Can check if no pieces between
+          continue; // Cannot check if pieces between
         case 'advisor':
           return dRow === 1 && dCol === 1;
         case 'elephant':
