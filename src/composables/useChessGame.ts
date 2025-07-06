@@ -278,7 +278,7 @@ export function useChessGame() {
         });
         
         const newCounts: {[key: string]: number} = {};
-        "RNBAKCP rnbakcp".split("").forEach(c => newCounts[c] = 0);
+        "RNBAKCP rnbakcp".split("").filter(c => c !== " ").forEach(c => newCounts[c] = 0);
         if (hiddenPart && hiddenPart !== '-') {
             const hiddenMatches = hiddenPart.match(/[a-zA-Z]\d+/g) || [];
             hiddenMatches.forEach(match => {
