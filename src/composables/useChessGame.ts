@@ -464,28 +464,35 @@ export function useChessGame() {
           if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) === 0) return true; // Can check if no pieces between
           continue; // Cannot check if pieces between
         case 'advisor':
-          return dRow === 1 && dCol === 1;
+          if (dRow !== 1 || dCol !== 1) continue;
+          return true;
         case 'elephant':
-          return dRow === 2 && dCol === 2;
+          if (dRow !== 2 || dCol !== 2) continue;
+          return true;
         case 'horse':
-          if (!(dRow === 2 && dCol === 1 || dRow === 1 && dCol === 2)) return false;
+          if (!(dRow === 2 && dCol === 1 || dRow === 1 && dCol === 2)) continue;
           const legRow = piece.row + (dRow === 2 ? (kingRow - piece.row) / 2 : 0);
           const legCol = piece.col + (dCol === 2 ? (kingCol - piece.col) / 2 : 0);
-          return !pieces.value.some(p => p.row === legRow && p.col === legCol);
+          if (pieces.value.some(p => p.row === legRow && p.col === legCol)) continue;
+          return true;
         case 'chariot':
-          if (dRow > 0 && dCol > 0) return false;
-          return countPiecesBetween(piece.row, piece.col, kingRow, kingCol) === 0;
+          if (dRow > 0 && dCol > 0) continue;
+          if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) > 0) continue;
+          return true;
         case 'cannon':
           console.log('isInCheck: 检查炮将军', piece.name, '位置:', piece.row, piece.col, '目标:', kingRow, kingCol);
           if (dRow > 0 && dCol > 0) {
             console.log('isInCheck: 炮不在直线位置，不能将军');
-            return false;
+            continue;
           }
           const piecesBetween = countPiecesBetween(piece.row, piece.col, kingRow, kingCol);
           console.log('isInCheck: 炮与将帅之间的棋子数:', piecesBetween);
-          const canCheck = piecesBetween === 1; // A cannon needs to jump over one piece to check
-          console.log('isInCheck: 炮能否将军:', canCheck);
-          return canCheck;
+          if (piecesBetween !== 1) {
+            console.log('isInCheck: 炮与将帅之间的棋子数不是1，不能将军');
+            continue;
+          }
+          console.log('isInCheck: 炮能将军');
+          return true;
         case 'pawn':
           // Pawn's check detection needs to consider the board flip state
           const pawnSide = getPieceSide(piece);
@@ -496,21 +503,25 @@ export function useChessGame() {
             isOverRiver = pawnSide === 'red' ? piece.row <= 4 : piece.row >= 5;
           }
           
+          let canCheck = false;
           if (isOverRiver) {
             // Can check horizontally after crossing the river
             if (isBoardFlipped.value) {
-              return (pawnSide === 'red' ? (kingRow - piece.row === 1 && dCol === 0) : (piece.row - kingRow === 1 && dCol === 0)) || (dRow === 0 && dCol === 1);
+              canCheck = (pawnSide === 'red' ? (kingRow - piece.row === 1 && dCol === 0) : (piece.row - kingRow === 1 && dCol === 0)) || (dRow === 0 && dCol === 1);
             } else {
-              return (pawnSide === 'red' ? (piece.row - kingRow === 1 && dCol === 0) : (kingRow - piece.row === 1 && dCol === 0)) || (dRow === 0 && dCol === 1);
+              canCheck = (pawnSide === 'red' ? (piece.row - kingRow === 1 && dCol === 0) : (kingRow - piece.row === 1 && dCol === 0)) || (dRow === 0 && dCol === 1);
             }
           } else {
             // Can only check forward before crossing the river
             if (isBoardFlipped.value) {
-              return pawnSide === 'red' ? (kingRow - piece.row === 1 && dCol === 0) : (piece.row - kingRow === 1 && dCol === 0);
+              canCheck = pawnSide === 'red' ? (kingRow - piece.row === 1 && dCol === 0) : (piece.row - kingRow === 1 && dCol === 0);
             } else {
-              return pawnSide === 'red' ? (piece.row - kingRow === 1 && dCol === 0) : (kingRow - piece.row === 1 && dCol === 0);
+              canCheck = pawnSide === 'red' ? (piece.row - kingRow === 1 && dCol === 0) : (kingRow - piece.row === 1 && dCol === 0);
             }
           }
+          
+          if (!canCheck) continue;
+          return true;
       }
     }
     return false;
