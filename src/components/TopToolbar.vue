@@ -7,7 +7,7 @@
         color="primary" 
         variant="text"
         @click="setupNewGame"
-        title="New Game"
+        title="新对局"
       />
       <v-btn 
         icon="mdi-content-copy" 
@@ -15,7 +15,7 @@
         color="primary" 
         variant="text"
         @click="copyFenToClipboard"
-        title="Copy FEN"
+        title="复制FEN"
       />
       <v-btn 
         icon="mdi-text-box" 
@@ -23,7 +23,7 @@
         color="primary" 
         variant="text"
         @click="inputFenString"
-        title="Input FEN"
+        title="输入FEN"
       />
       <v-btn 
         icon="mdi-pencil-box" 
@@ -31,7 +31,7 @@
         color="primary" 
         variant="text"
         @click="showPositionEditor = true"
-        title="Edit Position"
+        title="编辑局面"
       />
     </div>
 
@@ -46,7 +46,7 @@
         color="primary" 
         variant="text"
         @click="showUciOptionsDialog = true"
-        title="UCI Settings"
+        title="UCI设置"
       />
       <v-btn 
         icon="mdi-timer" 
@@ -54,7 +54,7 @@
         color="primary" 
         variant="text"
         @click="showTimeDialog = true"
-        title="Analysis Parameters"
+        title="分析参数"
       />
       <v-btn 
         icon="mdi-content-save" 
@@ -63,7 +63,7 @@
         variant="text"
         @click="handleSaveNotation"
         :loading="isSaving"
-        title="Save Notation"
+        title="保存棋谱"
       />
       <v-btn 
         icon="mdi-folder-open" 
@@ -72,7 +72,7 @@
         variant="text"
         @click="handleOpenNotation"
         :loading="isOpening"
-        title="Open Notation"
+        title="打开棋谱"
       />
     </div>
 
@@ -83,7 +83,7 @@
       v-model="showPositionEditor" 
       @position-changed="handlePositionChanged" 
     />
-    <FenInputDialog v-model="showFenInputDialog" @confirm="confirmFenInput" />
+    <FenInputDialog v-model="isFenDialogVisible" @confirm="confirmFenInput" />
   </div>
 </template>
 
@@ -95,12 +95,12 @@ import PositionEditorDialog from './PositionEditorDialog.vue';
 import FenInputDialog from './FenInputDialog.vue';
 
 const gameState: any = inject('game-state');
+const isFenDialogVisible: any = inject('fen-dialog-visible');
 
 // Dialog states
 const showUciOptionsDialog = ref(false);
 const showTimeDialog = ref(false);
 const showPositionEditor = ref(false);
-const showFenInputDialog = ref(false);
 
 // Save/Open states
 const isSaving = ref(false);
@@ -126,13 +126,17 @@ const copyFenToClipboard = async () => {
 
 // Input FEN
 const inputFenString = () => {
-  showFenInputDialog.value = true;
+  isFenDialogVisible.value = true;
 };
 
 // Confirm FEN input
 const confirmFenInput = (fen: string) => {
-  gameState.confirmFenInput(fen);
-  showFenInputDialog.value = false;
+  // Only process if FEN string is not empty
+  if (fen && fen.trim()) {
+    gameState.confirmFenInput(fen);
+  }
+  // Ensure local state is also synchronized to close
+  isFenDialogVisible.value = false;
 };
 
 // Save notation

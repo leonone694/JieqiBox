@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isFenInputDialogVisible" persistent max-width="600px">
+  <v-dialog v-model="dialogVisible" persistent max-width="600px">
     <v-card>
       <v-card-title>
         <span class="text-h5">输入或编辑FEN</span>
@@ -28,31 +28,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, watch } from 'vue';
+import { ref, inject, watch, computed } from 'vue';
+
+// Define props and emits
+interface Props {
+  modelValue: boolean;
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: boolean): void;
+  (e: 'confirm', fen: string): void;
+}
+
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Inject properties and methods from the main game state composable.
 const {
-  isFenInputDialogVisible,
-  confirmFenInput,
   generateFen,
 }: any = inject('game-state');
 
 const fenInput = ref('');
 
+// Computed property for v-model binding
+const dialogVisible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+});
+
 // Watch for the dialog's visibility state changes.
-watch(isFenInputDialogVisible, (newValue) => {
+watch(dialogVisible, (newValue) => {
   // When the dialog becomes visible, populate the textarea with the current game's FEN string.
   if (newValue) {
     fenInput.value = generateFen();
   }
 });
 
-
+// Function to close the dialog
 function closeDialog() {
-  isFenInputDialogVisible.value = false;
+  // Close the dialog directly without processing FEN
+  dialogVisible.value = false;
 }
 
+// Function to confirm FEN input
 function confirm() {
-  confirmFenInput(fenInput.value);
+  // Emit confirm event with FEN string
+  emit('confirm', fenInput.value);
+  // Close the dialog
+  dialogVisible.value = false;
 }
 </script>

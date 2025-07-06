@@ -903,11 +903,13 @@ export function useChessGame() {
   };
 
   const inputFenString = () => {
+    // Use global FEN dialog state
     isFenInputDialogVisible.value = true;
   };
 
   const confirmFenInput = (fen: string) => {
-    if (fen) {
+    // Load FEN if the string is not empty
+    if (fen && fen.trim()) {
       loadFen(fen, false); // No animation when inputting FEN
       history.value = [];
       currentMoveIndex.value = 0;
@@ -922,6 +924,7 @@ export function useChessGame() {
       // Trigger arrow clear event
       triggerArrowClear();
     }
+    // Close the dialog regardless of whether FEN is loaded
     isFenInputDialogVisible.value = false;
   };
 

@@ -207,6 +207,7 @@ const setupNewGameWithArrow = () => {
   setupNewGame();
 };
 const inputFenStringWithArrow = () => {
+  // Directly call the inputFenString function from game-state
   inputFenString();
 };
 </script>

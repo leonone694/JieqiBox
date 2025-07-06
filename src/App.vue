@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { provide } from 'vue';
+import { provide, ref } from 'vue';
 import TopToolbar from './components/TopToolbar.vue';
 import Chessboard from './components/Chessboard.vue'
 import AnalysisSidebar from './components/AnalysisSidebar.vue';
 import FlipPromptDialog from './components/FlipPromptDialog.vue';
-import FenInputDialog from './components/FenInputDialog.vue';
 
 import { useChessGame } from './composables/useChessGame';
 import { useUciEngine } from './composables/useUciEngine';
@@ -20,6 +19,10 @@ const engine = useUciEngine(game.generateFenForEngine);
 // Provide global state
 provide('game-state', game);
 provide('engine-state', engine);
+
+// Provide global FEN dialog state
+const isFenDialogVisible = ref(false);
+provide('fen-dialog-visible', isFenDialogVisible);
 </script>
 
 <template>
@@ -31,7 +34,6 @@ provide('engine-state', engine);
       </div>
       <AnalysisSidebar />
       <FlipPromptDialog />
-      <FenInputDialog />
     </div>
   </div>
 </template>
