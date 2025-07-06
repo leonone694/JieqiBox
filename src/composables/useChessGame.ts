@@ -340,7 +340,10 @@ export function useChessGame() {
       // Enable animation when making moves
       isAnimating.value = true;
       // Record last move position for highlighting
-      lastMovePositions.value = lastMove || null;
+      // In free mode, if it's a dark piece move, lastMovePositions has already been set in movePiece
+      if (!(flipMode.value === 'free' && pendingFlip.value)) {
+        lastMovePositions.value = lastMove || null;
+      }
     }
     selectedPieceId.value = null;
   };
@@ -401,6 +404,7 @@ export function useChessGame() {
     }
     
     pendingFlip.value = null;
+    // In free mode, lastMovePositions has already been set in movePiece, here we only need to record history
     recordAndFinalize('move', uciMove, lastMove);
   };
   
@@ -803,6 +807,8 @@ export function useChessGame() {
 
     if (wasDarkPiece) {
         if (flipMode.value === 'free') {
+          // In free mode, immediately set last-move-highlights so user knows which move the engine made
+          lastMovePositions.value = lastMove;
           pendingFlip.value = {
             pieceToMove: piece,
             uciMove: uciMove,
