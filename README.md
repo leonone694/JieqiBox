@@ -1,6 +1,7 @@
 # JieqiBox
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Join the Discord](https://img.shields.io/discord/1391287860249759827?logo=discord&logoColor=white&color=5865F2)](https://discord.gg/d8HxM5Erad)
 
 JieqiBox is a modern, cross-platform desktop application for Jieqi (揭棋) analysis and play. Built with a powerful combination of Tauri and Vue 3, it provides a comprehensive toolset for Jieqi enthusiasts and developers.
 
