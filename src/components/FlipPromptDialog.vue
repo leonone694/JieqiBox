@@ -1,48 +1,69 @@
 <template>
-  <v-dialog v-model="isDialogVisible" persistent max-width="500px">
-    <!-- Use v-if to ensure the dialog is shown only when pendingFlip is fully ready -->
-    <v-card v-if="gameState.pendingFlip.value">
-      <v-card-title>
+  <!-- Custom draggable dialog overlay -->
+  <div v-if="isDialogVisible" class="custom-dialog-overlay" @click="handleOverlayClick">
+    <div 
+      v-if="gameState.pendingFlip.value" 
+      class="custom-draggable-dialog"
+      :style="dialogStyle"
+      @click.stop
+    >
+      <div 
+        class="dialog-title-bar"
+        @mousedown="startDrag"
+        @touchstart="startDrag"
+      >
         <span class="text-h5">选择要翻开的棋子</span>
-      </v-card-title>
-      <v-card-text>
-        <v-container>
-          <v-row>
-            <v-col
-              v-for="item in availablePieces"
-              :key="item.name"
-              cols="4" sm="3" md="2"
-              class="text-center"
-            >
-              <div @click="selectPiece(item.name)" class="piece-option">
-                <img :src="getPieceImageUrl(item.name)" :alt="item.name" class="piece-image" />
-                <div>{{ item.count }}</div>
-              </div>
-            </v-col>
-          </v-row>
-          <v-row v-if="availablePieces.length === 0">
-             <v-col>
-                <p>错误：暗子池里没有符合当前位置颜色的棋子了！请先在侧边栏调整暗子池。</p>
-             </v-col>
-          </v-row>
-        </v-container>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn color="blue-darken-1" variant="text" @click="cancelFlip">
+        <div class="drag-handle">⋮⋮</div>
+      </div>
+      <div class="dialog-content">
+        <div class="pieces-grid">
+          <div
+            v-for="item in availablePieces"
+            :key="item.name"
+            class="piece-item"
+            @click="selectPiece(item.name)"
+          >
+            <div class="piece-option">
+              <img :src="getPieceImageUrl(item.name)" :alt="item.name" class="piece-image" />
+              <div>{{ item.count }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-if="availablePieces.length === 0" class="error-message">
+          <p>错误：暗子池里没有符合当前位置颜色的棋子了！请先在侧边栏调整暗子池。</p>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <div class="spacer"></div>
+        <button class="cancel-btn" @click="cancelFlip">
           取消
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue';
+import { computed, inject, ref, onMounted, onUnmounted } from 'vue';
 
 const gameState: any = inject('game-state');
 
+// Drag state management
+const isDragging = ref(false);
+const dragOffset = ref({ x: 0, y: 0 });
+const dialogPosition = ref({ x: 0, y: 0 });
+
 const isDialogVisible = computed(() => gameState.pendingFlip.value !== null);
+
+// Calculate dialog position for dragging
+const dialogStyle = computed(() => ({
+  position: 'fixed' as const,
+  top: `${dialogPosition.value.y}px`,
+  left: `${dialogPosition.value.x}px`,
+  transform: 'none',
+  margin: '0',
+  zIndex: 9999
+}));
 
 const availablePieces = computed(() => {
   if (!gameState.pendingFlip.value) return [];
@@ -58,6 +79,99 @@ const availablePieces = computed(() => {
       return pieceSide === requiredSide && (item.count as number) > 0;
     });
 });
+
+// Initialize dialog position to center of screen
+onMounted(() => {
+  centerDialog();
+});
+
+// Center the dialog on screen
+function centerDialog() {
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const dialogWidth = 500; // max-width from v-dialog
+  const dialogHeight = 400; // estimated height
+  
+  dialogPosition.value = {
+    x: Math.max(0, (windowWidth - dialogWidth) / 2),
+    y: Math.max(0, (windowHeight - dialogHeight) / 2)
+  };
+}
+
+// Start dragging when mouse down on title bar
+function startDrag(event: MouseEvent | TouchEvent) {
+  isDragging.value = true;
+  
+  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+  const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+  
+  dragOffset.value = {
+    x: clientX - dialogPosition.value.x,
+    y: clientY - dialogPosition.value.y
+  };
+  
+  // Add event listeners for dragging
+  document.addEventListener('mousemove', handleDrag);
+  document.addEventListener('touchmove', handleDrag, { passive: false });
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchend', stopDrag);
+  
+  // Prevent default to avoid text selection
+  event.preventDefault();
+}
+
+// Handle dragging movement
+function handleDrag(event: MouseEvent | TouchEvent) {
+  if (!isDragging.value) return;
+  
+  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+  const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+  
+  // Calculate new position
+  const newX = clientX - dragOffset.value.x;
+  const newY = clientY - dragOffset.value.y;
+  
+  // Allow dragging across the entire window without constraints
+  // Only prevent the dialog from being completely outside the viewport
+  const minX = -480; // Allow dialog to be almost completely outside left edge
+  const maxX = window.innerWidth - 20; // Allow dialog to be almost completely outside right edge
+  const minY = -380; // Allow dialog to be almost completely outside top edge
+  const maxY = window.innerHeight - 20; // Allow dialog to be almost completely outside bottom edge
+  
+  dialogPosition.value = {
+    x: Math.max(minX, Math.min(newX, maxX)),
+    y: Math.max(minY, Math.min(newY, maxY))
+  };
+  
+  // Prevent default for touch events
+  if ('touches' in event) {
+    event.preventDefault();
+  }
+}
+
+// Stop dragging
+function stopDrag() {
+  isDragging.value = false;
+  
+  // Remove event listeners
+  document.removeEventListener('mousemove', handleDrag);
+  document.removeEventListener('touchmove', handleDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchend', stopDrag);
+}
+
+// Clean up event listeners on component unmount
+onUnmounted(() => {
+  stopDrag();
+});
+
+// Handle overlay click to prevent dialog closing when clicking outside
+function handleOverlayClick(event: Event) {
+  // Only close if clicking directly on the overlay, not on the dialog
+  if (event.target === event.currentTarget) {
+    cancelFlip();
+  }
+}
 
 function selectPiece(pieceName: string) {
   if (gameState.pendingFlip.value) {
@@ -95,17 +209,121 @@ function getPieceImageUrl(pieceName: string): string {
 </script>
 
 <style scoped>
+/* Custom dialog overlay */
+.custom-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom draggable dialog */
+.custom-draggable-dialog {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 100%;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Dialog title bar */
+.dialog-title-bar {
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.drag-handle {
+  font-size: 16px;
+  color: #666;
+  cursor: move;
+  user-select: none;
+}
+
+/* Dialog content */
+.dialog-content {
+  padding: 20px;
+}
+
+/* Pieces grid */
+.pieces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.piece-item {
+  text-align: center;
+}
+
 .piece-option {
   cursor: pointer;
   padding: 10px;
   border-radius: 8px;
   transition: background-color 0.2s;
+  border: 1px solid transparent;
 }
+
 .piece-option:hover {
   background-color: #f0f0f0;
+  border-color: #ddd;
 }
+
 .piece-image {
   width: 40px;
   height: 40px;
+  display: block;
+  margin: 0 auto 5px;
+}
+
+/* Error message */
+.error-message {
+  text-align: center;
+  color: #d32f2f;
+  padding: 10px;
+}
+
+/* Dialog actions */
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.cancel-btn {
+  background: none;
+  border: none;
+  color: #1976d2;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: rgba(25, 118, 210, 0.1);
 }
 </style>
