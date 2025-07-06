@@ -1104,6 +1104,8 @@ export function useChessGame() {
 
   // Get the valid moves for the currently selected piece
   const getValidMovesForSelectedPiece = computed(() => {
+    if (pendingFlip.value !== null) return [];
+    
     if (!selectedPieceId.value) return [];
     
     const selectedPiece = pieces.value.find(p => p.id === selectedPieceId.value);
