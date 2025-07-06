@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide, ref } from 'vue';
+import { provide } from 'vue';
 import TopToolbar from './components/TopToolbar.vue';
 import Chessboard from './components/Chessboard.vue'
 import AnalysisSidebar from './components/AnalysisSidebar.vue';
