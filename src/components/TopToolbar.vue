@@ -95,7 +95,7 @@ import PositionEditorDialog from './PositionEditorDialog.vue';
 import FenInputDialog from './FenInputDialog.vue';
 
 const gameState: any = inject('game-state');
-const isFenDialogVisible: any = inject('fen-dialog-visible');
+const isFenDialogVisible: any = inject('fen-input-dialog-visible');
 
 // Dialog states
 const showUciOptionsDialog = ref(false);

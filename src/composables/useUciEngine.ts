@@ -151,7 +151,7 @@ export function useUciEngine(generateFen: () => string) {
           analysis.value = '绝杀！无着可走';
           send('stop');
         } else {
-          analysis.value = mv ? `最佳着: ${mv}` : '无着可走';
+          analysis.value = mv ? `最佳着法: ${mv}` : '无着可走';
         }
         
         bestMove.value = mv; // Set bestMove

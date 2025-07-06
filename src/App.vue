@@ -20,9 +20,8 @@ const engine = useUciEngine(game.generateFenForEngine);
 provide('game-state', game);
 provide('engine-state', engine);
 
-// Provide global FEN dialog state
-const isFenDialogVisible = ref(false);
-provide('fen-dialog-visible', isFenDialogVisible);
+// Provide the FEN input dialog state from game state
+provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
 </script>
 
 <template>
