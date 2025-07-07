@@ -5,6 +5,8 @@
 
 JieqiBox is a modern, cross-platform desktop application for Jieqi (揭棋) analysis and play. Built with a powerful combination of Tauri and Vue 3, it provides a comprehensive toolset for Jieqi enthusiasts and developers.
 
+You can obtain the engine by building it from https://github.com/official-pikafish/Pikafish/tree/jieqi.
+
 ![JieqiBox Screenshot](./screenshot.png)
 
 ## ✨ Features
