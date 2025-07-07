@@ -72,7 +72,7 @@ const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: 
 const { pieces,selectedPieceId,copySuccessVisible,copyFenToClipboard,
         inputFenString,handleBoardClick,setupNewGame,isAnimating,lastMovePositions,
         registerArrowClearCallback } = gs;
-const { pvMoves,bestMove,isThinking,multiPvMoves } = es;
+const { bestMove,isThinking,multiPvMoves } = es;
 
 // Inject isCurrentPositionInCheck
 const isCurrentPositionInCheck = gs.isCurrentPositionInCheck;
