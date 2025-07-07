@@ -10,7 +10,7 @@ export default {
     reset: 'Đặt lại',
     clear: 'Xóa',
     apply: 'Áp dụng',
-    execute: 'Thực thi',
+    execute: 'Thực hiện',
     loading: 'Đang tải...',
     error: 'Lỗi',
     success: 'Thành công',
@@ -26,8 +26,8 @@ export default {
     editPosition: 'Chỉnh sửa vị trí',
     uciSettings: 'Cài đặt UCI',
     analysisParams: 'Tham số phân tích',
-    saveNotation: 'Lưu ký hiệu',
-    openNotation: 'Mở ký hiệu',
+    saveNotation: 'Lưu biên bản',
+    openNotation: 'Mở biên bản',
     gameTitle: 'Ván Cờ úp'
   },
 
@@ -39,10 +39,11 @@ export default {
     noOptionsAvailable: 'Không có tùy chọn UCI có thể cấu hình',
     refreshOptions: 'Làm mới tùy chọn',
     range: 'Phạm vi',
-    execute: 'Thực thi',
-    resetToDefaults: 'Đặt lại về mặc định',
+    execute: 'Thực hiện',
+    resetToDefaults: 'Đặt lại mặc định',
     clearSettings: 'Xóa cài đặt',
-    confirmClearSettings: 'Bạn có chắc chắn muốn xóa tất cả cấu hình tùy chọn UCI cho động cơ hiện tại không? Hành động này không thể hoàn tác.',
+    confirmClearSettings:
+      'Bạn có chắc chắn muốn xóa tất cả cấu hình tùy chọn UCI cho động cơ hiện tại không? Hành động này không thể hoàn tác.',
     settingsCleared: 'Đã xóa cấu hình tùy chọn UCI'
   },
 
@@ -53,9 +54,10 @@ export default {
     maxDepth: 'Độ sâu tối đa',
     maxNodes: 'Số nút tối đa',
     analysisMode: 'Chế độ phân tích',
-    resetToDefaults: 'Đặt lại về mặc định',
+    resetToDefaults: 'Đặt lại mặc định',
     clearSettings: 'Xóa cài đặt',
-    confirmClearSettings: 'Bạn có chắc chắn muốn xóa tất cả cấu hình tham số phân tích không? Hành động này không thể hoàn tác.',
+    confirmClearSettings:
+      'Bạn có chắc chắn muốn xóa tất cả cấu hình tham số phân tích không? Hành động này không thể hoàn tác.',
     settingsCleared: 'Đã xóa cấu hình tham số phân tích',
     analysisModes: {
       movetime: 'Phân tích theo thời gian',
@@ -71,13 +73,13 @@ export default {
     switchSide: '⚡ Chuyển bên',
     resetPosition: '🔄 Đặt lại vị trí',
     addPieces: 'Thêm quân cờ',
-    brightPieces: 'Quân sáng',
-    darkPieces: 'Quân tối',
+    brightPieces: 'Quân cờ sáng',
+    darkPieces: 'Quân úp',
     selectedPosition: 'Vị trí đã chọn',
     piece: 'Quân cờ',
     validationStatus: {
       normal: 'Bình thường',
-      error: 'Lỗi: Số lượng quân cờ tối không khớp'
+      error: 'Lỗi: Số lượng quân úp không khớp'
     },
     cancel: 'Hủy',
     applyChanges: 'Áp dụng thay đổi',
@@ -96,9 +98,9 @@ export default {
       black_king: 'Tướng đen',
       black_cannon: 'Pháo đen',
       black_pawn: 'Tốt đen',
-      unknown: 'Quân tối',
-      red_unknown: 'Quân tối đỏ',
-      black_unknown: 'Quân tối đen'
+      unknown: 'Quân úp',
+      red_unknown: 'Quân úp đỏ',
+      black_unknown: 'Quân úp đen'
     }
   },
 
@@ -122,12 +124,13 @@ export default {
   about: {
     title: 'Về JieqiBox',
     version: 'Phiên bản',
-    description: 'Một ứng dụng desktop phân tích và chơi Cờ úp hiện đại được xây dựng với Tauri và Vue 3.',
+    description:
+      'Một ứng dụng desktop phân tích và chơi Cờ úp hiện đại được xây dựng với Tauri và Vue 3.',
     features: 'Tính năng',
     featuresList: [
       'Hỗ trợ ván Cờ úp',
       'Phân tích động cơ UCI',
-      'Lưu và tải ký hiệu',
+      'Lưu và tải biên bản',
       'Chỉnh sửa vị trí',
       'Hỗ trợ chuỗi FEN'
     ],
@@ -160,9 +163,9 @@ export default {
     blackAiOn: 'AI Đen (Bật)',
     blackAiOff: 'AI Đen (Tắt)',
     freeFlipMode: 'Chế độ lật tự do',
-    darkPiecePool: 'Hồ quân tối',
+    darkPiecePool: 'Kho quân úp',
     engineAnalysis: 'Phân tích động cơ',
-    notation: 'Ký hiệu',
+    notation: 'Biên bản',
     opening: 'Khai cuộc',
     adjustment: 'Điều chỉnh',
     engineLog: 'Nhật ký động cơ',
@@ -171,12 +174,12 @@ export default {
 
   // Thông báo lỗi
   errors: {
-    saveNotationFailed: 'Lưu ký hiệu thất bại',
-    openNotationFailed: 'Mở ký hiệu thất bại',
+    saveNotationFailed: 'Lưu biên bản thất bại',
+    openNotationFailed: 'Mở biên bản thất bại',
     engineNotLoaded: 'Chưa tải động cơ, không thể gửi lệnh',
     engineSendUnavailable: 'Phương thức send của động cơ không khả dụng',
-    darkPiecesMismatch: 'Lỗi: {darkCount} quân cờ tối > {poolCount} bể',
-    pieceCountExceeded: 'Lỗi: {pieceName} tổng số vượt quá!'
+    darkPiecesMismatch: 'Lỗi: {darkCount} quân úp > {poolCount} trong kho',
+    pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!'
   },
 
   // Phần dưới bàn cờ
@@ -196,4 +199,4 @@ export default {
     vi: 'Tiếng Việt',
     ja: '日本語'
   }
-} 
+}
