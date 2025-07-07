@@ -12,8 +12,8 @@
 
     <!-- Last move highlights -->
     <div class="last-move-highlights" v-if="lastMovePositions">
-      <div class="highlight from" :style="rcStyle(lastMovePositions.from.row, lastMovePositions.from.col)"></div>
-      <div class="highlight to" :style="rcStyle(lastMovePositions.to.row, lastMovePositions.to.col)"></div>
+      <div class="highlight from" :style="rcStyle(displayRow(lastMovePositions.from.row), lastMovePositions.from.col)"></div>
+      <div class="highlight to" :style="rcStyle(displayRow(lastMovePositions.to.row), lastMovePositions.to.col)"></div>
     </div>
 
     <!-- Valid moves indicators -->
@@ -235,6 +235,9 @@ const inputFenStringWithArrow = () => {
 /* ===== Arrow Colors ===== */
 const arrowColors = ['#0066cc','#e53935','#43a047','#ffb300','#8e24aa','#00897b'];
 const arrowColor = (idx:number)=> arrowColors[idx % arrowColors.length];
+
+// Helper to convert stored row to display row based on flip state
+const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
 </script>
 
 <style scoped lang="scss">

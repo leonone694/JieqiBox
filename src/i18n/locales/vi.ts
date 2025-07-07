@@ -169,7 +169,9 @@ export default {
     opening: 'Khai cuộc',
     adjustment: 'Điều chỉnh',
     engineLog: 'Nhật ký động cơ',
-    about: 'Về'
+    about: 'Về',
+    flipBoard: 'Lật bàn cờ',
+    flipBoardBack: 'Khôi phục hướng'
   },
 
   // Thông báo lỗi

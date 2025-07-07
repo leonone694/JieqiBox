@@ -155,81 +155,30 @@ export function useChessGame() {
 
   const generateFen = (): string => {
     const board: (Piece | null)[][] = Array.from({ length: 10 }, () => Array(9).fill(null));
-    
-    // Use original positions directly, no remapping
-    pieces.value.forEach(p => {
-      board[p.row][p.col] = p;
-    });
-
-    const boardFen = board.map((row, rowIndex) => {
-        let empty = 0;
-        let str = '';
-        row.forEach(p => {
-          if (p) {
-            if (empty > 0) { str += empty; empty = 0; }
-            if (p.isKnown) {
-              str += FEN_MAP[p.name];
-            } else {
-              // For hidden pieces, determine color based on position
-              // If the board is flipped, need to reverse the judgment
-              let isRedSide;
-              if (isBoardFlipped.value) {
-                // After flip: first 5 rows are red, last 5 rows are black
-                isRedSide = rowIndex < 5;
-              } else {
-                // Normal: first 5 rows are black, last 5 rows are red
-                isRedSide = rowIndex >= 5;
-              }
-              str += isRedSide ? 'X' : 'x';
-            }
-          } else empty++;
-        });
-        if (empty > 0) str += empty;
-        return str;
-      }).join('/');
-
-    let hiddenStr = '';
-    const hiddenOrder = "RNBAKCP";
-    hiddenOrder.split('').forEach(char => {
-        const redCount = unrevealedPieceCounts.value[char] || 0;
-        const blackCount = unrevealedPieceCounts.value[char.toLowerCase()] || 0;
-        if(redCount > 0) hiddenStr += char + redCount;
-        if(blackCount > 0) hiddenStr += char.toLowerCase() + blackCount;
-    });
-
-    return `${boardFen} ${hiddenStr || '-'} ${sideToMove.value === 'red' ? 'w' : 'b'} - - 0 1`;
-  };
-
-  // Generate FEN for engine (if board is flipped, need to remap positions)
-  const generateFenForEngine = (): string => {
-    const board: (Piece | null)[][] = Array.from({ length: 10 }, () => Array(9).fill(null));
-    
     // If the board is flipped, need to remap positions to generate FEN that engine can understand
     pieces.value.forEach(p => {
       const actualRow = isBoardFlipped.value ? (9 - p.row) : p.row;
       board[actualRow][p.col] = p;
     });
-
     const boardFen = board.map((row, rowIndex) => {
         let empty = 0;
         let str = '';
         row.forEach(p => {
-          if (p) {
-            if (empty > 0) { str += empty; empty = 0; }
-            if (p.isKnown) {
-              str += FEN_MAP[p.name];
-            } else {
-              // For hidden pieces, determine color based on remapped position
-              // After remapping: first 5 rows are black, last 5 rows are red (standard format)
-              const isRedSide = rowIndex >= 5;
-              str += isRedSide ? 'X' : 'x';
-            }
-          } else empty++;
+            if (p) {
+                if (empty > 0) { str += empty; empty = 0; }
+                if (p.isKnown) {
+                  str += FEN_MAP[p.name];
+                } else {
+                  // For hidden pieces, determine color based on remapped position
+                  // After remapping: first 5 rows are black, last 5 rows are red (standard format)
+                  const isRedSide = rowIndex >= 5;
+                  str += isRedSide ? 'X' : 'x';
+                }
+            } else empty++;
         });
         if (empty > 0) str += empty;
         return str;
       }).join('/');
-
     let hiddenStr = '';
     const hiddenOrder = "RNBAKCP";
     hiddenOrder.split('').forEach(char => {
@@ -238,11 +187,10 @@ export function useChessGame() {
         if(redCount > 0) hiddenStr += char + redCount;
         if(blackCount > 0) hiddenStr += char.toLowerCase() + blackCount;
     });
-
     // Only return FEN, without move history, ensure engine doesn't repeat moves
     return `${boardFen} ${hiddenStr || '-'} ${sideToMove.value === 'red' ? 'w' : 'b'} - - 0 1`;
   };
-  
+
   const loadFen = (fen: string, animate: boolean) => {
     isAnimating.value = animate;
     try {
@@ -770,8 +718,11 @@ export function useChessGame() {
     const originalRow = piece.row;
     const originalCol = piece.col;
 
-    // Record move positions for highlight display
-    const lastMove = { from: { row: originalRow, col: originalCol }, to: { row: targetRow, col: targetCol } };
+    const highlightMove = { from: { row: originalRow, col: originalCol }, to: { row: targetRow, col: targetCol } };
+    const historyMove = {
+      from: { row: convertRowForHistory(originalRow), col: originalCol },
+      to:   { row: convertRowForHistory(targetRow),   col: targetCol },
+    };
 
     if (targetPiece) {
       // In free flip mode, capturing opponent's hidden piece should not affect their unrevealed pool
@@ -807,13 +758,13 @@ export function useChessGame() {
 
     if (wasDarkPiece) {
         if (flipMode.value === 'free') {
-          // In free mode, immediately set last-move-highlights so user knows which move the engine made
-          lastMovePositions.value = lastMove;
+          // Still use current coordinates for highlighting
+          lastMovePositions.value = highlightMove;
           pendingFlip.value = {
             pieceToMove: piece,
             uciMove: uciMove,
             side: pieceSide,
-            callback: (chosenName) => completeFlipAfterMove(piece, uciMove, chosenName, lastMove),
+            callback: (chosenName) => completeFlipAfterMove(piece, uciMove, chosenName, historyMove),
           };
         } else {
             const pool = Object.entries(unrevealedPieceCounts.value)
@@ -830,10 +781,12 @@ export function useChessGame() {
               return;
             }
             const chosenName = shuffle(pool)[0];
-            completeFlipAfterMove(piece, uciMove, chosenName, lastMove);
+            completeFlipAfterMove(piece, uciMove, chosenName, historyMove);
         }
     } else {
-      recordAndFinalize('move', uciMove, lastMove);
+      // Set highlight
+      lastMovePositions.value = highlightMove;
+      recordAndFinalize('move', uciMove, historyMove);
     }
   };
 
@@ -911,7 +864,7 @@ export function useChessGame() {
   const copyFenToClipboard = async () => {
     try {
       // Use the same FEN generation logic as the engine to ensure consistency
-      const fen = generateFenForEngine();
+      const fen = generateFen();
       await navigator.clipboard.writeText(fen);
       copySuccessVisible.value = true;
       setTimeout(() => { copySuccessVisible.value = false; }, 2000);
@@ -1086,6 +1039,14 @@ export function useChessGame() {
     // Reset zIndex for all pieces when flipping the board
     pieces.value.forEach(p => p.zIndex = undefined);
     
+    // Flip last move highlight positions
+    if (lastMovePositions.value) {
+      lastMovePositions.value = {
+        from: { row: 9 - lastMovePositions.value.from.row, col: lastMovePositions.value.from.col },
+        to:   { row: 9 - lastMovePositions.value.to.row,   col: lastMovePositions.value.to.col },
+      };
+    }
+    
     // Trigger arrow clear event
     triggerArrowClear();
   };
@@ -1137,6 +1098,11 @@ export function useChessGame() {
     return getValidMovesForPiece(selectedPiece);
   });
 
+  // Add a helper function to convert row for history
+  function convertRowForHistory(row: number): number {
+    return isBoardFlipped.value ? 9 - row : row;
+  }
+
   setupNewGame();
   
   return {
@@ -1145,7 +1111,7 @@ export function useChessGame() {
     flipMode, unrevealedPieceCounts, pendingFlip, validationStatus,
     isFenInputDialogVisible, confirmFenInput,
     isAnimating, lastMovePositions,
-    getPieceNameFromChar, getPieceSide, getRoleByPosition, generateFen, generateFenForEngine, copyFenToClipboard, inputFenString,
+    getPieceNameFromChar, getPieceSide, getRoleByPosition, generateFen, copyFenToClipboard, inputFenString,
     handleBoardClick, setupNewGame, playMoveFromUci,
     replayToMove, adjustUnrevealedCount,
     saveGameNotation, openGameNotation, generateGameNotation,

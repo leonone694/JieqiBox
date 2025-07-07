@@ -22,6 +22,10 @@
       </v-btn>
     </div>
 
+    <v-btn @click="toggleBoardFlip" color="primary" class="full-btn">
+      {{ isBoardFlipped ? ($t('analysis.flipBoardBack') || '恢复方向') : ($t('analysis.flipBoard') || '翻转棋盘') }}
+    </v-btn>
+
     <v-switch
       v-model="flipMode"
       :label="$t('analysis.freeFlipMode')"
@@ -84,8 +88,6 @@
       </div>
     </div>
 
-
-
     <div class="section">
       <h3>{{ $t('analysis.engineLog') }}</h3>
       <div class="engine-log" ref="engineLogElement">
@@ -144,6 +146,8 @@ const {
   getPieceNameFromChar,
   sideToMove,
   pendingFlip,
+  toggleBoardFlip,
+  isBoardFlipped,
 } = gameState;
 
 const engineState = inject('engine-state') as any;

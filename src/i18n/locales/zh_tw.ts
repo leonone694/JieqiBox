@@ -166,7 +166,9 @@ export default {
     opening: '開局',
     adjustment: '調整',
     engineLog: '引擎日誌',
-    about: '關於'
+    about: '關於',
+    flipBoard: '翻轉棋盤',
+    flipBoardBack: '恢復方向'
   },
 
   // 錯誤訊息

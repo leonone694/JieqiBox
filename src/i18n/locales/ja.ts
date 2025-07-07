@@ -166,7 +166,9 @@ export default {
     opening: '開局',
     adjustment: '調整',
     engineLog: 'エンジンログ',
-    about: 'について'
+    about: 'について',
+    flipBoard: '盤を反転',
+    flipBoardBack: '向きを復元'
   },
 
   // エラーメッセージ

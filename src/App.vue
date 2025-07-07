@@ -39,8 +39,8 @@ watch(locale, (newLocale) => {
 
 const game = useChessGame();
 
-// Pass generateFenForEngine to ensure engine receives correct FEN format
-const engine = useUciEngine(game.generateFenForEngine);
+// Pass generateFen to ensure engine receives correct FEN format
+const engine = useUciEngine(game.generateFen);
 
 // Note: Removed incorrect engine connection code
 // game.connectEngine(engine.startAnalysis);

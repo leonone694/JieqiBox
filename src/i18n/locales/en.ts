@@ -166,7 +166,9 @@ export default {
     opening: 'Opening',
     adjustment: 'Adjustment',
     engineLog: 'Engine Log',
-    about: 'About'
+    about: 'About',
+    flipBoard: 'Flip Board',
+    flipBoardBack: 'Restore Orientation'
   },
 
   // Error messages

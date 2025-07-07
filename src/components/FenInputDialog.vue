@@ -45,7 +45,7 @@ const emit = defineEmits<Emits>();
 
 // Inject properties and methods from the main game state composable.
 const {
-  generateFenForEngine,
+  generateFen,
 }: any = inject('game-state');
 
 const fenInput = ref('');
@@ -60,7 +60,7 @@ const dialogVisible = computed({
 watch(dialogVisible, (newValue) => {
   // When the dialog becomes visible, populate the textarea with the current game's FEN string.
   if (newValue) {
-    fenInput.value = generateFenForEngine();
+    fenInput.value = generateFen();
   }
 });
 
