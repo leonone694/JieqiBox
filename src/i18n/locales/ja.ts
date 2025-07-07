@@ -71,8 +71,8 @@ export default {
     switchSide: '⚡ 手番を切り替え',
     resetPosition: '🔄 局面をリセット',
     addPieces: '駒を追加',
-    brightPieces: '明駒',
-    darkPieces: '暗駒',
+    brightPieces: '明子',
+    darkPieces: '暗子',
     selectedPosition: '選択された位置',
     piece: '駒',
     validationStatus: {
@@ -96,9 +96,9 @@ export default {
       black_king: '黒将',
       black_cannon: '黒砲',
       black_pawn: '黒卒',
-      unknown: '暗駒',
-      red_unknown: '赤暗駒',
-      black_unknown: '黒暗駒'
+      unknown: '暗子',
+      red_unknown: '赤暗子',
+      black_unknown: '黒暗子'
     }
   },
 
@@ -160,7 +160,7 @@ export default {
     blackAiOn: '黒AI(オン)',
     blackAiOff: '黒AI(オフ)',
     freeFlipMode: '自由めくりモード',
-    darkPiecePool: '暗駒プール',
+    darkPiecePool: '暗子プール',
     engineAnalysis: 'エンジン解析',
     notation: '棋譜',
     opening: '開局',
