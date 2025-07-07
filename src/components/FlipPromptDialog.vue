@@ -12,7 +12,7 @@
         @mousedown="startDrag"
         @touchstart="startDrag"
       >
-        <span class="text-h5">选择要翻开的棋子</span>
+        <span class="text-h5">{{ $t('flipPrompt.title') }}</span>
         <div class="drag-handle">⋮⋮</div>
       </div>
       <div class="dialog-content">
@@ -30,13 +30,13 @@
           </div>
         </div>
         <div v-if="availablePieces.length === 0" class="error-message">
-          <p>错误：暗子池里没有符合当前位置颜色的棋子了！请先在侧边栏调整暗子池。</p>
+          <p>{{ $t('flipPrompt.message') }}</p>
         </div>
       </div>
       <div class="dialog-actions">
         <div class="spacer"></div>
         <button class="cancel-btn" @click="cancelFlip">
-          取消
+          {{ $t('flipPrompt.cancel') }}
         </button>
       </div>
     </div>

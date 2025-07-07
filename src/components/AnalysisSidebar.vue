@@ -1,30 +1,30 @@
 <template>
   <div class="sidebar">
     <v-btn @click="loadEngine" :color="isEngineLoaded ? 'success' : 'primary'" class="full-btn">
-      {{ isEngineLoaded ? '引擎已加载' : '加载引擎' }}
+      {{ isEngineLoaded ? $t('analysis.engineLoaded') : $t('analysis.loadEngine') }}
     </v-btn>
     <v-btn @click="manualStartAnalysis" :disabled="!isEngineLoaded || isThinking" color="primary" class="full-btn">
-      {{ isThinking ? '思考中...' : '开始分析' }}
+      {{ isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis') }}
     </v-btn>
     <v-btn @click="stopAnalysis" :disabled="!isEngineLoaded || !isThinking" color="warning" class="full-btn">
-      停止分析
+      {{ $t('analysis.stopAnalysis') }}
     </v-btn>
     <v-btn @click="playBestMove" :disabled="!bestMove" color="secondary" class="full-btn">
-      走最佳着
+      {{ $t('analysis.playBestMove') }}
     </v-btn>
     
     <div class="autoplay-settings">
       <v-btn @click="toggleRedAi" :color="isRedAi ? 'error' : 'primary'" class="half-btn">
-        {{ isRedAi ? '红方电脑(开)' : '红方电脑(关)' }}
+        {{ isRedAi ? $t('analysis.redAiOn') : $t('analysis.redAiOff') }}
       </v-btn>
       <v-btn @click="toggleBlackAi" :color="isBlackAi ? 'error' : 'primary'" class="half-btn">
-        {{ isBlackAi ? '黑方电脑(开)' : '黑方电脑(关)' }}
+        {{ isBlackAi ? $t('analysis.blackAiOn') : $t('analysis.blackAiOff') }}
       </v-btn>
     </div>
 
     <v-switch
       v-model="flipMode"
-      label="自由翻子模式"
+      :label="$t('analysis.freeFlipMode')"
       color="indigo"
       true-value="free"
       false-value="random"
@@ -34,9 +34,9 @@
 
     <div class="section">
       <h3 class="section-title">
-        暗子池
-        <v-chip size="x-small" :color="validationStatus === '正常' ? 'green' : 'red'" variant="flat">
-          {{ validationStatus }}
+        {{ $t('analysis.darkPiecePool') }}
+        <v-chip size="x-small" :color="validationStatusKey === 'normal' ? 'green' : 'red'" variant="flat">
+          {{ validationStatusMessage }}
         </v-chip>
       </h3>
       <div class="pool-manager">
@@ -50,19 +50,19 @@
     </div>
 
     <div class="section">
-      <h3>引擎分析</h3>
+      <h3>{{ $t('analysis.engineAnalysis') }}</h3>
       <div class="analysis-output"><p>{{ analysis }}</p></div>
     </div>
 
     <div class="section">
-      <h3>棋谱</h3>
+      <h3>{{ $t('analysis.notation') }}</h3>
       <div class="move-list" ref="moveListElement">
         <div
           class="move-item"
           :class="{ 'current-move': currentMoveIndex === 0 }"
           @click="handleMoveClick(0)"
         >
-          <span class="move-number">开局</span>
+          <span class="move-number">{{ $t('analysis.opening') }}</span>
         </div>
         <div
           v-for="(entry, idx) in history"
@@ -76,7 +76,7 @@
             <span class="move-uci">{{ entry.data }}</span>
           </template>
           <template v-else-if="entry.type === 'adjust'">
-            <span class="move-adjust">调整: {{ entry.data }}</span>
+            <span class="move-adjust">{{ $t('analysis.adjustment') }}: {{ entry.data }}</span>
           </template>
         </div>
       </div>
@@ -85,7 +85,7 @@
 
 
     <div class="section">
-      <h3>引擎日志</h3>
+      <h3>{{ $t('analysis.engineLog') }}</h3>
       <div class="engine-log" ref="engineLogElement">
         <div
           v-for="(ln, Idx) in engineOutput"
@@ -105,7 +105,7 @@
         class="full-btn"
         prepend-icon="mdi-information"
       >
-        关于
+        {{ $t('analysis.about') }}
       </v-btn>
     </div>
 
@@ -116,9 +116,11 @@
 
 <script setup lang="ts">
 import { computed, inject, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-// import type { EngineLine } from '@/composables/useUciEngine';
+import { useI18n } from 'vue-i18n';
 import type { HistoryEntry } from '@/composables/useChessGame';
 import AboutDialog from './AboutDialog.vue';
+
+const { t } = useI18n();
 
 
 /* ---------- Debug ---------- */
@@ -445,6 +447,43 @@ watch(
 onUnmounted(() => {
   cleanupStorageWatch();
 });
+
+const validationStatusKey = computed(() => {
+  if (!validationStatus.value) return 'error';
+  // 支持"正常"/normal/Normal
+  return validationStatus.value.includes('正常') || validationStatus.value.toLowerCase().includes('normal') ? 'normal' : 'error';
+});
+
+// Get specific error message
+const validationStatusMessage = computed(() => {
+  if (!validationStatus.value) return '';
+  
+  // If it's normal status, use i18n translation
+  if (validationStatus.value.includes('正常') || validationStatus.value.toLowerCase().includes('normal')) {
+    return t('positionEditor.validationStatus.normal');
+  }
+  
+  // Parse error information
+  const errorText = validationStatus.value;
+  
+  // Check if it's dark pieces count mismatch error
+  const darkPiecesMatch = errorText.match(/错误:\s*(\d+)暗子\s*>\s*(\d+)池/);
+  if (darkPiecesMatch) {
+    const darkCount = darkPiecesMatch[1];
+    const poolCount = darkPiecesMatch[2];
+    return t('errors.darkPiecesMismatch', { darkCount, poolCount });
+  }
+  
+  // Check if it's piece count exceeded error
+  const pieceCountMatch = errorText.match(/错误:\s*(.+?)\s*总数超限!/);
+  if (pieceCountMatch) {
+    const pieceName = pieceCountMatch[1];
+    return t('errors.pieceCountExceeded', { pieceName });
+  }
+  
+  // If none matches, return original error message
+  return errorText;
+});
 </script>
 
 <style lang="scss" scoped>
@@ -510,6 +549,7 @@ onUnmounted(() => {
   width: 40px;
   text-align: right;
   color: #666;
+  white-space: nowrap;
 }
 .move-uci {
   flex: 1;

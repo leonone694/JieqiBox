@@ -2,7 +2,7 @@
   <v-dialog v-model="isVisible" max-width="800px" persistent>
     <v-card>
       <v-card-title class="dialog-title">
-        <span>UCI引擎选项配置</span>
+        <span>{{ $t('uciOptions.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
           <v-icon color="black">mdi-close</v-icon>
@@ -12,18 +12,18 @@
       <v-card-text class="options-container">
         <div v-if="isLoading" class="loading-section">
           <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          <span class="loading-text">正在加载引擎选项...</span>
+          <span class="loading-text">{{ $t('uciOptions.loadingText') }}</span>
         </div>
 
         <div v-else-if="!isEngineLoaded" class="empty-section">
           <v-icon size="48" color="grey">mdi-engine-off</v-icon>
-          <p>请先加载引擎</p>
+          <p>{{ $t('uciOptions.noEngineLoaded') }}</p>
         </div>
 
         <div v-else-if="uciOptions.length === 0" class="empty-section">
           <v-icon size="48" color="grey">mdi-cog-off</v-icon>
-          <p>暂无可配置的UCI选项</p>
-          <v-btn color="primary" @click="refreshOptions">刷新选项</v-btn>
+          <p>{{ $t('uciOptions.noOptionsAvailable') }}</p>
+          <v-btn color="primary" @click="refreshOptions">{{ $t('uciOptions.refreshOptions') }}</v-btn>
         </div>
 
         <div v-else class="options-list">
@@ -55,7 +55,7 @@
                   ></v-text-field>
                 </template>
               </v-slider>
-              <span class="option-range">范围: {{ option.min }} - {{ option.max }}</span>
+              <span class="option-range">{{ $t('uciOptions.range') }}: {{ option.min }} - {{ option.max }}</span>
             </div>
 
             <!-- 布尔类型选项 (check) -->
@@ -101,7 +101,7 @@
                 variant="outlined"
                 @click="executeButtonOption(option.name)"
               >
-                执行
+                {{ $t('uciOptions.execute') }}
               </v-btn>
             </div>
           </div>
@@ -109,11 +109,11 @@
       </v-card-text>
 
       <v-card-actions class="dialog-actions">
-        <v-btn color="grey" @click="resetToDefaults">恢复默认</v-btn>
-        <v-btn color="primary" @click="refreshOptions">刷新选项</v-btn>
-        <v-btn color="grey" @click="clearSettings">清除配置</v-btn>
+        <v-btn color="grey" @click="resetToDefaults">{{ $t('uciOptions.resetToDefaults') }}</v-btn>
+        <v-btn color="primary" @click="refreshOptions">{{ $t('uciOptions.refreshOptions') }}</v-btn>
+        <v-btn color="grey" @click="clearSettings">{{ $t('uciOptions.clearSettings') }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="grey" @click="closeDialog">关闭</v-btn>
+        <v-btn color="grey" @click="closeDialog">{{ $t('common.close') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -121,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, inject } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 // UCI option interface definition
 interface UciOption {
@@ -149,6 +150,7 @@ const emit = defineEmits<{
 }>();
 
 // Inject engine state
+const { t } = useI18n();
 const engineState = inject('engine-state') as any;
 const { isEngineLoaded, engineOutput, uciOptionsText, currentEnginePath } = engineState;
 
@@ -344,7 +346,7 @@ const resetToDefaults = () => {
 // Function to refresh UCI options
 const refreshOptions = () => {
   if (!isEngineLoaded.value) {
-    alert('请先加载引擎');
+    alert(t('uciOptions.noEngineLoaded'));
     return;
   }
 
@@ -430,7 +432,7 @@ onMounted(() => {
 
 // Function to clear settings
 const clearSettings = () => {
-  if (confirm('确定要清除当前引擎的所有UCI选项配置吗？此操作不可恢复。')) {
+  if (confirm(t('uciOptions.confirmClearSettings'))) {
     // Clear local storage
     localStorage.removeItem(storageKey.value);
 
@@ -443,7 +445,7 @@ const clearSettings = () => {
       }
     });
 
-    console.log('已清除UCI选项配置');
+    console.log(t('uciOptions.settingsCleared'));
   }
 };
 

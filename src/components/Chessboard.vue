@@ -39,10 +39,10 @@
 
     <!-- Panel -->
     <div class="panel">
-      <v-btn @click="copyFenToClipboard" size="small">复制FEN</v-btn>
-      <v-btn @click="inputFenStringWithArrow"  size="small">输入FEN</v-btn>
-      <v-btn @click="setupNewGameWithArrow"    size="small">新对局</v-btn>
-      <span v-if="copySuccessVisible" class="tip">✓ 已复制</span>
+      <v-btn @click="copyFenToClipboard" size="small">{{ $t('chessboard.copyFen') }}</v-btn>
+      <v-btn @click="inputFenStringWithArrow"  size="small">{{ $t('chessboard.inputFen') }}</v-btn>
+      <v-btn @click="setupNewGameWithArrow"    size="small">{{ $t('chessboard.newGame') }}</v-btn>
+      <span v-if="copySuccessVisible" class="tip">{{ $t('chessboard.copied') }}</span>
     </div>
   </div>
 </template>

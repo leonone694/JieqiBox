@@ -2,11 +2,11 @@
   <v-dialog v-model="dialogVisible" persistent max-width="600px">
     <v-card>
       <v-card-title>
-        <span class="text-h5">输入或编辑FEN</span>
+        <span class="text-h5">{{ $t('fenInput.title') }}</span>
       </v-card-title>
       <v-card-text>
         <v-textarea
-          label="FEN字符串"
+          :label="$t('fenInput.placeholder')"
           v-model="fenInput"
           rows="3"
           variant="outlined"
@@ -17,10 +17,10 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="blue-darken-1" variant="text" @click="closeDialog">
-          取消
+          {{ $t('fenInput.cancel') }}
         </v-btn>
         <v-btn color="blue-darken-1" variant="text" @click="confirm">
-          确认
+          {{ $t('fenInput.confirm') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -3,30 +3,30 @@
     <v-card>
       <v-card-title class="text-h5">
         <v-icon icon="mdi-information" class="mr-2"></v-icon>
-        关于 JieqiBox
+        {{ $t('about.title') }}
       </v-card-title>
       
       <v-card-text>
         <div class="about-content">
           <div class="app-info">
             <h3>JieqiBox</h3>
-            <p class="version">版本 {{ version }}</p>
+            <p class="version">{{ $t('about.version') }} {{ version }}</p>
             <p class="description">
-              一个现代化的揭棋分析和对弈桌面应用程序，基于 Tauri 和 Vue 3 构建。
+              {{ $t('about.description') }}
             </p>
           </div>
           
           <v-divider class="my-4"></v-divider>
           
           <div class="author-info">
-            <h4>作者</h4>
+            <h4>{{ $t('about.author') }}</h4>
             <p><strong>Velithia</strong></p>
           </div>
           
           <v-divider class="my-4"></v-divider>
           
           <div class="links">
-            <h4>相关链接</h4>
+            <h4>{{ $t('about.github') }}</h4>
             <div class="link-item">
               <v-icon icon="mdi-github" class="mr-2"></v-icon>
               <v-btn 
@@ -35,7 +35,7 @@
                 @click="openExternalLink('https://github.com/Velithia/JieqiBox')"
                 class="link-btn"
               >
-                GitHub 仓库
+                {{ $t('about.github') }}
               </v-btn>
             </div>
             <div class="link-item">
@@ -46,7 +46,7 @@
                 @click="openExternalLink('https://github.com/Velithia/JieqiBox/releases')"
                 class="link-btn"
               >
-                下载最新版本
+                {{ $t('about.downloadLatest') }}
               </v-btn>
             </div>
           </div>
@@ -54,7 +54,7 @@
           <v-divider class="my-4"></v-divider>
           
           <div class="license-info">
-            <h4>许可证</h4>
+            <h4>{{ $t('about.license') }}</h4>
             <p>MIT License</p>
             <v-btn 
               variant="text" 
@@ -62,7 +62,7 @@
               @click="openExternalLink('https://opensource.org/licenses/MIT')"
               class="link-btn"
             >
-              查看许可证详情
+              {{ $t('about.viewLicense') }}
             </v-btn>
           </div>
         </div>
@@ -71,7 +71,7 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="primary" @click="dialog = false">
-          关闭
+          {{ $t('common.close') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -2,7 +2,7 @@
   <v-dialog v-model="isVisible" max-width="500px" persistent>
     <v-card>
       <v-card-title class="dialog-title">
-        <span>引擎分析参数设置</span>
+        <span>{{ $t('timeDialog.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
           <v-icon color="black">mdi-close</v-icon>
@@ -11,7 +11,7 @@
 
       <v-card-text class="settings-container">
         <div class="setting-item">
-          <label class="setting-label">步时 (毫秒)</label>
+          <label class="setting-label">{{ $t('timeDialog.movetime') }}</label>
           <v-text-field
             v-model.number="movetime"
             type="number"
@@ -27,7 +27,7 @@
         </div>
 
         <div class="setting-item">
-          <label class="setting-label">最大层数</label>
+          <label class="setting-label">{{ $t('timeDialog.maxDepth') }}</label>
           <v-text-field
             v-model.number="maxDepth"
             type="number"
@@ -43,7 +43,7 @@
         </div>
 
         <div class="setting-item">
-          <label class="setting-label">最大节点数</label>
+          <label class="setting-label">{{ $t('timeDialog.maxNodes') }}</label>
           <v-text-field
             v-model.number="maxNodes"
             type="number"
@@ -59,7 +59,7 @@
         </div>
 
         <div class="setting-item">
-          <label class="setting-label">分析模式</label>
+          <label class="setting-label">{{ $t('timeDialog.analysisMode') }}</label>
           <v-select
             v-model="analysisMode"
             :items="analysisModes"
@@ -73,10 +73,10 @@
       </v-card-text>
 
       <v-card-actions class="dialog-actions">
-        <v-btn color="grey" @click="resetToDefaults">恢复默认</v-btn>
-        <v-btn color="error" @click="clearSettings">清除配置</v-btn>
+        <v-btn color="grey" @click="resetToDefaults">{{ $t('timeDialog.resetToDefaults') }}</v-btn>
+        <v-btn color="error" @click="clearSettings">{{ $t('timeDialog.clearSettings') }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="primary" @click="closeDialog">确定</v-btn>
+        <v-btn color="primary" @click="closeDialog">{{ $t('common.confirm') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -84,13 +84,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 // Analysis mode options
-const analysisModes = [
-  { title: '按时间分析', value: 'movetime' },
-  { title: '按层数分析', value: 'depth' },
-  { title: '按节点数分析', value: 'nodes' }
-];
+const analysisModes = computed(() => [
+  { title: t('timeDialog.analysisModes.movetime'), value: 'movetime' },
+  { title: t('timeDialog.analysisModes.depth'), value: 'depth' },
+  { title: t('timeDialog.analysisModes.nodes'), value: 'nodes' }
+]);
 
 // Component properties definition
 interface Props {
@@ -175,7 +178,7 @@ const resetToDefaults = () => {
 
 // Clear settings
 const clearSettings = () => {
-  if (confirm('确定要清除所有分析参数配置吗？此操作不可恢复。')) {
+  if (confirm(t('timeDialog.confirmClearSettings'))) {
     // Reset to default values
     movetime.value = 1000;
     maxDepth.value = 20;
@@ -188,7 +191,7 @@ const clearSettings = () => {
     // Notify parent component that settings have changed
     updateSettings();
     
-    console.log('已清除分析参数配置');
+    console.log(t('timeDialog.settingsCleared'));
   }
 };
 

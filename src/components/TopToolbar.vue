@@ -7,7 +7,7 @@
         color="primary" 
         variant="text"
         @click="setupNewGame"
-        title="新对局"
+        :title="$t('toolbar.newGame')"
       />
       <v-btn 
         icon="mdi-content-copy" 
@@ -15,7 +15,7 @@
         color="primary" 
         variant="text"
         @click="copyFenToClipboard"
-        title="复制FEN"
+        :title="$t('toolbar.copyFen')"
       />
       <v-btn 
         icon="mdi-text-box" 
@@ -23,7 +23,7 @@
         color="primary" 
         variant="text"
         @click="inputFenString"
-        title="输入FEN"
+        :title="$t('toolbar.inputFen')"
       />
       <v-btn 
         icon="mdi-pencil-box" 
@@ -31,12 +31,12 @@
         color="primary" 
         variant="text"
         @click="showPositionEditor = true"
-        title="编辑局面"
+        :title="$t('toolbar.editPosition')"
       />
     </div>
 
     <div class="toolbar-center">
-      <span class="game-title">揭棋对局</span>
+      <span class="game-title">{{ $t('toolbar.gameTitle') }}</span>
     </div>
 
     <div class="toolbar-right">
@@ -46,7 +46,7 @@
         color="primary" 
         variant="text"
         @click="showUciOptionsDialog = true"
-        title="UCI设置"
+        :title="$t('toolbar.uciSettings')"
       />
       <v-btn 
         icon="mdi-timer" 
@@ -54,7 +54,7 @@
         color="primary" 
         variant="text"
         @click="showTimeDialog = true"
-        title="分析参数"
+        :title="$t('toolbar.analysisParams')"
       />
       <v-btn 
         icon="mdi-content-save" 
@@ -63,7 +63,7 @@
         variant="text"
         @click="handleSaveNotation"
         :loading="isSaving"
-        title="保存棋谱"
+        :title="$t('toolbar.saveNotation')"
       />
       <v-btn 
         icon="mdi-folder-open" 
@@ -72,8 +72,9 @@
         variant="text"
         @click="handleOpenNotation"
         :loading="isOpening"
-        title="打开棋谱"
+        :title="$t('toolbar.openNotation')"
       />
+      <LanguageSelector />
     </div>
 
     <!-- Dialog components -->
@@ -89,11 +90,14 @@
 
 <script setup lang="ts">
 import { ref, inject } from 'vue';
+import { useI18n } from 'vue-i18n';
 import UciOptionsDialog from './UciOptionsDialog.vue';
 import TimeDialog from './TimeDialog.vue';
 import PositionEditorDialog from './PositionEditorDialog.vue';
 import FenInputDialog from './FenInputDialog.vue';
+import LanguageSelector from './LanguageSelector.vue';
 
+const { t } = useI18n();
 const gameState: any = inject('game-state');
 const isFenDialogVisible: any = inject('fen-input-dialog-visible');
 
@@ -145,7 +149,7 @@ const handleSaveNotation = async () => {
   try {
     await gameState.saveGameNotation();
   } catch (error) {
-    console.error('保存棋谱失败:', error);
+    console.error(t('errors.saveNotationFailed'), error);
   } finally {
     isSaving.value = false;
   }
@@ -157,7 +161,7 @@ const handleOpenNotation = () => {
   try {
     gameState.openGameNotation();
   } catch (error) {
-    console.error('打开棋谱失败:', error);
+    console.error(t('errors.openNotationFailed'), error);
   } finally {
     isOpening.value = false;
   }

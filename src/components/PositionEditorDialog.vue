@@ -2,7 +2,7 @@
   <v-dialog v-model="isVisible" persistent max-width="800px">
     <v-card>
       <v-card-title>
-        <span class="text-h5">局面编辑</span>
+        <span class="text-h5">{{ $t('positionEditor.title') }}</span>
       </v-card-title>
       
       <v-card-text>
@@ -12,13 +12,13 @@
             <v-col cols="12">
               <div class="d-flex gap-2 flex-wrap">
                 <v-btn @click="flipBoard" color="primary" variant="outlined">
-                  🔄 上下翻转
+                  {{ $t('positionEditor.flipBoard') }}
                 </v-btn>
                 <v-btn @click="switchSide" color="secondary" variant="outlined">
-                  ⚡ 切换先手
+                  {{ $t('positionEditor.switchSide') }}
                 </v-btn>
                 <v-btn @click="resetPosition" color="warning" variant="outlined">
-                  🔄 重置局面
+                  {{ $t('positionEditor.resetPosition') }}
                 </v-btn>
               </div>
             </v-col>
@@ -68,11 +68,11 @@
             <!-- Piece Selector Panel -->
             <v-col cols="4">
               <div class="piece-selector">
-                <h4>添加棋子</h4>
+                <h4>{{ $t('positionEditor.addPieces') }}</h4>
                 
                 <!-- Known Piece Selection -->
                 <div class="piece-category">
-                  <h5>明子</h5>
+                  <h5>{{ $t('positionEditor.brightPieces') }}</h5>
                   <div class="piece-grid">
                     <div 
                       v-for="piece in knownPieces" 
@@ -88,7 +88,7 @@
 
                 <!-- Unknown Piece Selection -->
                 <div class="piece-category">
-                  <h5>暗子</h5>
+                  <h5>{{ $t('positionEditor.darkPieces') }}</h5>
                   <div class="piece-grid">
                     <div 
                       v-for="piece in unknownPieces" 
@@ -104,9 +104,9 @@
 
                 <!-- Current Selection Info -->
                 <div v-if="selectedCell.row !== -1" class="selected-info">
-                  <p>选中位置: {{ String.fromCharCode(97 + selectedCell.col) }}{{ 9 - selectedCell.row }}</p>
+                  <p>{{ $t('positionEditor.selectedPosition') }}: {{ String.fromCharCode(97 + selectedCell.col) }}{{ 9 - selectedCell.row }}</p>
                   <p v-if="getPieceAt(selectedCell.row, selectedCell.col)">
-                    棋子: {{ getPieceDisplayName(getPieceAt(selectedCell.row, selectedCell.col)!.name) }}
+                    {{ $t('positionEditor.piece') }}: {{ getPieceDisplayName(getPieceAt(selectedCell.row, selectedCell.col)!.name) }}
                   </p>
                 </div>
               </div>
@@ -116,11 +116,11 @@
           <!-- Validation Status -->
           <v-row>
             <v-col cols="12">
-              <v-alert 
-                :type="validationStatus === '正常' ? 'success' : 'error'"
-                :title="validationStatus"
-                variant="tonal"
-              />
+                      <v-alert 
+          :type="validationStatus === 'normal' ? 'success' : 'error'"
+          :title="$t('positionEditor.validationStatus.' + validationStatus)"
+          variant="tonal"
+        />
             </v-col>
           </v-row>
         </v-container>
@@ -129,10 +129,10 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="error" variant="text" @click="cancelEdit">
-          取消
+          {{ $t('positionEditor.cancel') }}
         </v-btn>
-        <v-btn color="primary" @click="applyChanges" :disabled="validationStatus !== '正常'">
-          应用更改
+        <v-btn color="primary" @click="applyChanges" :disabled="validationStatus !== 'normal'">
+          {{ $t('positionEditor.applyChanges') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -141,6 +141,7 @@
 
 <script setup lang="ts">
 import { ref, computed, inject, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Piece } from '@/composables/useChessGame';
 
 interface Props {
@@ -155,6 +156,7 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+const { t } = useI18n();
 const gameState: any = inject('game-state');
 
 // Dialog visibility
@@ -169,26 +171,26 @@ const editingSideToMove = ref<'red' | 'black'>('red');
 const selectedCell = ref({ row: -1, col: -1 });
 
 // Piece options
-const knownPieces = [
-  { name: 'red_chariot', displayName: '红车' },
-  { name: 'red_horse', displayName: '红马' },
-  { name: 'red_elephant', displayName: '红象' },
-  { name: 'red_advisor', displayName: '红士' },
-  { name: 'red_king', displayName: '红帅' },
-  { name: 'red_cannon', displayName: '红炮' },
-  { name: 'red_pawn', displayName: '红兵' },
-  { name: 'black_chariot', displayName: '黑车' },
-  { name: 'black_horse', displayName: '黑马' },
-  { name: 'black_elephant', displayName: '黑象' },
-  { name: 'black_advisor', displayName: '黑士' },
-  { name: 'black_king', displayName: '黑将' },
-  { name: 'black_cannon', displayName: '黑炮' },
-  { name: 'black_pawn', displayName: '黑卒' },
-];
+const knownPieces = computed(() => [
+  { name: 'red_chariot', displayName: t('positionEditor.pieces.red_chariot') },
+  { name: 'red_horse', displayName: t('positionEditor.pieces.red_horse') },
+  { name: 'red_elephant', displayName: t('positionEditor.pieces.red_elephant') },
+  { name: 'red_advisor', displayName: t('positionEditor.pieces.red_advisor') },
+  { name: 'red_king', displayName: t('positionEditor.pieces.red_king') },
+  { name: 'red_cannon', displayName: t('positionEditor.pieces.red_cannon') },
+  { name: 'red_pawn', displayName: t('positionEditor.pieces.red_pawn') },
+  { name: 'black_chariot', displayName: t('positionEditor.pieces.black_chariot') },
+  { name: 'black_horse', displayName: t('positionEditor.pieces.black_horse') },
+  { name: 'black_elephant', displayName: t('positionEditor.pieces.black_elephant') },
+  { name: 'black_advisor', displayName: t('positionEditor.pieces.black_advisor') },
+  { name: 'black_king', displayName: t('positionEditor.pieces.black_king') },
+  { name: 'black_cannon', displayName: t('positionEditor.pieces.black_cannon') },
+  { name: 'black_pawn', displayName: t('positionEditor.pieces.black_pawn') },
+]);
 
-const unknownPieces = [
-  { name: 'unknown', displayName: '暗子' },
-];
+const unknownPieces = computed(() => [
+  { name: 'unknown', displayName: t('positionEditor.pieces.unknown') },
+]);
 
 // Initialize editing state
 watch(isVisible, (visible) => {
@@ -294,10 +296,10 @@ const validationStatus = computed(() => {
   const positions = editingPieces.value.map(p => `${p.row},${p.col}`);
   const uniquePositions = new Set(positions);
   if (positions.length !== uniquePositions.size) {
-    return '错误: 存在重复的棋子位置';
+    return 'error';
   }
   
-  return '正常';
+  return 'normal';
 });
 
 // Get piece image URL
@@ -308,12 +310,12 @@ const getPieceImageUrl = (pieceName: string): string => {
 
 // Get piece display name
 const getPieceDisplayName = (pieceName: string): string => {
-  const knownPiece = knownPieces.find(p => p.name === pieceName);
+  const knownPiece = knownPieces.value.find((p: any) => p.name === pieceName);
   if (knownPiece) return knownPiece.displayName;
   
-  if (pieceName === 'red_unknown') return '红暗子';
-  if (pieceName === 'black_unknown') return '黑暗子';
-  if (pieceName === 'unknown') return '暗子';
+  if (pieceName === 'red_unknown') return t('positionEditor.pieces.red_unknown');
+  if (pieceName === 'black_unknown') return t('positionEditor.pieces.black_unknown');
+  if (pieceName === 'unknown') return t('positionEditor.pieces.unknown');
   
   return pieceName;
 };
@@ -325,7 +327,7 @@ const cancelEdit = () => {
 
 // Apply changes
 const applyChanges = () => {
-  if (validationStatus.value !== '正常') return;
+  if (validationStatus.value !== 'normal') return;
   
   // Record the edit operation in history
   const editData = `position_edit:${editingPieces.value.length}_pieces`;
