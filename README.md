@@ -15,6 +15,12 @@ JieqiBox is a modern, cross-platform desktop application for Jieqi (揭棋) anal
 *   **Board Editor**: Visually create and edit any board position.
 *   **Move History**: Tracks and displays the full history of moves in a game.
 *   **Modern UI**: A clean and responsive interface built with Vue 3 and Vuetify.
+*   **Multi-language Support**: Full internationalization (i18n) support with 5 languages:
+    - 简体中文 (Simplified Chinese)
+    - 繁體中文 (Traditional Chinese)
+    - English
+    - Tiếng Việt (Vietnamese)
+    - 日本語 (Japanese)
 
 ## 🛠️ Tech Stack
 
@@ -23,6 +29,7 @@ JieqiBox is a modern, cross-platform desktop application for Jieqi (揭棋) anal
 *   **UI Components**: [Vuetify 3](https://vuetifyjs.com/)
 *   **Styling**: [SCSS](https://sass-lang.com/)
 *   **Build Tool**: [Vite](https://vitejs.dev/)
+*   **Internationalization**: [Vue I18n](https://vue-i18n.intlify.dev/) for multi-language support
 
 ## 🚀 Getting Started (For Users)
 
