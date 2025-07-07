@@ -14,6 +14,10 @@ export function useUciEngine(generateFen: () => string) {
   const analysis = ref('');
   const isThinking = ref(false);
   const pvMoves = ref<string[]>([]);          // Real-time PV
+  // MultiPV: store moves for each PV index (0-based)
+  const multiPvMoves = ref<string[][]>([]);
+  // Cache of analysis lines for each PV
+  const analysisLines: string[] = [];
   const uciOptionsText = ref(''); // cache UCI options raw text
   const currentEnginePath = ref(''); // current engine path
 
@@ -67,6 +71,8 @@ export function useUciEngine(generateFen: () => string) {
     isThinking.value = true; 
     bestMove.value = ''; 
     pvMoves.value = []; 
+    multiPvMoves.value = []; // reset MultiPV cache
+    analysisLines.length = 0; // clear cached analysis lines
     analysis.value = '思考中…';
     
     send(pos);
@@ -132,13 +138,34 @@ export function useUciEngine(generateFen: () => string) {
     unlisten = await listen<string>('engine-output', (ev) => {
       const ln = ev.payload; engineOutput.value.push({text: ln, kind: 'recv'});
 
+      // -------- MultiPV parsing helpers --------
+      const mpvMatch = ln.match(/\bmultipv\s+(\d+)/);
+      const mpvIndex = mpvMatch ? parseInt(mpvMatch[1], 10) - 1 : 0; // 0-based index
+
       /* --- Extract PV (using indexOf is more robust than regex) --- */
       const idx = ln.indexOf(' pv ');
       if(idx !== -1) {
         const mvStr = ln.slice(idx + 4).trim();           // 4 = ' pv '.length
-        pvMoves.value = mvStr.split(/\s+/);           // Update in real-time
+        const movesArr = mvStr.split(/\s+/);
+        // Update primary pvMoves for backward compatibility
+        if (mpvIndex === 0) {
+          pvMoves.value = movesArr;
+        }
+        // Store into multiPvMoves with reactive update
+        if (mpvIndex >= multiPvMoves.value.length) {
+          // Append
+          multiPvMoves.value.push(movesArr);
+        } else {
+          // Replace existing index to keep order
+          multiPvMoves.value.splice(mpvIndex, 1, movesArr);
+        }
       }
-      if(ln.startsWith('info') && ln.includes('score')) analysis.value = ln;
+      // ------ Aggregate analysis lines (show all PVs) ------
+      if(ln.startsWith('info') && ln.includes('score')) {
+        analysisLines[mpvIndex] = ln;
+        // Join available lines by newline
+        analysis.value = analysisLines.filter(Boolean).join('\n');
+      }
 
       if(ln.startsWith('bestmove')) {
         const mv = ln.split(' ')[1] ?? ''; 
@@ -159,6 +186,7 @@ export function useUciEngine(generateFen: () => string) {
         // Stop thinking state
         isThinking.value = false; 
         pvMoves.value = [];
+        multiPvMoves.value = [];
       }
       if(ln === 'uciok') send('isready');
       if(ln === 'readyok') analysis.value = '引擎已就绪';
@@ -172,7 +200,7 @@ export function useUciEngine(generateFen: () => string) {
   onUnmounted(() => unlisten?.());
 
   return { 
-    engineOutput, isEngineLoaded, bestMove, analysis, isThinking, pvMoves, 
+    engineOutput, isEngineLoaded, bestMove, analysis, isThinking, pvMoves, multiPvMoves,
     loadEngine, startAnalysis, stopAnalysis, uciOptionsText, send, currentEnginePath, applySavedSettings 
   };
 }

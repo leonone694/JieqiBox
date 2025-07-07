@@ -25,16 +25,26 @@
       </div>
     </div>
 
-    <!-- Arrow -->
+    <!-- Arrows (support MultiPV) -->
     <svg class="ar" viewBox="0 0 90 100" preserveAspectRatio="none">
       <defs>
-        <marker id="ah" markerWidth="2.5" markerHeight="2.5" refX="1.5" refY="1.25" orient="auto">
-          <polygon points="0 0, 2.5 1.25, 0 2.5" class="ah"/>
+        <marker v-for="(color, idx) in arrowColors" :key="`marker-${idx}`"
+          :id="`ah-${idx}`" markerWidth="2.5" markerHeight="2.5" refX="1.5" refY="1.25" orient="auto">
+          <polygon points="0 0, 2.5 1.25, 0 2.5" :fill="color"/>
         </marker>
       </defs>
-      <line v-if="arr"
-        :x1="arr.x1" :y1="arr.y1" :x2="arr.x2" :y2="arr.y2"
-        marker-end="url(#ah)" class="al" />
+      <template v-for="(a, idx) in arrs" :key="`arrow-${idx}`">
+        <line
+          :x1="a.x1" :y1="a.y1" :x2="a.x2" :y2="a.y2"
+          :style="{ stroke: arrowColor(idx) }"
+          :marker-end="`url(#ah-${idx % arrowColors.length})`" class="al" />
+        <text v-if="arrs.length > 1"
+          :x="(a.x1 + a.x2) / 2"
+          :y="(a.y1 + a.y2) / 2"
+          :fill="arrowColor(idx)"
+          class="arrow-label"
+        >{{ a.pv }}</text>
+      </template>
     </svg>
 
     <!-- Panel -->
@@ -48,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, watch, computed } from 'vue';
+import { inject, ref, watch, computed, watchEffect } from 'vue';
 import type { Piece } from '@/composables/useChessGame';
 
 /* ===== Layout ===== */
@@ -57,12 +67,12 @@ const files='abcdefghi'.split('');
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');
-const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: any };
+const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: any; multiPvMoves: any };
 
 const { pieces,selectedPieceId,copySuccessVisible,copyFenToClipboard,
         inputFenString,handleBoardClick,setupNewGame,isAnimating,lastMovePositions,
         registerArrowClearCallback } = gs;
-const { pvMoves,bestMove,isThinking } = es;
+const { pvMoves,bestMove,isThinking,multiPvMoves } = es;
 
 // Inject isCurrentPositionInCheck
 const isCurrentPositionInCheck = gs.isCurrentPositionInCheck;
@@ -126,7 +136,9 @@ const boardClick = (e:MouseEvent)=>{
 };
 
 /* ===== Arrow ===== */
-const arr = ref<null|{x1:number;y1:number;x2:number;y2:number}>(null);
+// Support multiple arrows for MultiPV
+interface Arrow {x1:number;y1:number;x2:number;y2:number; pv:number}
+const arrs = ref<Arrow[]>([]);
 const uciToRC = (uci:string)=>({ col: files.indexOf(uci[0]), row: 9 - +uci[1] });
 
 // Convert UCI coordinates
@@ -166,41 +178,50 @@ const convertUciForArrow = (uci: string): string => {
 };
 
 const updateArrow = ()=>{
-  // 1. Search phase: use PV
-  if(isThinking.value && pvMoves.value.length){
-    const mv=pvMoves.value[0]; if(mv.length>=4){
-      // If the board is flipped, UCI coordinates need to be converted
-      const actualMv = convertUciForArrow(mv);
-      console.log('PV Move:', mv, 'Converted:', actualMv, 'Flipped:', gs.isBoardFlipped.value);
-      const {row:fr,col:fc}=uciToRC(actualMv.slice(0,2));
-      const {row:tr,col:tc}=uciToRC(actualMv.slice(2,4));
-      console.log('From:', {row:fr,col:fc}, 'To:', {row:tr,col:tc});
-      const f=percentToSvgCoords(fr,fc), t=percentToSvgCoords(tr,tc);
-      arr.value={x1:f.x,y1:f.y,x2:t.x,y2:t.y}; return;
-    }
+  // 1. If engine is thinking, display arrows for all available PVs
+  if(isThinking.value && multiPvMoves.value.length){
+    const arrows: Arrow[] = [];
+    multiPvMoves.value.forEach((moves: string[], idx: number)=>{
+      if(!moves || !moves.length) return;
+      const mv = moves[0];
+      if(mv && mv.length>=4){
+        const actualMv = convertUciForArrow(mv);
+        const {row:fr,col:fc}=uciToRC(actualMv.slice(0,2));
+        const {row:tr,col:tc}=uciToRC(actualMv.slice(2,4));
+        const f=percentToSvgCoords(fr,fc), t=percentToSvgCoords(tr,tc);
+        arrows.push({x1:f.x,y1:f.y,x2:t.x,y2:t.y, pv: idx + 1});
+      }
+    });
+    arrs.value = arrows;
+    return;
   }
-  // 2. Best move is available
+  // 2. If not thinking, show best move if available
   if(!isThinking.value && bestMove.value){
     const mv=bestMove.value; if(mv.length>=4){
-      // If the board is flipped, UCI coordinates need to be converted
       const actualMv = convertUciForArrow(mv);
-      console.log('Best Move:', mv, 'Converted:', actualMv, 'Flipped:', gs.isBoardFlipped.value);
       const {row:fr,col:fc}=uciToRC(actualMv.slice(0,2));
       const {row:tr,col:tc}=uciToRC(actualMv.slice(2,4));
-      console.log('From:', {row:fr,col:fc}, 'To:', {row:tr,col:tc});
       const f=percentToSvgCoords(fr,fc), t=percentToSvgCoords(tr,tc);
-      arr.value={x1:f.x,y1:f.y,x2:t.x,y2:t.y}; return;
+      arrs.value = [{x1:f.x,y1:f.y,x2:t.x,y2:t.y,pv:1}];
+      return;
     }
   }
-  arr.value=null;
+  // Clear arrows
+  arrs.value = [];
 };
-watch([pvMoves,bestMove,isThinking], updateArrow, {immediate:true});
+// Use watchEffect to react to changes inside multiPvMoves deep
+watchEffect(() => {
+  // dependencies: isThinking.value, bestMove.value, multiPvMoves.value, multiPvMoves.value.length
+  // Also incorporate pvMoves for fallback
+  void multiPvMoves.value.map((m: string[]) => m.join(',')); // track nested arrays
+  updateArrow();
+});
 
 // Watch for board flip state changes and update the arrow accordingly
 watch(() => gs.isBoardFlipped.value, updateArrow);
 
 // Register arrow clearing callback
-registerArrowClearCallback(() => { arr.value = null });
+registerArrowClearCallback(() => { arrs.value = [] });
 
 // Wrap original methods (now just call the original method, arrow clearing is triggered automatically)
 const setupNewGameWithArrow = () => {
@@ -210,6 +231,10 @@ const inputFenStringWithArrow = () => {
   // Directly call the inputFenString function from game-state
   inputFenString();
 };
+
+/* ===== Arrow Colors ===== */
+const arrowColors = ['#0066cc','#e53935','#43a047','#ffb300','#8e24aa','#00897b'];
+const arrowColor = (idx:number)=> arrowColors[idx % arrowColors.length];
 </script>
 
 <style scoped lang="scss">
@@ -288,8 +313,7 @@ const inputFenStringWithArrow = () => {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
-.al{stroke:#0066cc;stroke-width:1;stroke-opacity:.9}
-.ah{fill:#0066cc}
+.al{stroke-width:1;stroke-opacity:.9}
 
 .panel{position:absolute;bottom:-55px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
 .tip{margin-left:4px;color:#2ecc71;font-size:12px}
@@ -359,5 +383,14 @@ const inputFenStringWithArrow = () => {
   /* Disable double-click highlighting */
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Arrow labels */
+.arrow-label{
+  fill:#0066cc;
+  font-size:3px;
+  font-weight:bold;
+  pointer-events:none;
+  user-select:none;
 }
 </style>

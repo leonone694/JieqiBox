@@ -51,7 +51,9 @@
 
     <div class="section">
       <h3>{{ $t('analysis.engineAnalysis') }}</h3>
-      <div class="analysis-output"><p>{{ analysis }}</p></div>
+      <div class="analysis-output">
+        <div v-for="(ln, idx) in analysisLines" :key="`an-${idx}`">{{ ln }}</div>
+      </div>
     </div>
 
     <div class="section">
@@ -172,6 +174,11 @@ const analysisSettings = ref({
   maxDepth: 20,
   maxNodes: 1000000,
   analysisMode: 'movetime'
+});
+
+// Computed: split analysis lines by newline for display
+const analysisLines = computed(() => {
+  return analysis.value ? analysis.value.split('\n').filter((l: string) => l.trim().length > 0) : [];
 });
 
 // Load analysis settings from local storage
