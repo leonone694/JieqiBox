@@ -613,6 +613,12 @@ export function useChessGame() {
             moveValid = false;
             break;
           }
+          const eyeRow = piece.row + (targetRow - piece.row) / 2;
+          const eyeCol = piece.col + (targetCol - piece.col) / 2;
+          if (pieces.value.some(p => p.row === eyeRow && p.col === eyeCol)) {
+            moveValid = false;
+            break;
+          }
           moveValid = true;
           break;
               case 'horse':
