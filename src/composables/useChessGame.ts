@@ -9,14 +9,14 @@ export interface Piece {
   initialRole: string;
   initialRow: number;
   initialCol: number;
-  zIndex?: number; // New: for controlling piece layering, cannon pieces are brought to top when capturing
+  zIndex?: number; // for controlling piece layering, cannon pieces are brought to top when capturing
 }
 
 export type HistoryEntry = {
   type: 'move' | 'adjust';
   data: string;
   fen: string;
-  lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }; // New: record the start and end positions of the last move
+  lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }; // record the start and end positions of the last move
 };
 
 // Custom game notation format interface
@@ -45,12 +45,14 @@ export function useChessGame() {
   const selectedPieceId = ref<number | null>(null);
   const copySuccessVisible = ref(false);
   const sideToMove = ref<'red' | 'black'>('red');
+  const halfmoveClock = ref(0); // halfmove clock
+  const fullmoveNumber = ref(1); // fullmove number
   
   const history = ref<HistoryEntry[]>([]);
   const currentMoveIndex = ref<number>(0);
   const flipMode = ref<'random' | 'free'>('random');
   const unrevealedPieceCounts = ref<{[key: string]: number}>({});
-  const isBoardFlipped = ref(false); // New: board flip state
+  const isBoardFlipped = ref(false); // board flip state
   
   const pendingFlip = ref<{
     pieceToMove: Piece;
@@ -68,7 +70,7 @@ export function useChessGame() {
   // Store the initial FEN for replay functionality
   const initialFen = ref<string>("xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1");
   
-  // New: record the start and end positions of the last move for highlighting
+  // record the start and end positions of the last move for highlighting
   const lastMovePositions = ref<{ from: { row: number; col: number }; to: { row: number; col: number } } | null>(null);
 
   const FEN_MAP: { [k: string]: string } = {
@@ -191,14 +193,18 @@ export function useChessGame() {
         if(blackCount > 0) hiddenStr += char.toLowerCase() + blackCount;
     });
     // Only return FEN, without move history, ensure engine doesn't repeat moves
-    return `${boardFen} ${hiddenStr || '-'} ${sideToMove.value === 'red' ? 'w' : 'b'} - - 0 1`;
+    return `${boardFen} ${hiddenStr || '-'} ${sideToMove.value === 'red' ? 'w' : 'b'} - - ${halfmoveClock.value} ${fullmoveNumber.value}`;
   };
 
   const loadFen = (fen: string, animate: boolean) => {
     isAnimating.value = animate;
     try {
         const parts = fen.split(' ');
-        const [boardPart, hiddenPart, sidePart] = parts;
+        const [boardPart, hiddenPart, sidePart, _castling, _enpassant, halfmove, fullmove] = parts;
+        sideToMove.value = sidePart === 'w' ? 'red' : 'black';
+        halfmoveClock.value = halfmove ? parseInt(halfmove, 10) : 0;
+        fullmoveNumber.value = fullmove ? parseInt(fullmove, 10) : 1;
+
         const newPieces: Piece[] = [];
         let pieceId = 1;
 
@@ -258,7 +264,6 @@ export function useChessGame() {
 
         pieces.value = newPieces;
         unrevealedPieceCounts.value = newCounts;
-        sideToMove.value = sidePart === 'w' ? 'red' : 'black';
         selectedPieceId.value = null;
         lastMovePositions.value = null; // Clear highlights when loading FEN
         
@@ -705,6 +710,23 @@ export function useChessGame() {
   
   const movePiece = (piece: Piece, targetRow: number, targetCol: number) => {
     const pieceSide = getPieceSide(piece);
+
+    // Update halfmove and fullmove counters
+    // A flip move is when an unknown piece is moved.
+    const isFlip = !piece.isKnown;
+    // Check for capture by checking if there is a piece at the target location before moving.
+    const capturedPieceIndexAtTarget = pieces.value.findIndex(p => p.row === targetRow && p.col === targetCol);
+    const isCapture = capturedPieceIndexAtTarget !== -1;
+
+    if (isFlip || isCapture) {
+      halfmoveClock.value = 0;
+    } else {
+      halfmoveClock.value++;
+    }
+
+    if (sideToMove.value === 'black') {
+      fullmoveNumber.value++;
+    }
 
     // Generate UCI coordinates; if the board is flipped, coordinates need to be converted
     const toUci = (r: number, c: number) => {
