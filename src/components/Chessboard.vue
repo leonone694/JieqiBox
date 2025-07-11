@@ -25,6 +25,16 @@
       </div>
     </div>
 
+    <!-- Rank and file labels -->
+    <div class="board-labels">
+      <div class="rank-labels">
+        <span v-for="(rank, index) in ranks" :key="rank" :style="rankLabelStyle(index)">{{ rank }}</span>
+      </div>
+      <div class="file-labels">
+        <span v-for="(file, index) in files" :key="file" :style="fileLabelStyle(index)">{{ file }}</span>
+      </div>
+    </div>
+
     <!-- Arrows (support MultiPV) -->
     <svg class="ar" viewBox="0 0 90 100" preserveAspectRatio="none">
       <defs>
@@ -64,6 +74,11 @@ import type { Piece } from '@/composables/useChessGame';
 /* ===== Layout ===== */
 const PAD_X=11,PAD_Y=11, COLS=9,ROWS=10, GX=100-PAD_X, GY=100-PAD_Y, OX=PAD_X/2, OY=PAD_Y/2;
 const files='abcdefghi'.split('');
+
+const ranks = computed(() => {
+  const baseRanks = Array.from({ length: 10 }, (_, i) => 9 - i);
+  return gs.isBoardFlipped.value ? baseRanks.slice().reverse() : baseRanks;
+});
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');
@@ -124,6 +139,16 @@ const rcStyle = (r:number,c:number,zIndex?:number) => {
     transform:'translate(-50%,-50%)',
     ...(zIndex !== undefined && { zIndex: zIndex })
   };
+};
+
+const rankLabelStyle = (index: number) => {
+  const { y } = percentFromRC(index, 0);
+  return { top: `${y}%`, transform: 'translateY(-50%)' };
+};
+
+const fileLabelStyle = (index: number) => {
+  const { x } = percentFromRC(0, index);
+  return { left: `${x}%`, transform: 'translateX(-50%)' };
 };
 
 /* ===== Clicks ===== */
@@ -403,5 +428,30 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
   font-weight:bold;
   pointer-events:none;
   user-select:none;
+}
+
+.board-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+
+  .rank-labels, .file-labels {
+    span {
+      position: absolute;
+      color: #666;
+      font-size: 14px;
+      font-weight: bold;
+      user-select: none;
+    }
+  }
+
+  .rank-labels span {
+    right: -10px;
+  }
+
+  .file-labels span {
+    bottom: -17px;
+  }
 }
 </style>
