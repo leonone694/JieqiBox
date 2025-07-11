@@ -204,5 +204,13 @@ export default {
   interfaceSettings: {
     title: '界面设置',
     showCoordinates: '显示行列序号'
+  },
+  
+  // UCI消息
+  uci: {
+    checkmate: '绝杀！无着可走',
+    bestMove: '最佳着法: {move}',
+    noMoves: '无着可走',
+    engineReady: '引擎已就绪'
   }
 } 

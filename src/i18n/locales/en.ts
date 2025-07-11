@@ -204,5 +204,13 @@ export default {
   interfaceSettings: {
     title: 'Interface Settings',
     showCoordinates: 'Show rank and file numbers'
+  },
+
+  // UCI messages
+  uci: {
+    checkmate: 'Checkmate! No moves available.',
+    bestMove: 'Best Move: {move}',
+    noMoves: 'No moves available',
+    engineReady: 'Engine is ready'
   }
 } 

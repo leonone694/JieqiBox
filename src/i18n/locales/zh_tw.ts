@@ -204,5 +204,13 @@ export default {
   interfaceSettings: {
     title: '介面設定',
     showCoordinates: '顯示座標'
+  },
+
+  // UCI訊息
+  uci: {
+    checkmate: '絕殺！無著可走',
+    bestMove: '最佳著法: {move}',
+    noMoves: '無著可走',
+    engineReady: '引擎已就緒'
   }
 } 

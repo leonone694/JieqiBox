@@ -206,5 +206,13 @@ export default {
   interfaceSettings: {
     title: 'Cài đặt giao diện',
     showCoordinates: 'Hiển thị số hàng và cột',
+  },
+
+  // Tin nhắn UCI
+  uci: {
+    checkmate: 'Chiếu hết! Không có nước đi nào.',
+    bestMove: 'Nước đi tốt nhất: {move}',
+    noMoves: 'Không có nước đi nào',
+    engineReady: 'Engine đã sẵn sàng'
   }
 }

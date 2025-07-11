@@ -204,5 +204,13 @@ export default {
   interfaceSettings: {
     title: 'インターフェース設定',
     showCoordinates: '行と列の番号を表示',
+  },
+
+  // UCIメッセージ
+  uci: {
+    checkmate: 'チェックメイト！利用可能な動きがありません。',
+    bestMove: '最善手: {move}',
+    noMoves: '利用可能な動きがありません',
+    engineReady: 'エンジンは準備ができました'
   }
 } 

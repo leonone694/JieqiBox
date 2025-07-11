@@ -2,12 +2,14 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
+import { useI18n } from 'vue-i18n';
 
 export interface EngineLine { text: string; kind: 'sent' | 'recv' }
 
 // function dbg(tag: string, ...m: any[]) { // console.log('[UCI]', tag, ...m) }
 
 export function useUciEngine(generateFen: () => string) {
+  const { t } = useI18n();
   const engineOutput = ref<EngineLine[]>([]);
   const isEngineLoaded = ref(false);
   const bestMove = ref('');
@@ -166,10 +168,10 @@ export function useUciEngine(generateFen: () => string) {
         // Check if it's a checkmate situation (none) - use trim() to remove possible spaces
         const trimmedMv = mv.trim();
         if(trimmedMv === '(none)' || trimmedMv === 'none') {
-          analysis.value = '绝杀！无着可走';
+          analysis.value = t('uci.checkmate');
           send('stop');
         } else {
-          analysis.value = mv ? `最佳着法: ${mv}` : '无着可走';
+          analysis.value = mv ? t('uci.bestMove', { move: mv }) : t('uci.noMoves');
         }
         
         bestMove.value = mv; // Set bestMove
@@ -180,7 +182,7 @@ export function useUciEngine(generateFen: () => string) {
         multiPvMoves.value = [];
       }
       if(ln === 'uciok') send('isready');
-      if(ln === 'readyok') analysis.value = '引擎已就绪';
+      if(ln === 'readyok') analysis.value = t('uci.engineReady');
 
       // record UCI options
       if (ln.startsWith('option name ')) {
