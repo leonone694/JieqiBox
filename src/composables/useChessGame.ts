@@ -65,6 +65,9 @@ export function useChessGame() {
   const isFenInputDialogVisible = ref(false);
   const isAnimating = ref(true); // Control piece movement animation switch
   
+  // Store the initial FEN for replay functionality
+  const initialFen = ref<string>("xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1");
+  
   // New: record the start and end positions of the last move for highlighting
   const lastMovePositions = ref<{ from: { row: number; col: number }; to: { row: number; col: number } } | null>(null);
 
@@ -298,6 +301,7 @@ export function useChessGame() {
   
   const setupNewGame = () => {
     const startFen = "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1";
+    initialFen.value = startFen; // Update initial FEN for new game
     loadFen(startFen, false); // No animation at game start
     history.value = [];
     currentMoveIndex.value = 0;
@@ -849,9 +853,8 @@ export function useChessGame() {
   const replayToMove = (index: number) => {
     currentMoveIndex.value = index;
     if (index === 0) {
-      // Don't call setupNewGame(), instead, load the starting FEN directly to preserve history
-      const startFen = "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1";
-      loadFen(startFen, false); // No animation during history navigation
+      // Load the initial FEN (either default or user-input) to preserve history
+      loadFen(initialFen.value, false); // No animation during history navigation
       lastMovePositions.value = null; // Clear highlight at the start of the game
       return;
     }
@@ -888,6 +891,7 @@ export function useChessGame() {
   const confirmFenInput = (fen: string) => {
     // Load FEN if the string is not empty
     if (fen && fen.trim()) {
+      initialFen.value = fen; // Store the user-input FEN as initial FEN
       loadFen(fen, false); // No animation when inputting FEN
       history.value = [];
       currentMoveIndex.value = 0;
@@ -916,7 +920,7 @@ export function useChessGame() {
         white: '红方',
         black: '黑方',
         result: '*',
-        initialFen: "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
+        initialFen: initialFen.value, // Use the actual initial FEN
         flipMode: flipMode.value,
         currentFen: generateFen(),
         unrevealedPieceCounts: { ...unrevealedPieceCounts.value },
@@ -969,6 +973,11 @@ export function useChessGame() {
       history.value = [...notation.moves];
       currentMoveIndex.value = notation.currentMoveIndex;
 
+      // Always set the initial FEN from notation if available
+      if (notation.metadata.initialFen) {
+        initialFen.value = notation.metadata.initialFen; // Set the initial FEN from notation
+      }
+      
       // If there is a current FEN, load the current state directly
       if (notation.metadata.currentFen) {
         loadFen(notation.metadata.currentFen, false);
@@ -1116,7 +1125,7 @@ export function useChessGame() {
     history, moveHistory, currentMoveIndex,
     flipMode, unrevealedPieceCounts, pendingFlip, validationStatus,
     isFenInputDialogVisible, confirmFenInput,
-    isAnimating, lastMovePositions,
+    isAnimating, lastMovePositions, initialFen,
     getPieceNameFromChar, getPieceSide, getRoleByPosition, generateFen, copyFenToClipboard, inputFenString,
     handleBoardClick, setupNewGame, playMoveFromUci,
     replayToMove, adjustUnrevealedCount,
