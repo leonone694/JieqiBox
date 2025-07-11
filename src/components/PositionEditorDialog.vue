@@ -51,7 +51,6 @@
                           class="piece-img"
                         />
                         <v-btn 
-                          v-if="!getPieceAt(row-1, col-1)!.isKnown"
                           icon="mdi-minus" 
                           size="x-small" 
                           color="error"
