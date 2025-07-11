@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, watch, computed, watchEffect, onMounted, onUnmounted } from 'vue';
+import { inject, ref, watch, computed, watchEffect } from 'vue';
 import type { Piece } from '@/composables/useChessGame';
 import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
 
