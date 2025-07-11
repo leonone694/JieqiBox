@@ -164,7 +164,7 @@ const updateSettings = () => {
     analysisMode: analysisMode.value
   };
   emit('settings-changed', settings);
-  console.log('TimeDialog: 设置已更新并保存:', settings);
+  // console.log('TimeDialog: 设置已更新并保存:', settings);
 };
 
 // Reset to default values
@@ -191,7 +191,7 @@ const clearSettings = () => {
     // Notify parent component that settings have changed
     updateSettings();
     
-    console.log(t('timeDialog.settingsCleared'));
+    // console.log(t('timeDialog.settingsCleared'));
   }
 };
 

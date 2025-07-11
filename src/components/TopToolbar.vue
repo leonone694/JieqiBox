@@ -182,7 +182,7 @@ const handleOpenNotation = () => {
 
 // Handle analysis settings changes
 const handleSettingsChanged = (settings: any) => {
-  console.log('TopToolbar: 收到设置变化:', settings);
+  // console.log('TopToolbar: 收到设置变化:', settings);
   analysisSettings.value = settings;
   // Save to local storage immediately to ensure AnalysisSidebar detects the change
   localStorage.setItem('analysis-settings', JSON.stringify(settings));

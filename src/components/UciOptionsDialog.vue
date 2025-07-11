@@ -174,24 +174,13 @@ const storageKey = computed(() => {
 
 // Send UCI command to the engine
 const sendUciCommand = (command: string) => {
-  console.log('UciOptionsDialog: 尝试发送命令:', command);
-  console.log('UciOptionsDialog: 引擎状态:', {
-    isEngineLoaded: isEngineLoaded.value,
-    hasSendMethod: !!engineState.send,
-    engineState: engineState
-  });
-
   if (!isEngineLoaded.value) {
-    console.warn('引擎未加载，无法发送命令:', command);
     return;
   }
 
   // Directly call the engine's send method
   if (engineState.send) {
-    console.log('UciOptionsDialog: 调用engineState.send');
     engineState.send(command);
-  } else {
-    console.error('引擎send方法不可用');
   }
 };
 
@@ -307,7 +296,6 @@ const saveOptionsToStorage = () => {
 const sendOptionToEngine = (name: string, value: string | number | boolean) => {
   const command = `setoption name ${name} value ${value}`;
   sendUciCommand(command);
-  console.log('发送设置命令:', command);
 };
 
 // Function to update an option's value
@@ -326,7 +314,6 @@ const updateOption = (name: string, value: string | number | boolean) => {
 const executeButtonOption = (name: string) => {
   const command = `setoption name ${name}`;
   sendUciCommand(command);
-  console.log('执行按钮命令:', command);
 };
 
 // Function to reset to default values
@@ -350,13 +337,10 @@ const refreshOptions = () => {
     return;
   }
 
-  console.log('UciOptionsDialog: 刷新选项，当前uciOptionsText长度:', uciOptionsText.value.length);
-
   isLoading.value = true;
 
   // If options are not in cache, actively request them
   if (!uciOptionsText.value || uciOptionsText.value.trim() === '') {
-    console.log('UciOptionsDialog: 缓存为空，发送uci命令获取选项');
     sendUciCommand('uci');
   }
 
@@ -364,7 +348,6 @@ const refreshOptions = () => {
   setTimeout(() => {
     isLoading.value = false;
     const options = parseUciOptions(uciOptionsText.value);
-    console.log('UciOptionsDialog: 解析到选项数量:', options.length);
     uciOptions.value = options;
     loadSavedOptions();
   }, 100);
@@ -445,7 +428,7 @@ const clearSettings = () => {
       }
     });
 
-    console.log(t('uciOptions.settingsCleared'));
+    // console.log(t('uciOptions.settingsCleared'));
   }
 };
 

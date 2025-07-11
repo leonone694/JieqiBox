@@ -281,13 +281,17 @@ export function useChessGame() {
     // Record move history: slice to current index position, then add new move record
     const newHistory = history.value.slice(0, currentMoveIndex.value);
     
+    // For 'move' type, update side to move before generating FEN for the resulting position.
+    if (type === 'move') {
+      sideToMove.value = sideToMove.value === 'red' ? 'black' : 'red';
+    }
+
     const fen = generateFen();
     newHistory.push({ type, data, fen, lastMove });
     history.value = newHistory;
     currentMoveIndex.value = history.value.length;
     
     if (type === 'move') {
-      sideToMove.value = sideToMove.value === 'red' ? 'black' : 'red';
       // Enable animation when making moves
       isAnimating.value = true;
       // Record last move position for highlighting
@@ -436,18 +440,18 @@ export function useChessGame() {
           if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) > 0) continue;
           return true;
         case 'cannon':
-          console.log('isInCheck: 检查炮将军', piece.name, '位置:', piece.row, piece.col, '目标:', kingRow, kingCol);
+          // console.log('isInCheck: 检查炮将军', piece.name, '位置:', piece.row, piece.col, '目标:', kingRow, kingCol);
           if (dRow > 0 && dCol > 0) {
-            console.log('isInCheck: 炮不在直线位置，不能将军');
+            // console.log('isInCheck: 炮不在直线位置，不能将军');
             continue;
           }
           const piecesBetween = countPiecesBetween(piece.row, piece.col, kingRow, kingCol);
-          console.log('isInCheck: 炮与将帅之间的棋子数:', piecesBetween);
+          // console.log('isInCheck: 炮与将帅之间的棋子数:', piecesBetween);
           if (piecesBetween !== 1) {
-            console.log('isInCheck: 炮与将帅之间的棋子数不是1，不能将军');
+            // console.log('isInCheck: 炮与将帅之间的棋子数不是1，不能将军');
             continue;
           }
-          console.log('isInCheck: 炮能将军');
+          // console.log('isInCheck: 炮能将军');
           return true;
         case 'pawn':
           // Pawn's check detection needs to consider the board flip state
@@ -485,7 +489,7 @@ export function useChessGame() {
 
   // Check if the current position is in check
   const isCurrentPositionInCheck = (side: 'red' | 'black'): boolean => {
-    console.log('isCurrentPositionInCheck: 检查', side, '方是否被将军');
+    // console.log('isCurrentPositionInCheck: 检查', side, '方是否被将军');
     // Find the king of the specified side
     const king = pieces.value.find(p => {
       if (!p.isKnown) return false;
@@ -494,19 +498,19 @@ export function useChessGame() {
     });
     
     if (!king) {
-      console.log('isCurrentPositionInCheck: 没有找到', side, '方将帅');
+      // console.log('isCurrentPositionInCheck: 没有找到', side, '方将帅');
       return false; // King not found (could be an unrevealed piece)
     }
     
-    console.log('isCurrentPositionInCheck: 找到', side, '方将帅位置:', king.row, king.col);
+    // console.log('isCurrentPositionInCheck: 找到', side, '方将帅位置:', king.row, king.col);
     const inCheck = isInCheck(king.row, king.col, side);
-    console.log('isCurrentPositionInCheck:', side, '方被将军:', inCheck);
+    // console.log('isCurrentPositionInCheck:', side, '方被将军:', inCheck);
     return inCheck;
   };
 
   // Simulate the move and check if the king is still in check
   const wouldBeInCheckAfterMove = (piece: Piece, targetRow: number, targetCol: number): boolean => {
-    console.log('wouldBeInCheckAfterMove: 开始检查', piece.name, targetRow, targetCol);
+    // console.log('wouldBeInCheckAfterMove: 开始检查', piece.name, targetRow, targetCol);
     const pieceSide = getPieceSide(piece);
     const originalRow = piece.row;
     const originalCol = piece.col;
@@ -521,7 +525,7 @@ export function useChessGame() {
     
     // Check if still in check
     const stillInCheck = isCurrentPositionInCheck(pieceSide);
-    console.log('wouldBeInCheckAfterMove: 走子后是否仍被将军:', stillInCheck);
+    // console.log('wouldBeInCheckAfterMove: 走子后是否仍被将军:', stillInCheck);
     
     // Revert the board state
     piece.row = originalRow;
@@ -534,10 +538,10 @@ export function useChessGame() {
   };
 
   const isMoveValid = (piece: Piece, targetRow: number, targetCol: number): boolean => {
-    console.log('isMoveValid: 开始检查', piece.name, targetRow, targetCol);
+    // console.log('isMoveValid: 开始检查', piece.name, targetRow, targetCol);
     // If it's an unrevealed piece, ensure it has an initialRole
     if (!piece.isKnown && !piece.initialRole) {
-      console.log('isMoveValid: 暗子没有initialRole，返回false');
+      // console.log('isMoveValid: 暗子没有initialRole，返回false');
       return false;
     }
     
@@ -568,7 +572,7 @@ export function useChessGame() {
     let moveValid = false;
     switch (role) {
       case 'king':
-        console.log('isMoveValid: 检查将帅走法', pieceSide, 'dRow:', dRow, 'dCol:', dCol, 'targetCol:', targetCol);
+        // console.log('isMoveValid: 检查将帅走法', pieceSide, 'dRow:', dRow, 'dCol:', dCol, 'targetCol:', targetCol);
         // King's move validation needs to consider the board flip state
         let kingTargetRowMin, kingTargetRowMax;
         if (isBoardFlipped.value) {
@@ -583,7 +587,7 @@ export function useChessGame() {
         moveValid = (dRow === 1 && dCol === 0 || dRow === 0 && dCol === 1) &&
                (targetCol >= 3 && targetCol <= 5) &&
                (targetRow >= kingTargetRowMin && targetRow <= kingTargetRowMax);
-        console.log('isMoveValid: 将帅走法检查结果:', moveValid, 'targetRow:', targetRow, 'kingTargetRowMin:', kingTargetRowMin, 'kingTargetRowMax:', kingTargetRowMax);
+        // console.log('isMoveValid: 将帅走法检查结果:', moveValid, 'targetRow:', targetRow, 'kingTargetRowMin:', kingTargetRowMin, 'kingTargetRowMax:', kingTargetRowMax);
         break;
               case 'advisor':
           // Check if it's an unrevealed advisor (at initial position and not flipped)
@@ -685,17 +689,17 @@ export function useChessGame() {
     
     // If the basic move is invalid, return false directly
     if (!moveValid) {
-      console.log('isMoveValid: 基本走法不合法，返回false');
+      // console.log('isMoveValid: 基本走法不合法，返回false');
       return false;
     }
     
     // If your king is still in check after this move, the move is illegal
-    console.log('isMoveValid: 检查走子后是否仍被将军');
+    // console.log('isMoveValid: 检查走子后是否仍被将军');
     if (wouldBeInCheckAfterMove(piece, targetRow, targetCol)) {
-      console.log('isMoveValid: 走子后仍被将军，返回false');
+      // console.log('isMoveValid: 走子后仍被将军，返回false');
       return false;
     }
-    console.log('isMoveValid: 走子合法，返回true');
+    // console.log('isMoveValid: 走子合法，返回true');
     return true;
   };
   
@@ -713,12 +717,12 @@ export function useChessGame() {
       }
     };
     const uciMove = toUci(piece.row, piece.col) + toUci(targetRow, targetCol);
-    console.log('movePiece: 检查走子合法性', piece.name, targetRow, targetCol);
+    // console.log('movePiece: 检查走子合法性', piece.name, targetRow, targetCol);
     if (!isMoveValid(piece, targetRow, targetCol)) {
-      console.log('movePiece: 走子不合法，拒绝执行');
+      // console.log('movePiece: 走子不合法，拒绝执行');
       return;
     }
-    console.log('movePiece: 走子合法，执行走子');
+    // console.log('movePiece: 走子合法，执行走子');
 
     // Enable animation effect when making a move
     isAnimating.value = true;

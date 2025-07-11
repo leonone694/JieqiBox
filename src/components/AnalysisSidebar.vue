@@ -126,12 +126,6 @@ import AboutDialog from './AboutDialog.vue';
 
 const { t } = useI18n();
 
-
-/* ---------- Debug ---------- */
-function dbg(tag: string, ...msg: any[]) {
-  console.log('[SDB]', tag, ...msg);
-}
-
 /* ---------- Injected State ---------- */
 const gameState = inject('game-state') as any;
 const {
@@ -148,6 +142,7 @@ const {
   pendingFlip,
   toggleBoardFlip,
   isBoardFlipped,
+  initialFen,
 } = gameState;
 
 const engineState = inject('engine-state') as any;
@@ -197,9 +192,7 @@ const loadAnalysisSettings = () => {
         maxNodes: settings.maxNodes || 1000000,
         analysisMode: settings.analysisMode || 'movetime'
       };
-      console.log('加载保存的分析设置:', analysisSettings.value);
     } catch (e) {
-      console.error('解析保存的分析设置失败:', e);
     }
   }
 };
@@ -219,9 +212,7 @@ const watchStorageChanges = () => {
           maxNodes: settings.maxNodes || 1000000,
           analysisMode: settings.analysisMode || 'movetime'
         };
-        console.log('检测到跨标签页存储变化，更新分析设置:', analysisSettings.value);
       } catch (e) {
-        console.error('解析存储变化失败:', e);
       }
     }
   });
@@ -246,16 +237,8 @@ const watchStorageChanges = () => {
             maxNodes: settings.maxNodes || 1000000,
             analysisMode: settings.analysisMode || 'movetime'
           };
-          console.log('检测到同页面设置变化，更新分析设置:', analysisSettings.value);
-          console.log('变化详情:', {
-            movetime: { old: currentSettings.movetime, new: settings.movetime },
-            maxDepth: { old: currentSettings.maxDepth, new: settings.maxDepth },
-            maxNodes: { old: currentSettings.maxNodes, new: settings.maxNodes },
-            analysisMode: { old: currentSettings.analysisMode, new: settings.analysisMode }
-          });
         }
       } catch (e) {
-        console.error('检查设置变化失败:', e);
       }
     }
   }, 50); // Check every 50ms for better responsiveness
@@ -269,36 +252,52 @@ const cleanupStorageWatch = () => {
   }
 };
 
-/* ---------- Generate moves to pass to the engine (only includes actual move operations) ---------- */
-const engineMovesSinceLastFlip = computed(() => {
+/* ---------- Helper: Count unknown pieces in FEN ---------- */
+function countUnknownPieces(fen: string): number {
+  const boardPart = fen.split(' ')[0];
+  return (boardPart.match(/[xX]/g) || []).length;
+}
+
+/* ---------- Find the index of the last piece reveal (when the number of unknown pieces changes) ---------- */
+function findLastRevealIndex(): number {
   const h = history.value;
-  
-  // Find the index of the last position edit operation
-  let lastPositionEditIndex = -1;
+  // Debug history
+  console.log('[findLastRevealIndex] history:', h);
+  let debugArr = [];
   for (let i = h.length - 1; i >= 0; i--) {
-    const entry = h[i];
-    if (entry.type === 'adjust' && entry.data.startsWith('position_edit:')) {
-      lastPositionEditIndex = i;
-      break;
+    const prevFen = i === 0 ? initialFen.value : h[i - 1].fen;
+    const prevUnknown = countUnknownPieces(prevFen);
+    const currUnknown = countUnknownPieces(h[i].fen);
+    debugArr.push({i, prevUnknown, currUnknown, fen: h[i].fen});
+    if (prevUnknown !== currUnknown) {
+      console.log('[findLastRevealIndex] reveal at', i, 'prevUnknown:', prevUnknown, 'currUnknown:', currUnknown, 'fen:', h[i].fen);
+      console.table(debugArr);
+      return i; // Reveal happened at index i (after executing move i)
     }
   }
-  
-  // Keep only the move operations after the last position edit
+  console.log('[findLastRevealIndex] no reveal found, returning -1');
+  console.table(debugArr);
+  return -1;
+}
+
+/* ---------- Generate starting FEN and moves based on the last reveal ---------- */
+const baseFenForEngine = computed(() => {
+  const idx = findLastRevealIndex();
+  if (idx >= 0) {
+    return history.value[idx].fen; // The FEN already includes the result of the reveal
+  }
+  return initialFen.value;
+});
+
+const engineMovesSinceLastReveal = computed(() => {
+  const idx = findLastRevealIndex();
   const moves: string[] = [];
-  for (let i = lastPositionEditIndex + 1; i < h.length; i++) {
-    const entry = h[i];
-    // Only include move operations of type 'move'
-    // Exclude all 'adjust' operations (flips, position edits, etc.)
+  for (let i = idx + 1; i < history.value.length; i++) {
+    const entry = history.value[i];
     if (entry.type === 'move') {
       moves.push(entry.data);
     }
   }
-  
-  // Remove the first move
-  if (moves.length > 0) {
-    moves.shift();
-  }
-  
   return moves;
 });
 
@@ -360,15 +359,7 @@ function checkAndTriggerAi() {
     isCurrentAiTurnNow() && 
     !isThinking.value && 
     !pendingFlip.value;
-  dbg('CHECK-AI', {
-    side: sideToMove.value,
-    redAI: isRedAi.value,
-    blackAI: isBlackAi.value,
-    thinking: isThinking.value,
-    pendingFlip: !!pendingFlip.value,
-    should,
-  });
-  if (should) startAnalysis(analysisSettings.value, engineMovesSinceLastFlip.value);
+  if (should) startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
 }
 function playBestMove() {
   if (!bestMove.value) return;
@@ -378,7 +369,7 @@ function handleMoveClick(moveIndex: number) {
   replayToMove(moveIndex);
 }
 function manualStartAnalysis() {
-  startAnalysis(analysisSettings.value, engineMovesSinceLastFlip.value);
+  startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
 }
 
 // Open the about dialog
@@ -403,23 +394,19 @@ watch(
 
 watch(bestMove, (move) => {
   if (!move) return;
-  dbg('WATCH bestMove', { move, aiTurn: isCurrentAiTurnNow() });
   
   if (isEngineLoaded.value && isCurrentAiTurnNow()) {
     setTimeout(() => {
       const ok = playMoveFromUci(move);
-      dbg('PLAY', { move, ok });
       bestMove.value = '';
       if (!ok) {
-        console.log('着法执行失败:', move, '类型:', typeof move, '长度:', move.length);
         // In case of a checkmate, do not search again - use trim() to remove spaces
         const trimmedMove = move.trim();
         if (trimmedMove === '(none)' || trimmedMove === 'none') {
-          console.log('绝杀情况，停止分析');
           return;
         }
         console.warn('非法着法，重新搜索', move);
-        startAnalysis(analysisSettings.value, engineMovesSinceLastFlip.value);
+        startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
       } else {
         nextTick(() => {
           checkAndTriggerAi();
