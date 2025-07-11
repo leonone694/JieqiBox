@@ -28,6 +28,7 @@ export default {
     analysisParams: '解析パラメータ',
     saveNotation: '棋譜を保存',
     openNotation: '棋譜を開く',
+    interfaceSettings: 'インターフェース設定',
     gameTitle: '揭棋ゲーム'
   },
 
@@ -197,5 +198,11 @@ export default {
     en: 'English',
     vi: 'Tiếng Việt',
     ja: '日本語'
+  },
+
+  // インターフェース設定
+  interfaceSettings: {
+    title: 'インターフェース設定',
+    showCoordinates: '行と列の番号を表示',
   }
 } 

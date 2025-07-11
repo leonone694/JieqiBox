@@ -33,6 +33,14 @@
         @click="showPositionEditor = true"
         :title="$t('toolbar.editPosition')"
       />
+      <v-btn 
+        icon="mdi-view-dashboard-outline" 
+        size="small" 
+        color="primary" 
+        variant="text"
+        @click="showInterfaceSettingsDialog = true"
+        :title="$t('toolbar.interfaceSettings')"
+      />
     </div>
 
     <div class="toolbar-center">
@@ -84,6 +92,7 @@
       v-model="showPositionEditor" 
       @position-changed="handlePositionChanged" 
     />
+    <InterfaceSettingsDialog v-model="showInterfaceSettingsDialog" />
     <FenInputDialog v-model="isFenDialogVisible" @confirm="confirmFenInput" />
   </div>
 </template>
@@ -96,6 +105,7 @@ import TimeDialog from './TimeDialog.vue';
 import PositionEditorDialog from './PositionEditorDialog.vue';
 import FenInputDialog from './FenInputDialog.vue';
 import LanguageSelector from './LanguageSelector.vue';
+import InterfaceSettingsDialog from './InterfaceSettingsDialog.vue';
 
 const { t } = useI18n();
 const gameState: any = inject('game-state');
@@ -106,6 +116,7 @@ const isFenDialogVisible: any = inject('fen-input-dialog-visible');
 const showUciOptionsDialog = ref(false);
 const showTimeDialog = ref(false);
 const showPositionEditor = ref(false);
+const showInterfaceSettingsDialog = ref(false);
 
 // Save/Open states
 const isSaving = ref(false);

@@ -26,7 +26,7 @@
     </div>
 
     <!-- Rank and file labels -->
-    <div class="board-labels">
+    <div class="board-labels" v-if="showCoordinates">
       <div class="rank-labels">
         <span v-for="(rank, index) in ranks" :key="rank" :style="rankLabelStyle(index)">{{ rank }}</span>
       </div>
@@ -68,8 +68,9 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, watch, computed, watchEffect } from 'vue';
+import { inject, ref, watch, computed, watchEffect, onMounted, onUnmounted } from 'vue';
 import type { Piece } from '@/composables/useChessGame';
+import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
 
 /* ===== Layout ===== */
 const PAD_X=11,PAD_Y=11, COLS=9,ROWS=10, GX=100-PAD_X, GY=100-PAD_Y, OX=PAD_X/2, OY=PAD_Y/2;
@@ -79,6 +80,8 @@ const ranks = computed(() => {
   const baseRanks = Array.from({ length: 10 }, (_, i) => 9 - i);
   return gs.isBoardFlipped.value ? baseRanks.slice().reverse() : baseRanks;
 });
+
+const { showCoordinates } = useInterfaceSettings();
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');

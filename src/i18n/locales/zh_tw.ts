@@ -15,7 +15,7 @@ export default {
     error: '錯誤',
     success: '成功',
     warning: '警告',
-    info: '資訊'
+    info: '資訊',
   },
 
   // 頂部工具列
@@ -28,7 +28,8 @@ export default {
     analysisParams: '分析參數',
     saveNotation: '儲存棋譜',
     openNotation: '開啟棋譜',
-    gameTitle: '揭棋對局'
+    gameTitle: '揭棋對局',
+    interfaceSettings: 'Interface Settings'
   },
 
   // UCI選項對話框
@@ -197,5 +198,11 @@ export default {
     en: 'English',
     vi: 'Tiếng Việt',
     ja: '日本語'
+  },
+
+  // 介面設定
+  interfaceSettings: {
+    title: '介面設定',
+    showCoordinates: '顯示座標'
   }
 } 

@@ -28,7 +28,8 @@ export default {
     analysisParams: 'Analysis Parameters',
     saveNotation: 'Save Notation',
     openNotation: 'Open Notation',
-    gameTitle: 'Jieqi Game'
+    gameTitle: 'Jieqi Game',
+    interfaceSettings: 'Interface Settings'
   },
 
   // UCI options dialog
@@ -197,5 +198,11 @@ export default {
     en: 'English',
     vi: 'Tiếng Việt',
     ja: '日本語'
+  },
+
+  // Interface settings dialog
+  interfaceSettings: {
+    title: 'Interface Settings',
+    showCoordinates: 'Show rank and file numbers'
   }
 } 

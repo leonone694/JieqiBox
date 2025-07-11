@@ -15,7 +15,7 @@ export default {
     error: '错误',
     success: '成功',
     warning: '警告',
-    info: '信息'
+    info: '信息',
   },
 
   // 顶部工具栏
@@ -28,6 +28,7 @@ export default {
     analysisParams: '分析参数',
     saveNotation: '保存棋谱',
     openNotation: '打开棋谱',
+    interfaceSettings: '界面设置',
     gameTitle: '揭棋对局'
   },
 
@@ -197,5 +198,11 @@ export default {
     en: 'English',
     vi: 'Tiếng Việt',
     ja: '日本語'
+  },
+  
+  // 界面设置
+  interfaceSettings: {
+    title: '界面设置',
+    showCoordinates: '显示行列序号'
   }
 } 

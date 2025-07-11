@@ -15,7 +15,7 @@ export default {
     error: 'Lỗi',
     success: 'Thành công',
     warning: 'Cảnh báo',
-    info: 'Thông tin'
+    info: 'Thông tin',
   },
 
   // Thanh công cụ trên cùng
@@ -28,7 +28,8 @@ export default {
     analysisParams: 'Tham số phân tích',
     saveNotation: 'Lưu biên bản',
     openNotation: 'Mở biên bản',
-    gameTitle: 'Ván Cờ úp'
+    gameTitle: 'Ván Cờ úp',
+    interfaceSettings: 'Cài đặt giao diện'
   },
 
   // Hộp thoại tùy chọn UCI
@@ -200,5 +201,10 @@ export default {
     en: 'English',
     vi: 'Tiếng Việt',
     ja: '日本語'
+  },
+
+  interfaceSettings: {
+    title: 'Cài đặt giao diện',
+    showCoordinates: 'Hiển thị số hàng và cột',
   }
 }
