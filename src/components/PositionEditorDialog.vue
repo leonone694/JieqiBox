@@ -203,8 +203,8 @@ watch(isVisible, (visible) => {
       isKnown: piece.isKnown,
       name: piece.isKnown ? piece.name : (
         gameState.isBoardFlipped ? 
-          (piece.row < 5 ? 'red_unknown' : 'black_unknown') :
-          (piece.row >= 5 ? 'red_unknown' : 'black_unknown')
+          (piece.row >= 5 ? 'red_unknown' : 'black_unknown') :
+          (piece.row < 5 ? 'red_unknown' : 'black_unknown')
       )
     }));
     editingSideToMove.value = gameState.sideToMove.value;
@@ -237,8 +237,8 @@ const addPiece = (pieceName: string, isKnown: boolean) => {
   if (pieceName === 'unknown') {
     // Need to consider if the board is flipped
     const isRedSide = gameState.isBoardFlipped ? 
-      selectedCell.value.row < 5 : 
-      selectedCell.value.row >= 5;
+      selectedCell.value.row >= 5 : 
+      selectedCell.value.row < 5;
     finalPieceName = isRedSide ? 'red_unknown' : 'black_unknown';
   }
   
