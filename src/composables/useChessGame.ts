@@ -794,8 +794,13 @@ export function useChessGame() {
 
     if (wasDarkPiece) {
         if (flipMode.value === 'free') {
-          // Still use current coordinates for highlighting
-          lastMovePositions.value = highlightMove;
+          // For highlighting, we need to use display coordinates, which respect board flip.
+          const displayHighlightMove = {
+            from: { row: isBoardFlipped.value ? 9 - originalRow : originalRow, col: originalCol },
+            to: { row: isBoardFlipped.value ? 9 - targetRow : targetRow, col: targetCol }
+          };
+          lastMovePositions.value = displayHighlightMove;
+          
           pendingFlip.value = {
             pieceToMove: piece,
             uciMove: uciMove,
@@ -1075,18 +1080,9 @@ export function useChessGame() {
     pieces.value = pieces.value.map(piece => ({
       ...piece,
       row: 9 - piece.row,
-      initialRow: 9 - piece.initialRow,
     }));
     // Reset zIndex for all pieces when flipping the board
     pieces.value.forEach(p => p.zIndex = undefined);
-    
-    // Flip last move highlight positions
-    if (lastMovePositions.value) {
-      lastMovePositions.value = {
-        from: { row: 9 - lastMovePositions.value.from.row, col: lastMovePositions.value.from.col },
-        to:   { row: 9 - lastMovePositions.value.to.row,   col: lastMovePositions.value.to.col },
-      };
-    }
     
     // Trigger arrow clear event
     triggerArrowClear();
