@@ -67,7 +67,7 @@ const files='abcdefghi'.split('');
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');
-const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: any; multiPvMoves: any };
+const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: any; multiPvMoves: any; stopAnalysis: any };
 
 const { pieces,selectedPieceId,copySuccessVisible,copyFenToClipboard,
         inputFenString,handleBoardClick,setupNewGame,isAnimating,lastMovePositions,
@@ -225,9 +225,17 @@ registerArrowClearCallback(() => { arrs.value = [] });
 
 // Wrap original methods (now just call the original method, arrow clearing is triggered automatically)
 const setupNewGameWithArrow = () => {
+  // Stop engine analysis before starting new game to prevent continued thinking
+  if (es.stopAnalysis) {
+    es.stopAnalysis();
+  }
   setupNewGame();
 };
 const inputFenStringWithArrow = () => {
+  // Stop engine analysis before inputting FEN to prevent continued thinking
+  if (es.stopAnalysis) {
+    es.stopAnalysis();
+  }
   // Directly call the inputFenString function from game-state
   inputFenString();
 };

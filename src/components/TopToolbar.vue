@@ -99,6 +99,7 @@ import LanguageSelector from './LanguageSelector.vue';
 
 const { t } = useI18n();
 const gameState: any = inject('game-state');
+const engineState: any = inject('engine-state');
 const isFenDialogVisible: any = inject('fen-input-dialog-visible');
 
 // Dialog states
@@ -118,8 +119,12 @@ const analysisSettings = ref({
   analysisMode: 'movetime'
 });
 
-// New game
+// New game - stop engine analysis before starting new game
 const setupNewGame = () => {
+  // Stop engine analysis before starting new game to prevent continued thinking
+  if (engineState.stopAnalysis) {
+    engineState.stopAnalysis();
+  }
   gameState.setupNewGame();
 };
 
@@ -133,8 +138,12 @@ const inputFenString = () => {
   isFenDialogVisible.value = true;
 };
 
-// Confirm FEN input
+// Confirm FEN input - stop engine analysis before loading new position
 const confirmFenInput = (fen: string) => {
+  // Stop engine analysis before loading new position to prevent continued thinking
+  if (engineState.stopAnalysis) {
+    engineState.stopAnalysis();
+  }
   // Only process if FEN string is not empty
   if (fen && fen.trim()) {
     gameState.confirmFenInput(fen);
@@ -155,8 +164,12 @@ const handleSaveNotation = async () => {
   }
 };
 
-// Open notation
+// Open notation - stop engine analysis before loading new game
 const handleOpenNotation = () => {
+  // Stop engine analysis before loading new game to prevent continued thinking
+  if (engineState.stopAnalysis) {
+    engineState.stopAnalysis();
+  }
   isOpening.value = true;
   try {
     gameState.openGameNotation();
@@ -175,8 +188,12 @@ const handleSettingsChanged = (settings: any) => {
   localStorage.setItem('analysis-settings', JSON.stringify(settings));
 };
 
-// Handle position changes
+// Handle position changes - stop engine analysis when position is edited
 const handlePositionChanged = (_pieces: any[], _sideToMove: 'red' | 'black') => {
+  // Stop engine analysis when position is edited to prevent continued thinking
+  if (engineState.stopAnalysis) {
+    engineState.stopAnalysis();
+  }
   // Callback after position editing is complete
 };
 </script>
