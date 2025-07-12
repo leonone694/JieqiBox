@@ -267,8 +267,9 @@ export function useChessGame() {
         selectedPieceId.value = null;
         lastMovePositions.value = null; // Clear highlights when loading FEN
         
-        // Reset zIndex for all pieces
+        // Reset zIndex for all pieces and update based on position
         pieces.value.forEach(p => p.zIndex = undefined);
+        updateAllPieceZIndexes();
         
         // Detect and set correct flip state
         detectAndSetBoardFlip();
@@ -357,10 +358,13 @@ export function useChessGame() {
       // Check if it was a capture move (piece was captured at target position)
       const wasCapture = piece.row === lastMove.to.row && piece.col === lastMove.to.col;
       if (wasCapture) {
-        // Reset zIndex for all pieces
+        // Reset zIndex for all pieces and update based on position
         pieces.value.forEach(p => p.zIndex = undefined);
+        updateAllPieceZIndexes();
         // Set cannon's zIndex to highest
         piece.zIndex = 1000;
+        // Update other pieces' zIndex based on position
+        updateAllPieceZIndexes();
       }
     }
     
@@ -783,13 +787,19 @@ export function useChessGame() {
     const isCannon = piece.isKnown ? piece.name.includes('cannon') : piece.initialRole === 'cannon';
     if (isCannon) {
       if (targetPiece) {
-        // Bring cannon to top on capture
+        // Bring cannon to top on capture (highest priority)
         pieces.value.forEach(p => p.zIndex = undefined);
         piece.zIndex = 1000;
+        // Update other pieces' zIndex based on position
+        updateAllPieceZIndexes();
       } else {
-        // Reset zIndex on cannon move
+        // Reset zIndex on cannon move and update all pieces
         piece.zIndex = undefined;
+        updateAllPieceZIndexes();
       }
+    } else {
+      // For non-cannon pieces, update all zIndexes based on position
+      updateAllPieceZIndexes();
     }
 
     if (wasDarkPiece) {
@@ -829,6 +839,40 @@ export function useChessGame() {
       lastMovePositions.value = highlightMove;
       recordAndFinalize('move', uciMove, historyMove);
     }
+  };
+
+  // Calculate zIndex based on piece position and special conditions
+  const calculatePieceZIndex = (piece: Piece): number | undefined => {
+    // Base zIndex calculation: pieces in lower rows (higher row numbers) have higher priority
+    // Row 9 (bottom) has highest priority, Row 0 (top) has lowest priority
+    const baseZIndex = piece.row * 10; // Each row difference = 10 zIndex units
+    
+    // Special conditions that override base zIndex
+    if (piece.zIndex !== undefined) {
+      // If piece already has a special zIndex (e.g., cannon after capture), keep it
+      return piece.zIndex;
+    }
+    
+    // Check if piece is in check (highest priority)
+    if (piece.isKnown && piece.name.includes('king')) {
+      const side = getPieceSide(piece);
+      if (isCurrentPositionInCheck(side)) {
+        return 1100; // Highest priority for checked king/general
+      }
+    }
+    
+    // Return base zIndex based on position
+    return baseZIndex;
+  };
+
+  // Update zIndex for all pieces based on current position
+  const updateAllPieceZIndexes = () => {
+    pieces.value.forEach(piece => {
+      // Only update if piece doesn't have a special zIndex (like cannon after capture)
+      if (piece.zIndex === undefined || piece.zIndex < 1000) {
+        piece.zIndex = calculatePieceZIndex(piece);
+      }
+    });
   };
 
   // Convert UCI coordinates (if the board is flipped)
