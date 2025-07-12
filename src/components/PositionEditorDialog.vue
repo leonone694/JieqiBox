@@ -328,16 +328,16 @@ const cancelEdit = () => {
 const applyChanges = () => {
   if (validationStatus.value !== 'normal') return;
   
+  // Directly apply the edited piece positions
+  // If the board was flipped, the main interface will also remain flipped
+  gameState.pieces.value = editingPieces.value;
+  gameState.sideToMove.value = editingSideToMove.value;
+  
   // Record the edit operation in history
   const editData = `position_edit:${editingPieces.value.length}_pieces`;
   if (gameState.recordAndFinalize) {
     gameState.recordAndFinalize('adjust', editData);
   }
-  
-  // Directly apply the edited piece positions
-  // If the board was flipped, the main interface will also remain flipped
-  gameState.pieces.value = editingPieces.value;
-  gameState.sideToMove.value = editingSideToMove.value;
   
   // Reset the zIndex of all pieces during position editing
   gameState.pieces.value.forEach((p: any) => p.zIndex = undefined);

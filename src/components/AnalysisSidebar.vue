@@ -265,6 +265,11 @@ function findLastRevealIndex(): number {
   console.log('[findLastRevealIndex] history:', h);
   let debugArr = [];
   for (let i = h.length - 1; i >= 0; i--) {
+    const entry = h[i];
+    // Position edits or adjustments reset the engine state
+    if (entry.type === 'adjust') {
+      return i;
+    }
     const prevFen = i === 0 ? initialFen.value : h[i - 1].fen;
     const prevUnknown = countUnknownPieces(prevFen);
     const currUnknown = countUnknownPieces(h[i].fen);
