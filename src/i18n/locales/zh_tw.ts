@@ -156,6 +156,7 @@ export default {
     engineLoaded: '引擎已載入',
     thinking: '思考中...',
     playBestMove: '走最佳著',
+    undoMove: '悔棋',
     redAiOn: '紅方電腦(開)',
     redAiOff: '紅方電腦(關)',
     blackAiOn: '黑方電腦(開)',

@@ -156,6 +156,7 @@ export default {
     engineLoaded: 'エンジン読み込み済み',
     thinking: '思考中...',
     playBestMove: '最善手を指す',
+    undoMove: '一手戻す',
     redAiOn: '赤AI(オン)',
     redAiOff: '赤AI(オフ)',
     blackAiOn: '黒AI(オン)',

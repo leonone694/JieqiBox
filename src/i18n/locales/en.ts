@@ -156,6 +156,7 @@ export default {
     engineLoaded: 'Engine Loaded',
     thinking: 'Thinking...',
     playBestMove: 'Play Best Move',
+    undoMove: 'Undo Move',
     redAiOn: 'Red AI (On)',
     redAiOff: 'Red AI (Off)',
     blackAiOn: 'Black AI (On)',

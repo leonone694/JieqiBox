@@ -13,6 +13,10 @@
       {{ $t('analysis.playBestMove') }}
     </v-btn>
     
+    <v-btn @click="handleUndoMove" :disabled="currentMoveIndex <= 0" color="error" class="full-btn">
+      {{ $t('analysis.undoMove') }}
+    </v-btn>
+    
     <div class="autoplay-settings">
       <v-btn @click="toggleRedAi" :color="isRedAi ? 'error' : 'primary'" class="half-btn">
         {{ isRedAi ? $t('analysis.redAiOn') : $t('analysis.redAiOff') }}
@@ -143,6 +147,7 @@ const {
   toggleBoardFlip,
   isBoardFlipped,
   initialFen,
+  undoLastMove,
 } = gameState;
 
 const engineState = inject('engine-state') as any;
@@ -375,6 +380,15 @@ function handleMoveClick(moveIndex: number) {
 }
 function manualStartAnalysis() {
   startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+}
+
+// Undo the last move
+function handleUndoMove() {
+  const success = undoLastMove();
+  if (!success) {
+    // No moves to undo
+    console.log('No moves to undo');
+  }
 }
 
 // Open the about dialog

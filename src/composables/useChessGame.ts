@@ -1184,6 +1184,40 @@ export function useChessGame() {
     return isBoardFlipped.value ? 9 - row : row;
   }
 
+  // Undo the last move (whether made by human or computer)
+  const undoLastMove = () => {
+    // Check if there are any moves to undo
+    if (currentMoveIndex.value <= 0) {
+      return false; // No moves to undo
+    }
+    
+    // Remove the last move from history
+    const newHistory = history.value.slice(0, currentMoveIndex.value - 1);
+    history.value = newHistory;
+    currentMoveIndex.value = newHistory.length;
+    
+    // Replay to the new current position
+    if (newHistory.length === 0) {
+      // If no moves left, load the initial position
+      loadFen(initialFen.value, false);
+      lastMovePositions.value = null;
+    } else {
+      // Replay to the last remaining move
+      const lastEntry = newHistory[newHistory.length - 1];
+      loadFen(lastEntry.fen, false);
+      lastMovePositions.value = lastEntry.lastMove || null;
+    }
+    
+    // Reset zIndex for all pieces
+    pieces.value.forEach(p => p.zIndex = undefined);
+    updateAllPieceZIndexes();
+    
+    // Trigger arrow clear event
+    triggerArrowClear();
+    
+    return true;
+  };
+
   setupNewGame();
   
   return {
@@ -1200,5 +1234,6 @@ export function useChessGame() {
     registerArrowClearCallback, triggerArrowClear,
     isCurrentPositionInCheck, isInCheck, wouldBeInCheckAfterMove,
     getValidMovesForSelectedPiece,
+    undoLastMove,
   };
 }
