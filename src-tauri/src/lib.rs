@@ -7,6 +7,7 @@ use tauri::{AppHandle, Emitter};
 use std::sync::{Arc, Mutex};
 use tauri::async_runtime;
 use std::process::Command;
+use encoding_rs::GBK;
 
 // -------------------------------------------------------------
 type EngineProcess = Arc<Mutex<Option<CommandChild>>>;
@@ -36,8 +37,9 @@ async fn spawn_engine(
         while let Some(event) = rx.recv().await {
             match event {
                 CommandEvent::Stdout(buf) | CommandEvent::Stderr(buf) => {
-                    // Key: bytes → UTF-8 string
-                    let text = String::from_utf8_lossy(&buf).to_string();
+                    // Decode from GBK, as many Chinese engines use this on Windows.
+                    let (cow, _encoding_used, _had_errors) = GBK.decode(&buf);
+                    let text = cow.into_owned();
                     let _ = app.emit("engine-output", text);
                 }
                 _ => {}
