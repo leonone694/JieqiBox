@@ -1,5 +1,7 @@
 # JieqiBox
 
+![JieqiBox Logo](./wood_yellow_logo.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Join the Discord](https://img.shields.io/discord/1391287860249759827?logo=discord&logoColor=white&color=5865F2)](https://discord.gg/d8HxM5Erad)
 
