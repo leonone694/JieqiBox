@@ -204,7 +204,8 @@ export default {
   // 界面设置
   interfaceSettings: {
     title: '界面设置',
-    showCoordinates: '显示行列序号'
+    showCoordinates: '显示行列序号',
+    parseUciInfo: '解析UCI信息'
   },
   
   // UCI消息

@@ -207,6 +207,7 @@ export default {
   interfaceSettings: {
     title: 'Cài đặt giao diện',
     showCoordinates: 'Hiển thị số hàng và cột',
+    parseUciInfo: 'Phân tích thông tin UCI',
   },
 
   // Tin nhắn UCI

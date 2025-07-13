@@ -126,9 +126,13 @@
 import { computed, inject, ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { HistoryEntry } from '@/composables/useChessGame';
+import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
 import AboutDialog from './AboutDialog.vue';
 
 const { t } = useI18n();
+
+// Get interface settings
+const { parseUciInfo } = useInterfaceSettings();
 
 /* ---------- Injected State ---------- */
 const gameState = inject('game-state') as any;
@@ -467,7 +471,7 @@ onUnmounted(() => {
 
 const validationStatusKey = computed(() => {
   if (!validationStatus.value) return 'error';
-  // 支持"正常"/normal/Normal
+  // Support "正常"/normal/Normal
   return validationStatus.value.includes('正常') || validationStatus.value.toLowerCase().includes('normal') ? 'normal' : 'error';
 });
 
@@ -581,8 +585,13 @@ function formatUciInfo(info: Record<string, any>) {
 const parsedAnalysisLines = computed(() => {
   return analysisLines.value.map((line: string) => {
     if (line.startsWith('info ')) {
-      const info = parseUciInfoLine(line);
-      if (info) return formatUciInfo(info);
+      // Decide whether to parse UCI info based on parseUciInfo setting
+      if (parseUciInfo.value) {
+        const info = parseUciInfoLine(line);
+        if (info) return formatUciInfo(info);
+      }
+      // If not parsing, return original line
+      return line;
     }
     return line; // Non-info lines are returned as is
   });

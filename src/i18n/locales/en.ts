@@ -204,7 +204,8 @@ export default {
   // Interface settings dialog
   interfaceSettings: {
     title: 'Interface Settings',
-    showCoordinates: 'Show rank and file numbers'
+    showCoordinates: 'Show rank and file numbers',
+    parseUciInfo: 'Parse UCI Info'
   },
 
   // UCI messages

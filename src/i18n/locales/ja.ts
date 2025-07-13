@@ -205,6 +205,7 @@ export default {
   interfaceSettings: {
     title: 'インターフェース設定',
     showCoordinates: '行と列の番号を表示',
+    parseUciInfo: 'UCI情報を解析',
   },
 
   // UCIメッセージ

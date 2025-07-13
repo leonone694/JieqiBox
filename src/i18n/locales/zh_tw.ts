@@ -204,7 +204,8 @@ export default {
   // 介面設定
   interfaceSettings: {
     title: '介面設定',
-    showCoordinates: '顯示座標'
+    showCoordinates: '顯示座標',
+    parseUciInfo: '解析UCI資訊'
   },
 
   // UCI訊息

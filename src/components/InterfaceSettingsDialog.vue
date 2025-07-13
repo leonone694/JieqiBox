@@ -8,6 +8,11 @@
           :label="$t('interfaceSettings.showCoordinates')"
           color="primary"
         ></v-switch>
+        <v-switch
+          v-model="parseUciInfo"
+          :label="$t('interfaceSettings.parseUciInfo')"
+          color="primary"
+        ></v-switch>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -23,8 +28,8 @@ import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
 
 const isDialogVisible = defineModel<boolean>();
 
-// Get showCoordinates from the shared state
-const { showCoordinates } = useInterfaceSettings();
+// Get showCoordinates and parseUciInfo from shared state
+const { showCoordinates, parseUciInfo } = useInterfaceSettings();
 
 const closeDialog = () => {
   isDialogVisible.value = false;

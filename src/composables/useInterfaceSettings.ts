@@ -3,45 +3,54 @@ import { ref, watch } from 'vue';
 const INTERFACE_SETTINGS_KEY = 'interface-settings';
 
 /**
- * Gets the initial setting from localStorage.
- * @returns {boolean} - The initial value for whether to show coordinates.
+ * Gets the initial settings from localStorage.
+ * @returns {object} - Object containing initial values for showCoordinates and parseUciInfo
  */
-const getInitialShowCoordinates = (): boolean => {
-  // Access localStorage only in the client environment
+const getInitialSettings = (): { showCoordinates: boolean; parseUciInfo: boolean } => {
+  // Only access localStorage in client environment
   if (typeof window === 'undefined') {
-    return false;
+    return { showCoordinates: false, parseUciInfo: true };
   }
   
   const savedSettings = localStorage.getItem(INTERFACE_SETTINGS_KEY);
   if (savedSettings) {
     try {
       const settings = JSON.parse(savedSettings);
-      return !!settings.showCoordinates;
+      return {
+        showCoordinates: !!settings.showCoordinates,
+        parseUciInfo: settings.parseUciInfo !== false // Default to true
+      };
     } catch (e) {
       console.error('Failed to parse interface settings:', e);
-      // Return default value on parsing failure
-      return false;
+      // Return default values on parsing failure
+      return { showCoordinates: false, parseUciInfo: true };
     }
   }
-  // Return default value if no saved settings are found
-  return false;
+  // Return default values if no saved settings found
+  return { showCoordinates: false, parseUciInfo: true };
 };
 
-// Create a reactive reference shared across the application
-const showCoordinates = ref<boolean>(getInitialShowCoordinates());
+// Create reactive references shared across the application
+const { showCoordinates: initialShowCoordinates, parseUciInfo: initialParseUciInfo } = getInitialSettings();
+const showCoordinates = ref<boolean>(initialShowCoordinates);
+const parseUciInfo = ref<boolean>(initialParseUciInfo);
 
-// Watch for changes to showCoordinates and persist them to localStorage
-watch(showCoordinates, (newValue) => {
-  const settings = { showCoordinates: newValue };
+// Watch for changes to showCoordinates and parseUciInfo and persist to localStorage
+watch([showCoordinates, parseUciInfo], ([newShowCoordinates, newParseUciInfo]) => {
+  const settings = { 
+    showCoordinates: newShowCoordinates,
+    parseUciInfo: newParseUciInfo
+  };
   localStorage.setItem(INTERFACE_SETTINGS_KEY, JSON.stringify(settings));
 });
 
 /**
- * Provides the reactive state for interface settings.
- * @returns {{showCoordinates: import('vue').Ref<boolean>}} - An object containing the reactive state for interface settings.
+ * Provides reactive state for interface settings.
+ * @returns {{showCoordinates: import('vue').Ref<boolean>, parseUciInfo: import('vue').Ref<boolean>}} - Object containing reactive state for interface settings
  */
 export function useInterfaceSettings() {
   return {
     showCoordinates,
+    parseUciInfo,
   };
 } 
