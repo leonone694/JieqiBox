@@ -213,5 +213,13 @@ export default {
     bestMove: '最善手: {move}',
     noMoves: '利用可能な動きがありません',
     engineReady: 'エンジンは準備ができました'
+  },
+
+  // ゲーム操作確認
+  gameConfirm: {
+    clearHistoryTitle: '後続の棋譜をクリア',
+    clearHistoryMessage: '履歴局面で手を指しています。これにより、後続のすべての棋譜記録がクリアされます。続行しますか？',
+    confirm: '確認',
+    cancel: 'キャンセル'
   }
 } 

@@ -215,5 +215,13 @@ export default {
     bestMove: 'Nước đi tốt nhất: {move}',
     noMoves: 'Không có nước đi nào',
     engineReady: 'Engine đã sẵn sàng'
+  },
+
+  // Xác nhận thao tác trò chơi
+  gameConfirm: {
+    clearHistoryTitle: 'Xóa lịch sử tiếp theo',
+    clearHistoryMessage: 'Bạn đang thực hiện nước đi trong vị trí lịch sử. Điều này sẽ xóa tất cả lịch sử nước đi tiếp theo. Bạn có chắc chắn muốn tiếp tục không?',
+    confirm: 'Xác nhận',
+    cancel: 'Hủy'
   }
 }

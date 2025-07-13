@@ -65,6 +65,11 @@
       <v-btn @click="setupNewGameWithArrow"    size="small">{{ $t('chessboard.newGame') }}</v-btn>
       <span v-if="copySuccessVisible" class="tip">{{ $t('chessboard.copied') }}</span>
     </div>
+    <ClearHistoryConfirmDialog
+      :visible="showClearHistoryDialog"
+      :onConfirm="onConfirmClearHistory"
+      :onCancel="onCancelClearHistory"
+    />
   </div>
 </template>
 
@@ -72,6 +77,7 @@
 import { inject, ref, watch, computed, watchEffect } from 'vue';
 import type { Piece } from '@/composables/useChessGame';
 import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
+import ClearHistoryConfirmDialog from './ClearHistoryConfirmDialog.vue';
 
 /* ===== Layout ===== */
 const PAD_X=11,PAD_Y=11, COLS=9,ROWS=10, GX=100-PAD_X, GY=100-PAD_Y, OX=PAD_X/2, OY=PAD_Y/2;
@@ -158,12 +164,35 @@ const fileLabelStyle = (index: number) => {
 };
 
 /* ===== Clicks ===== */
-const boardClick = (e:MouseEvent)=>{
-  const rect=(e.currentTarget as HTMLElement).getBoundingClientRect();
-  const xp=((e.clientX-rect.left)/rect.width)*100,  yp=((e.clientY-rect.top)/rect.height)*100;
-  const col=Math.round(((xp-OX)/GX)*(COLS-1));
-  const row=Math.round(((yp-OY)/GY)*(ROWS-1));
-  handleBoardClick(Math.max(0,Math.min(ROWS-1,row)), Math.max(0,Math.min(COLS-1,col)));
+// ===== Dialog related =====
+const showClearHistoryDialog = ref(false);
+const pendingMove = ref<{ piece: Piece; row: number; col: number } | null>(null);
+
+// Encapsulated click handling
+const boardClick = (e: MouseEvent) => {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const xp = ((e.clientX - rect.left) / rect.width) * 100, yp = ((e.clientY - rect.top) / rect.height) * 100;
+  const col = Math.round(((xp - OX) / GX) * (COLS - 1));
+  const row = Math.round(((yp - OY) / GY) * (ROWS - 1));
+  // Call useChessGame's handleBoardClick
+  const result = handleBoardClick(Math.max(0, Math.min(ROWS - 1, row)), Math.max(0, Math.min(COLS - 1, col)));
+  if (result && result.requireClearHistoryConfirm) {
+    pendingMove.value = result.move;
+    showClearHistoryDialog.value = true;
+  }
+};
+
+// Execute clear history and move after user confirmation
+const onConfirmClearHistory = () => {
+  if (pendingMove.value) {
+    gs.clearHistoryAndMove(pendingMove.value.piece, pendingMove.value.row, pendingMove.value.col);
+  }
+  showClearHistoryDialog.value = false;
+  pendingMove.value = null;
+};
+const onCancelClearHistory = () => {
+  showClearHistoryDialog.value = false;
+  pendingMove.value = null;
 };
 
 /* ===== Arrow ===== */

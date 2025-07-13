@@ -213,5 +213,13 @@ export default {
     bestMove: '最佳著法: {move}',
     noMoves: '無著可走',
     engineReady: '引擎已就緒'
+  },
+
+  // 遊戲操作確認
+  gameConfirm: {
+    clearHistoryTitle: '清空後續棋譜',
+    clearHistoryMessage: '您正在歷史局面中走子，這將清空後續的所有棋譜記錄。確定要繼續嗎？',
+    confirm: '確定',
+    cancel: '取消'
   }
 } 

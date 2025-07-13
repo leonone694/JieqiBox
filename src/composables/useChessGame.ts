@@ -373,14 +373,16 @@ export function useChessGame() {
     recordAndFinalize('move', uciMove, lastMove);
   };
   
+  /**
+   * Handle board click event.
+   * If a move is attempted in a historical position, return an object indicating confirmation is required.
+   * Otherwise, perform the move as usual.
+   * @returns {object|undefined} If confirmation is needed, returns { requireClearHistoryConfirm: true, move: { piece, row, col } }
+   */
   const handleBoardClick = (row: number, col: number) => {
-    if (currentMoveIndex.value < history.value.length) {
-      alert("请先回到最新局面再走子！");
-      return;
-    }
     if (pendingFlip.value) return;
     const clickedPiece = pieces.value.find(p => p.row === row && p.col === col);
-    
+
     if (selectedPieceId.value !== null) {
       const selectedPiece = pieces.value.find(p => p.id === selectedPieceId.value)!;
       if (clickedPiece && clickedPiece.id === selectedPieceId.value) {
@@ -389,12 +391,29 @@ export function useChessGame() {
       if (clickedPiece && getPieceSide(clickedPiece) === getPieceSide(selectedPiece)) {
         selectedPieceId.value = clickedPiece.id; return;
       }
+      // If in a historical position, require confirmation before clearing history
+      if (currentMoveIndex.value < history.value.length) {
+        // Return a signal to the UI to show confirmation dialog
+        return {
+          requireClearHistoryConfirm: true,
+          move: { piece: selectedPiece, row, col }
+        };
+      }
       movePiece(selectedPiece, row, col);
     } else if (clickedPiece) {
       if (getPieceSide(clickedPiece) === sideToMove.value) {
         selectedPieceId.value = clickedPiece.id;
       }
     }
+  };
+
+  /**
+   * Actually perform the move and clear history after user confirms.
+   * This should be called by the UI after user confirms the dialog.
+   */
+  const clearHistoryAndMove = (piece: Piece, row: number, col: number) => {
+    history.value = history.value.slice(0, currentMoveIndex.value);
+    movePiece(piece, row, col);
   };
   
   // Check if the specified position is in check
@@ -1227,7 +1246,7 @@ export function useChessGame() {
     isFenInputDialogVisible, confirmFenInput,
     isAnimating, lastMovePositions, initialFen,
     getPieceNameFromChar, getPieceSide, getRoleByPosition, generateFen, copyFenToClipboard, inputFenString,
-    handleBoardClick, setupNewGame, playMoveFromUci,
+    handleBoardClick, clearHistoryAndMove, setupNewGame, playMoveFromUci,
     replayToMove, adjustUnrevealedCount,
     saveGameNotation, openGameNotation, generateGameNotation,
     loadFen, recordAndFinalize, toggleBoardFlip, isBoardFlipped, detectAndSetBoardFlip,

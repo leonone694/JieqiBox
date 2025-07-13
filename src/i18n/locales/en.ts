@@ -213,5 +213,13 @@ export default {
     bestMove: 'Best Move: {move}',
     noMoves: 'No moves available',
     engineReady: 'Engine is ready'
+  },
+
+  // Game operation confirmation
+  gameConfirm: {
+    clearHistoryTitle: 'Clear Subsequent History',
+    clearHistoryMessage: 'You are making a move in a historical position. This will clear all subsequent move history. Are you sure you want to continue?',
+    confirm: 'Confirm',
+    cancel: 'Cancel'
   }
 } 
