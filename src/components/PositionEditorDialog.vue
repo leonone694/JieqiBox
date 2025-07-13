@@ -142,6 +142,7 @@
 import { ref, computed, inject, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Piece } from '@/composables/useChessGame';
+import { START_FEN } from '@/utils/constants';
 
 interface Props {
   modelValue: boolean;
@@ -281,9 +282,8 @@ const switchSide = () => {
 
 // Reset position
 const resetPosition = () => {
-  const startFen = "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1";
   if (gameState.loadFen) {
-    gameState.loadFen(startFen, false);
+    gameState.loadFen(START_FEN, false);
     editingPieces.value = JSON.parse(JSON.stringify(gameState.pieces.value));
     editingSideToMove.value = 'red';
   }

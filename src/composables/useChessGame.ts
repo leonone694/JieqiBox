@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { START_FEN, FEN_MAP, REVERSE_FEN_MAP, INITIAL_PIECE_COUNTS } from '@/utils/constants';
 
 export interface Piece {
   id: number;
@@ -68,25 +69,12 @@ export function useChessGame() {
   const isAnimating = ref(true); // Control piece movement animation switch
   
   // Store the initial FEN for replay functionality
-  const initialFen = ref<string>("xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1");
+  const initialFen = ref<string>(START_FEN);
   
   // record the start and end positions of the last move for highlighting
   const lastMovePositions = ref<{ from: { row: number; col: number }; to: { row: number; col: number } } | null>(null);
 
-  const FEN_MAP: { [k: string]: string } = {
-    red_chariot: 'R', red_horse: 'N', red_elephant: 'B', red_advisor: 'A',
-    red_king: 'K',   red_cannon: 'C', red_pawn: 'P',
-    black_chariot: 'r', black_horse: 'n', black_elephant: 'b', black_advisor: 'a',
-    black_king: 'k',   black_cannon: 'c', black_pawn: 'p',
-  };
-  const REVERSE_FEN_MAP: { [k: string]: string } = {
-    R: 'chariot', N: 'horse', B: 'elephant', A: 'advisor', K: 'king', C: 'cannon', P: 'pawn',
-    r: 'chariot', n: 'horse', b: 'elephant', a: 'advisor', k: 'king', c: 'cannon', p: 'pawn',
-  };
-  const INITIAL_PIECE_COUNTS: { [k: string]: number } = {
-    R: 2, N: 2, B: 2, A: 2, C: 2, P: 5, K: 1,
-    r: 2, n: 2, b: 2, a: 2, c: 2, p: 5, k: 1,
-  };
+
   const getRoleByPosition = (row: number, col: number): string => {
     const initialPositions: { [role: string]: { row: number; col: number }[] } = {
         chariot:  [{ row: 0, col: 0 }, { row: 0, col: 8 }, { row: 9, col: 0 }, { row: 9, col: 8 }],
@@ -310,9 +298,8 @@ export function useChessGame() {
   };
   
   const setupNewGame = () => {
-    const startFen = "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1";
-    initialFen.value = startFen; // Update initial FEN for new game
-    loadFen(startFen, false); // No animation at game start
+    initialFen.value = START_FEN; // Update initial FEN for new game
+    loadFen(START_FEN, false); // No animation at game start
     history.value = [];
     currentMoveIndex.value = 0;
     lastMovePositions.value = null; // Clear highlights for new game
@@ -732,7 +719,7 @@ export function useChessGame() {
     return true;
   };
   
-  const movePiece = (piece: Piece, targetRow: number, targetCol: number) => {
+  const movePiece = (piece: Piece, targetRow: number, targetCol: number, skipFlipLogic: boolean = false) => {
     const pieceSide = getPieceSide(piece);
 
     // Update halfmove and fullmove counters
@@ -822,7 +809,7 @@ export function useChessGame() {
       updateAllPieceZIndexes();
     }
 
-    if (wasDarkPiece) {
+    if (wasDarkPiece && !skipFlipLogic) {
         if (flipMode.value === 'free') {
           // For highlighting, we need to use display coordinates, which respect board flip.
           const displayHighlightMove = {
@@ -926,8 +913,11 @@ export function useChessGame() {
   const playMoveFromUci = (uci: string): boolean => {
     if (uci.length < 4) return false;
     
+    // Extract base UCI move (first 4 characters)
+    const baseUci = uci.substring(0, 4);
+    
     // If the board is flipped, UCI coordinates need to be converted
-    const actualUci = convertUciForFlip(uci);
+    const actualUci = convertUciForFlip(baseUci);
     
     const file2col = (c: string) => c.charCodeAt(0) - 'a'.charCodeAt(0);
     const rank2row = (d: string) => 9 - parseInt(d, 10);
@@ -941,7 +931,47 @@ export function useChessGame() {
     if (!piece) return false;                         // No piece at the starting position
     if (!isMoveValid(piece, toRow, toCol)) return false; // Illegal move
 
-    movePiece(piece, toRow, toCol);
+    // Check if this move has explicit flip information
+    const hasExplicitFlip = uci.length > 4;
+    
+    // Execute the move with flip logic disabled if explicit flip information is present
+    movePiece(piece, toRow, toCol, hasExplicitFlip);
+    
+    // Handle flip information if present (characters after the 4th position)
+    if (hasExplicitFlip) {
+      const flipInfo = uci.substring(4);
+      
+      // Process flip information: uppercase for revealed pieces, lowercase for captured pieces
+      for (const char of flipInfo) {
+        if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+          // Uppercase letter - revealed piece
+          const pieceName = getPieceNameFromChar(char);
+          if (pieceName) {
+            // Find the moved piece and reveal it
+            const movedPiece = pieces.value.find(p => p.row === toRow && p.col === toCol);
+            if (movedPiece && !movedPiece.isKnown) {
+              movedPiece.name = pieceName;
+              movedPiece.isKnown = true;
+              // Adjust unrevealed count
+              adjustUnrevealedCount(char, -1);
+            }
+          }
+        } else if (char === char.toLowerCase() && char !== char.toUpperCase()) {
+          // Lowercase letter - captured piece
+          const pieceName = getPieceNameFromChar(char);
+          if (pieceName) {
+            // Adjust unrevealed count for captured piece
+            adjustUnrevealedCount(char, -1);
+          }
+        }
+      }
+      
+      // If there was explicit flip information, clear any pending flip dialog
+      if (pendingFlip.value) {
+        pendingFlip.value = null;
+      }
+    }
+    
     return true;                                      // Executed successfully
   };
   
@@ -988,24 +1018,91 @@ export function useChessGame() {
   const confirmFenInput = (fen: string) => {
     // Load FEN if the string is not empty
     if (fen && fen.trim()) {
-      initialFen.value = fen; // Store the user-input FEN as initial FEN
-      loadFen(fen, false); // No animation when inputting FEN
-      history.value = [];
-      currentMoveIndex.value = 0;
-      lastMovePositions.value = null; // Clear highlight when inputting FEN
+      let processedFen = fen.trim();
       
-      // Ensure the flip state is correct after inputting FEN
-      detectAndSetBoardFlip();
+      // Remove "position fen " or "fen " prefix if present
+      if (processedFen.startsWith('position fen ')) {
+        processedFen = processedFen.substring(13); // "position fen " length is 13
+      } else if (processedFen.startsWith('fen ')) {
+        processedFen = processedFen.substring(4); // "fen " length is 4
+      } else if (processedFen.startsWith('position ')) {
+        processedFen = processedFen.substring(9); // "position " length is 9
+      }
       
-      // Reset zIndex for all pieces when inputting FEN
-      pieces.value.forEach(p => p.zIndex = undefined);
-      // Update zIndex for all pieces based on new positions
-      updateAllPieceZIndexes();
+      // Replace "startpos" with the actual start FEN (check if it starts with "startpos")
+      if (processedFen.startsWith('startpos')) {
+        if (processedFen === 'startpos') {
+          processedFen = START_FEN;
+        } else if (processedFen.startsWith('startpos ')) {
+          // If there are additional parts after "startpos", keep them
+          const remainingPart = processedFen.substring(9); // "startpos " length is 9
+          // Check if the remaining part contains "moves"
+          if (remainingPart.startsWith('moves ')) {
+            // For "startpos moves ..." format, we need to handle it specially
+            processedFen = START_FEN + ' ' + remainingPart;
+          } else {
+            // For other formats, just append
+            processedFen = START_FEN + remainingPart;
+          }
+        }
+      }
       
-      // Trigger arrow clear event
-      triggerArrowClear();
+      // Check if contains move history information
+      const movesIndex = processedFen.indexOf(' moves ');
+      if (movesIndex !== -1) {
+        // Separate FEN part and move history part
+        const fenPart = processedFen.substring(0, movesIndex).trim();
+        const movesPart = processedFen.substring(movesIndex + 7).trim(); // " moves " length is 7
+        
+        // Load base FEN first
+        initialFen.value = fenPart;
+        loadFen(fenPart, false);
+        history.value = [];
+        currentMoveIndex.value = 0;
+        lastMovePositions.value = null;
+        
+        // Ensure flip state is correct
+        detectAndSetBoardFlip();
+        
+        // Reset zIndex for all pieces
+        pieces.value.forEach(p => p.zIndex = undefined);
+        updateAllPieceZIndexes();
+        
+        // Execute historical moves
+        const moves = movesPart.split(' ').filter(move => move.length >= 4);
+        for (const move of moves) {
+          if (playMoveFromUci(move)) {
+            // Move successful, continue to next
+            continue;
+          } else {
+            // Move failed, stop execution
+            console.warn(`Cannot execute move: ${move}`);
+            break;
+          }
+        }
+        
+        // Trigger arrow clear event
+        triggerArrowClear();
+      } else {
+        // No move history, process as before
+        initialFen.value = processedFen;
+        loadFen(processedFen, false);
+        history.value = [];
+        currentMoveIndex.value = 0;
+        lastMovePositions.value = null;
+        
+        // Ensure flip state is correct
+        detectAndSetBoardFlip();
+        
+        // Reset zIndex for all pieces
+        pieces.value.forEach(p => p.zIndex = undefined);
+        updateAllPieceZIndexes();
+        
+        // Trigger arrow clear event
+        triggerArrowClear();
+      }
     }
-    // Close the dialog regardless of whether FEN is loaded
+    // Close dialog regardless of whether FEN is loaded
     isFenInputDialogVisible.value = false;
   };
 
