@@ -341,6 +341,10 @@ const applyChanges = () => {
   
   // Reset the zIndex of all pieces during position editing
   gameState.pieces.value.forEach((p: any) => p.zIndex = undefined);
+  // Update zIndex for all pieces based on new positions
+  if (gameState.updateAllPieceZIndexes) {
+    gameState.updateAllPieceZIndexes();
+  }
   
   // Trigger the arrow clear event
   if (gameState.triggerArrowClear) {

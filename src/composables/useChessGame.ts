@@ -353,14 +353,15 @@ export function useChessGame() {
     piece.name = chosenPieceName;
     piece.isKnown = true;
     
+    // Reset zIndex for all pieces and update based on position after revealing
+    pieces.value.forEach(p => p.zIndex = undefined);
+    updateAllPieceZIndexes();
+    
     // If the revealed piece is a cannon and was revealed during capture, bring to top
     if (chosenPieceName.includes('cannon') && lastMove) {
       // Check if it was a capture move (piece was captured at target position)
       const wasCapture = piece.row === lastMove.to.row && piece.col === lastMove.to.col;
       if (wasCapture) {
-        // Reset zIndex for all pieces and update based on position
-        pieces.value.forEach(p => p.zIndex = undefined);
-        updateAllPieceZIndexes();
         // Set cannon's zIndex to highest
         piece.zIndex = 1000;
         // Update other pieces' zIndex based on position
@@ -959,6 +960,8 @@ export function useChessGame() {
     
     // Reset zIndex for all pieces during history replay
     pieces.value.forEach(p => p.zIndex = undefined);
+    // Update zIndex for all pieces based on new positions
+    updateAllPieceZIndexes();
     
     // Trigger arrow clear event
     triggerArrowClear();
@@ -996,6 +999,8 @@ export function useChessGame() {
       
       // Reset zIndex for all pieces when inputting FEN
       pieces.value.forEach(p => p.zIndex = undefined);
+      // Update zIndex for all pieces based on new positions
+      updateAllPieceZIndexes();
       
       // Trigger arrow clear event
       triggerArrowClear();
@@ -1092,6 +1097,8 @@ export function useChessGame() {
 
       // Reset zIndex for all pieces when loading game notation
       pieces.value.forEach(p => p.zIndex = undefined);
+      // Update zIndex for all pieces based on new positions
+      updateAllPieceZIndexes();
       
       // Trigger arrow clear event
       triggerArrowClear();
@@ -1146,6 +1153,8 @@ export function useChessGame() {
     }));
     // Reset zIndex for all pieces when flipping the board
     pieces.value.forEach(p => p.zIndex = undefined);
+    // Update zIndex for all pieces based on new positions
+    updateAllPieceZIndexes();
     
     // Trigger arrow clear event
     triggerArrowClear();
@@ -1253,6 +1262,6 @@ export function useChessGame() {
     registerArrowClearCallback, triggerArrowClear,
     isCurrentPositionInCheck, isInCheck, wouldBeInCheckAfterMove,
     getValidMovesForSelectedPiece,
-    undoLastMove,
+    undoLastMove, updateAllPieceZIndexes,
   };
 }
