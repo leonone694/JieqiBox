@@ -351,6 +351,11 @@ const applyChanges = () => {
     gameState.triggerArrowClear();
   }
   
+  // Force stop engine analysis and AI to ensure applying position edit when engine doesn't continue thinking
+  window.dispatchEvent(new CustomEvent('force-stop-ai', {
+    detail: { reason: 'position-edit' }
+  }));
+  
   emit('position-changed', editingPieces.value, editingSideToMove.value);
   isVisible.value = false;
 };

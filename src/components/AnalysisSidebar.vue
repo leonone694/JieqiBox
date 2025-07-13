@@ -404,6 +404,29 @@ function openAboutDialog() {
 onMounted(() => {
   loadAnalysisSettings();
   watchStorageChanges();
+  
+  // Listen for force stop AI event, used to force close AI when creating new game
+  const handleForceStopAi = (event: CustomEvent) => {
+    console.log('Force stop AI:', event.detail?.reason);
+    // Force stop engine analysis
+    if (isThinking.value) {
+      stopAnalysis();
+    }
+    // Force close red and black AI
+    isRedAi.value = false;
+    isBlackAi.value = false;
+    // Clear best move
+    if (engineState.bestMove) {
+      engineState.bestMove.value = '';
+    }
+  };
+  
+  window.addEventListener('force-stop-ai', handleForceStopAi as EventListener);
+  
+  // Remove event listener when component is unmounted
+  onUnmounted(() => {
+    window.removeEventListener('force-stop-ai', handleForceStopAi as EventListener);
+  });
 });
 
 /* ---------- Watchers ---------- */
@@ -428,7 +451,7 @@ watch(bestMove, (move) => {
         if (trimmedMove === '(none)' || trimmedMove === 'none') {
           return;
         }
-        console.warn('非法着法，重新搜索', move);
+        console.warn('Illegal move, re-searching', move);
         startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
       } else {
         nextTick(() => {

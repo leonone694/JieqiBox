@@ -312,6 +312,12 @@ export function useChessGame() {
     
     // Trigger arrow clear event
     triggerArrowClear();
+    
+    // Force stop engine analysis and AI to ensure engine doesn't continue thinking when starting new game
+    // Trigger custom event to notify AnalysisSidebar component to close AI
+    window.dispatchEvent(new CustomEvent('force-stop-ai', {
+      detail: { reason: 'new-game' }
+    }));
   };
 
   const adjustUnrevealedCount = (char: string, delta: 1 | -1) => {
@@ -994,6 +1000,11 @@ export function useChessGame() {
     
     // Trigger arrow clear event
     triggerArrowClear();
+    
+    // Force stop engine analysis and AI to ensure engine doesn't continue thinking when replaying moves
+    window.dispatchEvent(new CustomEvent('force-stop-ai', {
+      detail: { reason: 'replay-move' }
+    }));
   };
   
   const copyFenToClipboard = async () => {
@@ -1100,6 +1111,11 @@ export function useChessGame() {
         // Trigger arrow clear event
         triggerArrowClear();
       }
+      
+      // Force stop engine analysis and AI to ensure input FEN when engine doesn't continue thinking
+      window.dispatchEvent(new CustomEvent('force-stop-ai', {
+        detail: { reason: 'fen-input' }
+      }));
     }
     // Close dialog regardless of whether FEN is loaded
     isFenInputDialogVisible.value = false;
@@ -1199,6 +1215,11 @@ export function useChessGame() {
       // Trigger arrow clear event
       triggerArrowClear();
 
+      // Force stop engine analysis and AI to ensure loading game notation when engine doesn't continue thinking
+      window.dispatchEvent(new CustomEvent('force-stop-ai', {
+        detail: { reason: 'load-notation' }
+      }));
+
       return true;
     } catch (error) {
       console.error('加载棋谱失败:', error);
@@ -1223,9 +1244,10 @@ export function useChessGame() {
 
   // Detect board state and automatically set the flip state
   const detectAndSetBoardFlip = () => {
-    // Find the positions of the red King and black General
-    const redKing = pieces.value.find(p => p.isKnown && p.name === 'red_king');
-    const blackKing = pieces.value.find(p => p.isKnown && p.name === 'black_king');
+    // Detect if the board should be flipped based on the current position
+    // This is used to ensure the board orientation matches the FEN format
+    const redKing = pieces.value.find(p => p.name === 'red_king');
+    const blackKing = pieces.value.find(p => p.name === 'black_king');
     
     if (redKing && blackKing) {
       // If the red King is at the top (row < 5) and the black General is at the bottom (row >= 5), the board is flipped
@@ -1242,6 +1264,7 @@ export function useChessGame() {
   // Toggle the board flip state
   const toggleBoardFlip = () => {
     isBoardFlipped.value = !isBoardFlipped.value;
+    
     // Flip the positions of all pieces
     pieces.value = pieces.value.map(piece => ({
       ...piece,
@@ -1338,6 +1361,11 @@ export function useChessGame() {
     
     // Trigger arrow clear event
     triggerArrowClear();
+    
+    // Force stop engine analysis and AI to ensure undo move when engine doesn't continue thinking
+    window.dispatchEvent(new CustomEvent('force-stop-ai', {
+      detail: { reason: 'undo-move' }
+    }));
     
     return true;
   };
