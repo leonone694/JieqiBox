@@ -255,6 +255,9 @@ export function useChessGame() {
         selectedPieceId.value = null;
         lastMovePositions.value = null; // Clear highlights when loading FEN
         
+        // Detect and set correct flip state BEFORE assigning dark piece identities
+        detectAndSetBoardFlip();
+        
         // Reset zIndex for all pieces and update based on position
         pieces.value.forEach(p => p.zIndex = undefined);
         updateAllPieceZIndexes();
@@ -330,11 +333,13 @@ export function useChessGame() {
 
   const completeFlipAfterMove = (piece: Piece, uciMove: string, chosenPieceName: string, lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }) => {
     const char = getCharFromPieceName(chosenPieceName);
+    
     if ((unrevealedPieceCounts.value[char] || 0) <= 0) {
       alert(`错误：暗子池中没有 ${chosenPieceName} 了！`);
       pendingFlip.value = null;
       return;
     }
+    
     unrevealedPieceCounts.value[char]--;
     
     piece.name = chosenPieceName;
@@ -348,6 +353,7 @@ export function useChessGame() {
     if (chosenPieceName.includes('cannon') && lastMove) {
       // Check if it was a capture move (piece was captured at target position)
       const wasCapture = piece.row === lastMove.to.row && piece.col === lastMove.to.col;
+      
       if (wasCapture) {
         // Set cannon's zIndex to highest
         piece.zIndex = 1000;
@@ -456,18 +462,13 @@ export function useChessGame() {
           if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) > 0) continue;
           return true;
         case 'cannon':
-          // console.log('isInCheck: 检查炮将军', piece.name, '位置:', piece.row, piece.col, '目标:', kingRow, kingCol);
           if (dRow > 0 && dCol > 0) {
-            // console.log('isInCheck: 炮不在直线位置，不能将军');
             continue;
           }
           const piecesBetween = countPiecesBetween(piece.row, piece.col, kingRow, kingCol);
-          // console.log('isInCheck: 炮与将帅之间的棋子数:', piecesBetween);
           if (piecesBetween !== 1) {
-            // console.log('isInCheck: 炮与将帅之间的棋子数不是1，不能将军');
             continue;
           }
-          // console.log('isInCheck: 炮能将军');
           return true;
         case 'pawn':
           // Pawn's check detection needs to consider the board flip state
@@ -505,7 +506,6 @@ export function useChessGame() {
 
   // Check if the current position is in check
   const isCurrentPositionInCheck = (side: 'red' | 'black'): boolean => {
-    // console.log('isCurrentPositionInCheck: 检查', side, '方是否被将军');
     // Find the king of the specified side
     const king = pieces.value.find(p => {
       if (!p.isKnown) return false;
@@ -514,19 +514,15 @@ export function useChessGame() {
     });
     
     if (!king) {
-      // console.log('isCurrentPositionInCheck: 没有找到', side, '方将帅');
       return false; // King not found (could be an unrevealed piece)
     }
     
-    // console.log('isCurrentPositionInCheck: 找到', side, '方将帅位置:', king.row, king.col);
     const inCheck = isInCheck(king.row, king.col, side);
-    // console.log('isCurrentPositionInCheck:', side, '方被将军:', inCheck);
     return inCheck;
   };
 
   // Simulate the move and check if the king is still in check
   const wouldBeInCheckAfterMove = (piece: Piece, targetRow: number, targetCol: number): boolean => {
-    // console.log('wouldBeInCheckAfterMove: 开始检查', piece.name, targetRow, targetCol);
     const pieceSide = getPieceSide(piece);
     const originalRow = piece.row;
     const originalCol = piece.col;
@@ -541,7 +537,6 @@ export function useChessGame() {
     
     // Check if still in check
     const stillInCheck = isCurrentPositionInCheck(pieceSide);
-    // console.log('wouldBeInCheckAfterMove: 走子后是否仍被将军:', stillInCheck);
     
     // Revert the board state
     piece.row = originalRow;
@@ -554,10 +549,8 @@ export function useChessGame() {
   };
 
   const isMoveValid = (piece: Piece, targetRow: number, targetCol: number): boolean => {
-    // console.log('isMoveValid: 开始检查', piece.name, targetRow, targetCol);
     // If it's an unrevealed piece, ensure it has an initialRole
     if (!piece.isKnown && !piece.initialRole) {
-      // console.log('isMoveValid: 暗子没有initialRole，返回false');
       return false;
     }
     
@@ -588,7 +581,6 @@ export function useChessGame() {
     let moveValid = false;
     switch (role) {
       case 'king':
-        // console.log('isMoveValid: 检查将帅走法', pieceSide, 'dRow:', dRow, 'dCol:', dCol, 'targetCol:', targetCol);
         // King's move validation needs to consider the board flip state
         let kingTargetRowMin, kingTargetRowMax;
         if (isBoardFlipped.value) {
@@ -603,7 +595,6 @@ export function useChessGame() {
         moveValid = (dRow === 1 && dCol === 0 || dRow === 0 && dCol === 1) &&
                (targetCol >= 3 && targetCol <= 5) &&
                (targetRow >= kingTargetRowMin && targetRow <= kingTargetRowMax);
-        // console.log('isMoveValid: 将帅走法检查结果:', moveValid, 'targetRow:', targetRow, 'kingTargetRowMin:', kingTargetRowMin, 'kingTargetRowMax:', kingTargetRowMax);
         break;
               case 'advisor':
           // Check if it's an unrevealed advisor (at initial position and not flipped)
@@ -705,21 +696,18 @@ export function useChessGame() {
     
     // If the basic move is invalid, return false directly
     if (!moveValid) {
-      // console.log('isMoveValid: 基本走法不合法，返回false');
       return false;
     }
     
     // If your king is still in check after this move, the move is illegal
-    // console.log('isMoveValid: 检查走子后是否仍被将军');
     if (wouldBeInCheckAfterMove(piece, targetRow, targetCol)) {
-      // console.log('isMoveValid: 走子后仍被将军，返回false');
       return false;
     }
-    // console.log('isMoveValid: 走子合法，返回true');
     return true;
   };
   
   const movePiece = (piece: Piece, targetRow: number, targetCol: number, skipFlipLogic: boolean = false) => {
+    
     const pieceSide = getPieceSide(piece);
 
     // Update halfmove and fullmove counters
@@ -750,12 +738,10 @@ export function useChessGame() {
       }
     };
     const uciMove = toUci(piece.row, piece.col) + toUci(targetRow, targetCol);
-    // console.log('movePiece: 检查走子合法性', piece.name, targetRow, targetCol);
+
     if (!isMoveValid(piece, targetRow, targetCol)) {
-      // console.log('movePiece: 走子不合法，拒绝执行');
       return;
     }
-    // console.log('movePiece: 走子合法，执行走子');
 
     // Enable animation effect when making a move
     isAnimating.value = true;
@@ -772,6 +758,7 @@ export function useChessGame() {
     };
 
     if (targetPiece) {
+      
       // In free flip mode, capturing opponent's hidden piece should not affect their unrevealed pool
       // Only in random flip mode, we randomly remove a piece from opponent's pool
       if (!targetPiece.isKnown && flipMode.value === 'random') {
@@ -911,10 +898,15 @@ export function useChessGame() {
   };
 
   const playMoveFromUci = (uci: string): boolean => {
-    if (uci.length < 4) return false;
+    // Trim whitespace characters (including \r\n) from the UCI string
+    const trimmedUci = uci.trim();
+    
+    if (trimmedUci.length < 4) {
+      return false;
+    }
     
     // Extract base UCI move (first 4 characters)
-    const baseUci = uci.substring(0, 4);
+    const baseUci = trimmedUci.substring(0, 4);
     
     // If the board is flipped, UCI coordinates need to be converted
     const actualUci = convertUciForFlip(baseUci);
@@ -928,18 +920,25 @@ export function useChessGame() {
     const toRow   = rank2row(actualUci[3]);
 
     const piece = pieces.value.find(p => p.row === fromRow && p.col === fromCol);
-    if (!piece) return false;                         // No piece at the starting position
-    if (!isMoveValid(piece, toRow, toCol)) return false; // Illegal move
+    if (!piece) {
+      return false;
+    }
+    
+    if (!isMoveValid(piece, toRow, toCol)) {
+      return false;
+    }
 
     // Check if this move has explicit flip information
-    const hasExplicitFlip = uci.length > 4;
+    const hasExplicitFlip = trimmedUci.length > 4;
     
-    // Execute the move with flip logic disabled if explicit flip information is present
-    movePiece(piece, toRow, toCol, hasExplicitFlip);
+    // For engine moves, we should NOT skip flip logic since engine UCI moves are always 4 characters
+    // Only skip flip logic if there's explicit flip information (which engine never provides)
+    const skipFlipLogic = hasExplicitFlip;
+    movePiece(piece, toRow, toCol, skipFlipLogic);
     
     // Handle flip information if present (characters after the 4th position)
     if (hasExplicitFlip) {
-      const flipInfo = uci.substring(4);
+      const flipInfo = trimmedUci.substring(4);
       
       // Process flip information: uppercase for revealed pieces, lowercase for captured pieces
       for (const char of flipInfo) {
