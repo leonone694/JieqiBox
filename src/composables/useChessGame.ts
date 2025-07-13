@@ -520,7 +520,7 @@ export function useChessGame() {
     });
     
     if (!king) {
-      return false; // King not found (could be an unrevealed piece)
+      return false; // King not found
     }
     
     const inCheck = isInCheck(king.row, king.col, side);

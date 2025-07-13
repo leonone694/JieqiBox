@@ -141,7 +141,7 @@ const percentToSvgCoords = (row:number,col:number)=>({
 /* ===== Pieces ===== */
 const img = (p:Piece)=> new URL(`../assets/${p.isKnown?p.name:'dark_piece'}.svg`, import.meta.url).href;
 // rcStyle: calculate the style for each piece, including zIndex
-// zIndex priority: cannon capture (1000) > checked king/general (1100) > lower row pieces > others
+// zIndex priority: checked king/general (1100) > cannon capture (1000) > lower row pieces > others
 const rcStyle = (r:number,c:number,zIndex?:number) => {
   const {x,y}=percentFromRC(r,c);
   return { 
