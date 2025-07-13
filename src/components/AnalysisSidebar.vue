@@ -60,7 +60,7 @@
     <div class="section">
       <h3>{{ $t('analysis.engineAnalysis') }}</h3>
       <div class="analysis-output">
-        <div v-for="(ln, idx) in analysisLines" :key="`an-${idx}`">{{ ln }}</div>
+        <div v-for="(ln, idx) in parsedAnalysisLines" :key="`an-${idx}`" v-html="ln"></div>
       </div>
     </div>
 
@@ -501,9 +501,95 @@ const validationStatusMessage = computed(() => {
   // If none matches, return original error message
   return errorText;
 });
+
+// UCI info line parser: parse info line into an object
+function parseUciInfoLine(line: string) {
+  // Only process lines starting with 'info '
+  if (!line.startsWith('info ')) return null;
+  const result: Record<string, any> = {};
+  // Extract common fields using regex
+  const regexps = [
+    { key: 'depth', re: /depth (\d+)/ },
+    { key: 'seldepth', re: /seldepth (\d+)/ },
+    { key: 'multipv', re: /multipv (\d+)/ },
+    { key: 'score', re: /score (cp|mate) ([\-\d]+)/ },
+    { key: 'nodes', re: /nodes (\d+)/ },
+    { key: 'nps', re: /nps (\d+)/ },
+    { key: 'hashfull', re: /hashfull (\d+)/ },
+    { key: 'tbhits', re: /tbhits (\d+)/ },
+    { key: 'time', re: /time (\d+)/ },
+    { key: 'pv', re: /\spv\s(.+?)(?=\s+(?:depth|seldepth|multipv|score|nodes|nps|hashfull|tbhits|time|$))/ },
+  ];
+  for (const { key, re } of regexps) {
+    const m = line.match(re);
+    if (m) {
+      if (key === 'score') {
+        result['scoreType'] = m[1];
+        result['scoreValue'] = m[2];
+      } else {
+        result[key] = m[1] || m[2];
+      }
+    }
+  }
+  return result;
+}
+
+// Format UCI info object for user-friendly display, with i18n support and color coding
+function formatUciInfo(info: Record<string, any>) {
+  if (!info) return '';
+  
+  let scoreValue = 0;
+  let isMate = false;
+  if (info.scoreType && info.scoreValue) {
+    if (info.scoreType === 'cp') {
+      scoreValue = parseInt(info.scoreValue, 10);
+    } else if (info.scoreType === 'mate') {
+      scoreValue = parseInt(info.scoreValue, 10);
+      isMate = true;
+    }
+  }
+  
+  const getScoreColorClass = () => {
+    if (isMate) {
+      return scoreValue > 0 ? 'score-mate-positive' : 'score-mate-negative';
+    } else {
+      if (scoreValue > 50) return 'score-positive';
+      if (scoreValue < -50) return 'score-negative';
+      return 'score-neutral';
+    }
+  };
+  
+  // Use i18n for field names
+  const fields = [
+    info.depth && `${t('uci.depth')}: ${info.depth}`,
+    info.seldepth && `${t('uci.seldepth')}: ${info.seldepth}`,
+    info.multipv && `${t('uci.multipv')}: ${info.multipv}`,
+    (info.scoreType && info.scoreValue) && `<span class="${getScoreColorClass()}">${info.scoreType === 'cp'
+      ? `${t('uci.score')}: ${info.scoreValue}`
+      : `${t('uci.mate')}: ${info.scoreValue}`}</span>`,
+    info.nodes && `${t('uci.nodes')}: ${info.nodes}`,
+    info.nps && `${t('uci.nps')}: ${(parseInt(info.nps, 10) / 1000).toFixed(1)}K`,
+    info.hashfull && `${t('uci.hashfull')}: ${info.hashfull}`,
+    info.tbhits && `${t('uci.tbhits')}: ${info.tbhits}`,
+    info.time && `${t('uci.time')}: ${(parseInt(info.time, 10) / 1000).toFixed(2)}s`,
+    info.pv && `<span class="pv-line">${t('uci.pv')}: ${info.pv}</span>`,
+  ].filter(Boolean);
+  return fields.join(' | ');
+}
+
+// Process analysisLines: translate info lines, keep others as is
+const parsedAnalysisLines = computed(() => {
+  return analysisLines.value.map((line: string) => {
+    if (line.startsWith('info ')) {
+      const info = parseUciInfoLine(line);
+      if (info) return formatUciInfo(info);
+    }
+    return line; // Non-info lines are returned as is
+  });
+});
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .sidebar {
   width: 320px;
   height: 90vh;
@@ -541,11 +627,46 @@ const validationStatusMessage = computed(() => {
   background-color: #fff;
   padding: 10px;
   border-radius: 5px;
-  height: 120px;
+  height: 150px;
   overflow-y: auto;
   font-family: 'Courier New', Courier, monospace;
   border: 1px solid #eee;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.score-positive {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.score-negative {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.score-neutral {
+  color: #666;
+}
+
+.score-mate-positive {
+  color: #b71c1c;
+  font-weight: bold;
+  background-color: #ffcdd2;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.score-mate-negative {
+  color: #1b5e20;
+  font-weight: bold;
+  background-color: #c8e6c9;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.pv-line {
+  color: #1976d2;
+  font-weight: bold;
 }
 .move-item {
   display: flex;

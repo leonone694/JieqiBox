@@ -209,6 +209,17 @@ export default {
   
   // UCI消息
   uci: {
+    depth: '深度',
+    seldepth: '选择深度',
+    multipv: '多PV',
+    score: '分数',
+    mate: '绝杀',
+    nodes: '节点数',
+    nps: 'NPS',
+    hashfull: 'Hash占用',
+    tbhits: '库命中',
+    time: '用时',
+    pv: '主变',
     checkmate: '绝杀！无着可走',
     bestMove: '最佳着法: {move}',
     noMoves: '无着可走',

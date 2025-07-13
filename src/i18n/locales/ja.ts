@@ -209,6 +209,17 @@ export default {
 
   // UCIメッセージ
   uci: {
+    depth: '深さ',
+    seldepth: '選択深さ',
+    multipv: 'マルチPV',
+    score: 'スコア',
+    mate: '詰み',
+    nodes: 'ノード',
+    nps: 'NPS',
+    hashfull: 'ハッシュ使用率',
+    tbhits: 'テーブルベースヒット',
+    time: '時間',
+    pv: '主変化',
     checkmate: 'チェックメイト！利用可能な動きがありません。',
     bestMove: '最善手: {move}',
     noMoves: '利用可能な動きがありません',

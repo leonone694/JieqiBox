@@ -209,6 +209,17 @@ export default {
 
   // UCI messages
   uci: {
+    depth: 'Depth',
+    seldepth: 'SelDepth',
+    multipv: 'MultiPV',
+    score: 'Score',
+    mate: 'Mate',
+    nodes: 'Nodes',
+    nps: 'NPS',
+    hashfull: 'HashFull',
+    tbhits: 'TBHits',
+    time: 'Time',
+    pv: 'PV',
     checkmate: 'Checkmate! No moves available.',
     bestMove: 'Best Move: {move}',
     noMoves: 'No moves available',

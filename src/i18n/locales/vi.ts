@@ -211,6 +211,17 @@ export default {
 
   // Tin nhắn UCI
   uci: {
+    depth: 'Độ sâu',
+    seldepth: 'Độ sâu chọn',
+    multipv: 'MultiPV',
+    score: 'Điểm',
+    mate: 'Chiếu hết',
+    nodes: 'Số nút',
+    nps: 'NPS',
+    hashfull: 'Hash đầy',
+    tbhits: 'Bảng truy cập',
+    time: 'Thời gian',
+    pv: 'Biến chính',
     checkmate: 'Chiếu hết! Không có nước đi nào.',
     bestMove: 'Nước đi tốt nhất: {move}',
     noMoves: 'Không có nước đi nào',
