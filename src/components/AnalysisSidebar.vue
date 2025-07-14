@@ -321,7 +321,7 @@ const INITIAL_PIECE_COUNTS: { [k: string]: number } = {
   r: 2, n: 2, b: 2, a: 2, c: 2, p: 5, k: 1,
 };
 const unrevealedPiecesForDisplay = computed(() => {
-  const allChars = 'RNBAKCP'.split('');
+  const allChars = 'RNBACP'.split('');
   return allChars.flatMap((char) => [
     {
       char,
