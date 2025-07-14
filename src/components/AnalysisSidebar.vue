@@ -6,7 +6,7 @@
     <v-btn @click="manualStartAnalysis" :disabled="!isEngineLoaded || isThinking" color="primary" class="full-btn">
       {{ isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis') }}
     </v-btn>
-    <v-btn @click="stopAnalysis" :disabled="!isEngineLoaded || !isThinking" color="warning" class="full-btn">
+    <v-btn @click="handleStopAnalysis" :disabled="!isEngineLoaded || !isThinking" color="warning" class="full-btn">
       {{ $t('analysis.stopAnalysis') }}
     </v-btn>
     <v-btn @click="playBestMove" :disabled="!bestMove" color="secondary" class="full-btn">
@@ -18,10 +18,10 @@
     </v-btn>
     
     <div class="autoplay-settings">
-      <v-btn @click="toggleRedAi" :color="isRedAi ? 'error' : 'primary'" class="half-btn">
+      <v-btn @click="toggleRedAi" :color="isRedAi ? 'error' : 'primary'" class="half-btn" :disabled="isManualAnalysis">
         {{ isRedAi ? $t('analysis.redAiOn') : $t('analysis.redAiOff') }}
       </v-btn>
-      <v-btn @click="toggleBlackAi" :color="isBlackAi ? 'error' : 'primary'" class="half-btn">
+      <v-btn @click="toggleBlackAi" :color="isBlackAi ? 'error' : 'primary'" class="half-btn" :disabled="isManualAnalysis">
         {{ isBlackAi ? $t('analysis.blackAiOn') : $t('analysis.blackAiOff') }}
       </v-btn>
     </div>
@@ -169,6 +169,7 @@ const {
 /* ---------- Auto Play ---------- */
 const isRedAi = ref(false);
 const isBlackAi = ref(false);
+const isManualAnalysis = ref(false); // Track if current analysis is manual or AI auto-play
 const moveListElement = ref<HTMLElement | null>(null);
 const engineLogElement = ref<HTMLElement | null>(null);
 const aboutDialogRef = ref<InstanceType<typeof AboutDialog> | null>(null);
@@ -352,9 +353,19 @@ function getMoveNumber(historyIndex: number): string {
 
 /* ---------- Core Logic ---------- */
 function toggleRedAi() {
+  // Disable manual analysis when AI auto-play is enabled
+  if (!isRedAi.value && isThinking.value && isManualAnalysis.value) {
+    stopAnalysis();
+    isManualAnalysis.value = false;
+  }
   isRedAi.value = !isRedAi.value;
 }
 function toggleBlackAi() {
+  // Disable manual analysis when AI auto-play is enabled
+  if (!isBlackAi.value && isThinking.value && isManualAnalysis.value) {
+    stopAnalysis();
+    isManualAnalysis.value = false;
+  }
   isBlackAi.value = !isBlackAi.value;
 }
 function isCurrentAiTurnNow() {
@@ -373,7 +384,11 @@ function checkAndTriggerAi() {
     isCurrentAiTurnNow() && 
     !isThinking.value && 
     !pendingFlip.value;
-  if (should) startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+  if (should) {
+    // AI auto-play mode uses limited analysis settings (time, depth, nodes)
+    isManualAnalysis.value = false; // Mark as AI auto-play analysis
+    startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+  }
 }
 function playBestMove() {
   if (!bestMove.value) return;
@@ -383,7 +398,25 @@ function handleMoveClick(moveIndex: number) {
   replayToMove(moveIndex);
 }
 function manualStartAnalysis() {
-  startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+  // Manual analysis uses infinite thinking mode without time, depth, or node limits
+  // Disable AI auto-play when manual analysis is active
+  isRedAi.value = false;
+  isBlackAi.value = false;
+  isManualAnalysis.value = true; // Mark as manual analysis
+  
+  const infiniteAnalysisSettings = {
+    movetime: 0, // 0 means infinite thinking
+    maxDepth: 0, // 0 means no depth limit
+    maxNodes: 0, // 0 means no node limit
+    analysisMode: 'infinite'
+  };
+  startAnalysis(infiniteAnalysisSettings, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+}
+
+// Handle stop analysis and reset manual analysis state
+function handleStopAnalysis() {
+  stopAnalysis();
+  isManualAnalysis.value = false; // Reset manual analysis state
 }
 
 // Undo the last move
@@ -452,6 +485,8 @@ watch(bestMove, (move) => {
           return;
         }
         console.warn('Illegal move, re-searching', move);
+        // AI auto-play mode also uses limited analysis settings when re-searching
+        isManualAnalysis.value = false; // Ensure it's marked as AI analysis
         startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
       } else {
         nextTick(() => {
