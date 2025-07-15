@@ -34,10 +34,11 @@ export default {
 
   // UCI選項對話框
   uciOptions: {
-    title: 'UCI引擎選項配置',
+    title: 'UCI引擎選項',
     loadingText: '正在載入引擎選項...',
-    noEngineLoaded: '請先載入引擎',
-    noOptionsAvailable: '暫無可配置的UCI選項',
+    noEngineLoaded: '目前未載入任何引擎。',
+    loadEngine: '載入引擎',
+    noOptionsAvailable: '該引擎無可用UCI選項。',
     refreshOptions: '重新整理選項',
     range: '範圍',
     execute: '執行',

@@ -34,10 +34,11 @@ export default {
 
   // Hộp thoại tùy chọn UCI
   uciOptions: {
-    title: 'Cấu hình tùy chọn động cơ UCI',
-    loadingText: 'Đang tải tùy chọn động cơ...',
-    noEngineLoaded: 'Vui lòng tải động cơ trước',
-    noOptionsAvailable: 'Không có tùy chọn UCI có thể cấu hình',
+    title: 'Tùy chọn công cụ UCI',
+    loadingText: 'Đang tải tùy chọn công cụ...',
+    noEngineLoaded: 'Chưa có công cụ nào được tải.',
+    loadEngine: 'Tải công cụ',
+    noOptionsAvailable: 'Không có tùy chọn UCI nào cho công cụ này.',
     refreshOptions: 'Làm mới tùy chọn',
     range: 'Phạm vi',
     execute: 'Thực hiện',

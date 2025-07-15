@@ -34,10 +34,11 @@ export default {
 
   // UCI options dialog
   uciOptions: {
-    title: 'UCI Engine Options Configuration',
+    title: 'UCI Engine Options',
     loadingText: 'Loading engine options...',
-    noEngineLoaded: 'Please load engine first',
-    noOptionsAvailable: 'No configurable UCI options available',
+    noEngineLoaded: 'No engine is currently loaded.',
+    loadEngine: 'Load Engine',
+    noOptionsAvailable: 'No UCI options available for this engine.',
     refreshOptions: 'Refresh Options',
     range: 'Range',
     execute: 'Execute',

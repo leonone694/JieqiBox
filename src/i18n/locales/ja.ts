@@ -34,10 +34,11 @@ export default {
 
   // UCIオプションダイアログ
   uciOptions: {
-    title: 'UCIエンジンオプション設定',
+    title: 'UCIエンジンオプション',
     loadingText: 'エンジンオプションを読み込み中...',
-    noEngineLoaded: '先にエンジンを読み込んでください',
-    noOptionsAvailable: '設定可能なUCIオプションがありません',
+    noEngineLoaded: 'エンジンがロードされていません。',
+    loadEngine: 'エンジンを読み込む',
+    noOptionsAvailable: 'このエンジンには利用可能なUCIオプションがありません。',
     refreshOptions: 'オプションを更新',
     range: '範囲',
     execute: '実行',

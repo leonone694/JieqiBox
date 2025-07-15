@@ -18,6 +18,14 @@
         <div v-else-if="!isEngineLoaded" class="empty-section">
           <v-icon size="48" color="grey">mdi-engine-off</v-icon>
           <p>{{ $t('uciOptions.noEngineLoaded') }}</p>
+          <v-btn 
+            color="primary" 
+            @click="loadEngine" 
+            :loading="isEngineLoading"
+            :disabled="isEngineLoading"
+          >
+            {{ $t('uciOptions.loadEngine') }}
+          </v-btn>
         </div>
 
         <div v-else-if="uciOptions.length === 0" class="empty-section">
@@ -152,7 +160,14 @@ const emit = defineEmits<{
 // Inject engine state
 const { t } = useI18n();
 const engineState = inject('engine-state') as any;
-const { isEngineLoaded, engineOutput, uciOptionsText, currentEnginePath } = engineState;
+const { 
+  isEngineLoaded, 
+  isEngineLoading, 
+  loadEngine, 
+  engineOutput, 
+  uciOptionsText, 
+  currentEnginePath 
+} = engineState;
 
 // Reactive data
 const isLoading = ref(false);

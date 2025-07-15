@@ -12,6 +12,7 @@ export function useUciEngine(generateFen: () => string) {
   const { t } = useI18n();
   const engineOutput = ref<EngineLine[]>([]);
   const isEngineLoaded = ref(false);
+  const isEngineLoading = ref(false); // Add a new state for engine loading
   const bestMove = ref('');
   const analysis = ref('');
   const isThinking = ref(false);
@@ -29,6 +30,7 @@ export function useUciEngine(generateFen: () => string) {
 
   /* ---------- Load Engine ---------- */
   const loadEngine = async () => {
+    isEngineLoading.value = true; // Set loading to true
     try {
       const path = await open({ multiple: false, title: '选择UCI引擎' });
       if (typeof path === 'string' && path) {
@@ -43,7 +45,11 @@ export function useUciEngine(generateFen: () => string) {
           applySavedSettings();
         }, 500);
       }
-    } catch(e) { alert('Failed to load engine'); }
+    } catch(e) { 
+      alert('Failed to load engine'); 
+    } finally {
+      isEngineLoading.value = false; // Set loading to false
+    }
   };
 
   /* ---------- Basic Send ---------- */
@@ -239,7 +245,7 @@ export function useUciEngine(generateFen: () => string) {
   onUnmounted(() => unlisten?.());
 
   return { 
-    engineOutput, isEngineLoaded, bestMove, analysis, isThinking, pvMoves, multiPvMoves,
+    engineOutput, isEngineLoaded, isEngineLoading, bestMove, analysis, isThinking, pvMoves, multiPvMoves,
     loadEngine, startAnalysis, stopAnalysis, uciOptionsText, send, currentEnginePath, applySavedSettings 
   };
 }
