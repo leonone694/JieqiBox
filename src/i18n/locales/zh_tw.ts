@@ -29,7 +29,7 @@ export default {
     saveNotation: '儲存棋譜',
     openNotation: '開啟棋譜',
     gameTitle: '揭棋對局',
-    interfaceSettings: 'Interface Settings'
+    interfaceSettings: '介面設定'
   },
 
   // UCI選項對話框
@@ -206,7 +206,8 @@ export default {
   interfaceSettings: {
     title: '介面設定',
     showCoordinates: '顯示座標',
-    parseUciInfo: '解析UCI資訊'
+    parseUciInfo: '解析UCI資訊',
+    showAnimations: '開啟走子動畫'
   },
 
   // UCI訊息

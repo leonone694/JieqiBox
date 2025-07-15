@@ -207,6 +207,7 @@ export default {
     title: 'インターフェース設定',
     showCoordinates: '行と列の番号を表示',
     parseUciInfo: 'UCI情報を解析',
+    showAnimations: '駒の動きのアニメーションを有効にする'
   },
 
   // UCIメッセージ

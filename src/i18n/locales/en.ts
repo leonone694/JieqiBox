@@ -206,7 +206,8 @@ export default {
   interfaceSettings: {
     title: 'Interface Settings',
     showCoordinates: 'Show rank and file numbers',
-    parseUciInfo: 'Parse UCI Info'
+    parseUciInfo: 'Parse UCI Info',
+    showAnimations: 'Enable move animations'
   },
 
   // UCI messages

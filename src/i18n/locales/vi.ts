@@ -209,6 +209,7 @@ export default {
     title: 'Cài đặt giao diện',
     showCoordinates: 'Hiển thị số hàng và cột',
     parseUciInfo: 'Phân tích thông tin UCI',
+    showAnimations: 'Bật hoạt ảnh di chuyển quân cờ'
   },
 
   // Tin nhắn UCI

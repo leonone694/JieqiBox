@@ -6,7 +6,7 @@
     <div class="pieces" @click="boardClick">
       <img v-for="p in pieces" :key="p.id"
            :src="img(p)" class="piece"
-           :class="{selected:p.id===selectedPieceId,animated:isAnimating,inCheck:p.id===checkedKingId}"
+           :class="{selected:p.id===selectedPieceId,animated:isAnimating && showAnimations,inCheck:p.id===checkedKingId}"
            :style="rcStyle(p.row,p.col,p.zIndex)" />
       <!-- Each piece's zIndex: cannon capture > checked king/general > lower row pieces > others -->
     </div>
@@ -88,7 +88,7 @@ const ranks = computed(() => {
   return gs.isBoardFlipped.value ? baseRanks.slice().reverse() : baseRanks;
 });
 
-const { showCoordinates } = useInterfaceSettings();
+const { showCoordinates, showAnimations } = useInterfaceSettings();
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');
