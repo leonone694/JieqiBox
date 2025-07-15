@@ -297,12 +297,6 @@ export function useChessGame() {
         lastMovePositions.value = lastMove || null;
       }
       
-      // When user makes a manual move, immediately stop engine thinking to prevent one side from making two consecutive moves
-      // Trigger custom event to notify AnalysisSidebar component to stop engine analysis
-      console.log(`[DEBUG] recordAndFinalize: Dispatching force-stop-ai for reason 'manual-move'.`);
-      window.dispatchEvent(new CustomEvent('force-stop-ai', {
-        detail: { reason: 'manual-move' }
-      }));
     }
     selectedPieceId.value = null;
   };
@@ -345,6 +339,7 @@ export function useChessGame() {
   };
 
   const completeFlipAfterMove = (piece: Piece, uciMove: string, chosenPieceName: string, lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }) => {
+    console.log(`[DEBUG] completeFlipAfterMove: Entered. User chose '${chosenPieceName}'.`);
     const char = getCharFromPieceName(chosenPieceName);
     
     if ((unrevealedPieceCounts.value[char] || 0) <= 0) {
@@ -376,6 +371,7 @@ export function useChessGame() {
     }
     
     pendingFlip.value = null;
+    console.log(`[DEBUG] completeFlipAfterMove: 'pendingFlip' cleared. Finalizing move.`);
     // In free mode, lastMovePositions has already been set in movePiece, here we only need to record history
     recordAndFinalize('move', uciMove, lastMove);
   };
@@ -721,6 +717,15 @@ export function useChessGame() {
   
   const movePiece = (piece: Piece, targetRow: number, targetCol: number, skipFlipLogic: boolean = false) => {
     
+    console.log(`[DEBUG] movePiece: Entered for piece ${piece.id} to ${targetRow},${targetCol}.`);
+
+    // Any user-initiated move should immediately stop any ongoing analysis.
+    // This handles all cases: regular moves, captures, and dark piece flips.
+    console.log(`[DEBUG] movePiece: Dispatching 'force-stop-ai' for reason 'manual-move'.`);
+    window.dispatchEvent(new CustomEvent('force-stop-ai', {
+      detail: { reason: 'manual-move' }
+    }));
+
     const pieceSide = getPieceSide(piece);
 
     // Update halfmove and fullmove counters
@@ -810,7 +815,9 @@ export function useChessGame() {
     }
 
     if (wasDarkPiece && !skipFlipLogic) {
+        console.log(`[DEBUG] movePiece: Dark piece move detected.`);
         if (flipMode.value === 'free') {
+          console.log(`[DEBUG] movePiece: Free flip mode. Setting 'pendingFlip' to open dialog.`);
           // For highlighting, we need to use display coordinates, which respect board flip.
           const displayHighlightMove = {
             from: { row: isBoardFlipped.value ? 9 - originalRow : originalRow, col: originalCol },
@@ -842,6 +849,7 @@ export function useChessGame() {
             completeFlipAfterMove(piece, uciMove, chosenName, historyMove);
         }
     } else {
+      console.log(`[DEBUG] movePiece: Regular move detected. Finalizing.`);
       // Set highlight
       lastMovePositions.value = highlightMove;
       recordAndFinalize('move', uciMove, historyMove);

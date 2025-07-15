@@ -401,7 +401,7 @@ function manualStartAnalysis() {
   isManualAnalysis.value = true; // Mark as manual analysis
   
   console.log('[DEBUG] MANUAL_START_ANALYSIS: Triggered.');
-
+  
   const infiniteAnalysisSettings = {
     movetime: 0, // 0 means infinite thinking
     maxDepth: 0, // 0 means no depth limit
@@ -446,10 +446,10 @@ onMounted(() => {
     // For a manual move, we only stop the thinking process.
     // We don't turn off the AI toggles, allowing the AI to potentially start thinking for the next turn.
     if (event.detail?.reason === 'manual-move') {
-      if (isThinking.value) {
+    if (isThinking.value) {
         // This is a "cancel" operation.
         stopAnalysis({ playBestMoveOnStop: false });
-      }
+    }
       return; // Early return to avoid turning off AI states
     }
     
@@ -473,6 +473,13 @@ onMounted(() => {
   // then it checks if a new analysis should begin.
   const onEngineReady = () => {
     console.log('[DEBUG] ON_ENGINE_READY: Event received. Checking what to do next.');
+
+    // If a flip prompt is active, do nothing yet.
+    // The analysis will be re-triggered (if needed) by other watchers after the user makes a selection.
+    if (pendingFlip.value) {
+      console.log('[DEBUG] ON_ENGINE_READY: A flip is pending. Deferring analysis decision.');
+      return;
+    }
     
     // If we were in manual analysis mode, restart it for the new position.
     if (isManualAnalysis.value) {
