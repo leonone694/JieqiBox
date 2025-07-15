@@ -296,6 +296,13 @@ export function useChessGame() {
       if (!(flipMode.value === 'free' && pendingFlip.value)) {
         lastMovePositions.value = lastMove || null;
       }
+      
+      // When user makes a manual move, immediately stop engine thinking to prevent one side from making two consecutive moves
+      // Trigger custom event to notify AnalysisSidebar component to stop engine analysis
+      console.log(`[DEBUG] recordAndFinalize: Dispatching force-stop-ai for reason 'manual-move'.`);
+      window.dispatchEvent(new CustomEvent('force-stop-ai', {
+        detail: { reason: 'manual-move' }
+      }));
     }
     selectedPieceId.value = null;
   };
@@ -1086,7 +1093,6 @@ export function useChessGame() {
             continue;
           } else {
             // Move failed, stop execution
-            console.warn(`Cannot execute move: ${move}`);
             break;
           }
         }

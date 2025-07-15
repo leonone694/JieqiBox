@@ -271,9 +271,6 @@ function countUnknownPieces(fen: string): number {
 /* ---------- Find the index of the last piece reveal (when the number of unknown pieces changes) ---------- */
 function findLastRevealIndex(): number {
   const h = history.value;
-  // Debug history
-  console.log('[findLastRevealIndex] history:', h);
-  let debugArr = [];
   for (let i = h.length - 1; i >= 0; i--) {
     const entry = h[i];
     // Position edits or adjustments reset the engine state
@@ -283,15 +280,10 @@ function findLastRevealIndex(): number {
     const prevFen = i === 0 ? initialFen.value : h[i - 1].fen;
     const prevUnknown = countUnknownPieces(prevFen);
     const currUnknown = countUnknownPieces(h[i].fen);
-    debugArr.push({i, prevUnknown, currUnknown, fen: h[i].fen});
     if (prevUnknown !== currUnknown) {
-      console.log('[findLastRevealIndex] reveal at', i, 'prevUnknown:', prevUnknown, 'currUnknown:', currUnknown, 'fen:', h[i].fen);
-      console.table(debugArr);
       return i; // Reveal happened at index i (after executing move i)
     }
   }
-  console.log('[findLastRevealIndex] no reveal found, returning -1');
-  console.table(debugArr);
   return -1;
 }
 
@@ -355,7 +347,7 @@ function getMoveNumber(historyIndex: number): string {
 function toggleRedAi() {
   // Disable manual analysis when AI auto-play is enabled
   if (!isRedAi.value && isThinking.value && isManualAnalysis.value) {
-    stopAnalysis();
+    stopAnalysis({ playBestMoveOnStop: false });
     isManualAnalysis.value = false;
   }
   isRedAi.value = !isRedAi.value;
@@ -363,7 +355,7 @@ function toggleRedAi() {
 function toggleBlackAi() {
   // Disable manual analysis when AI auto-play is enabled
   if (!isBlackAi.value && isThinking.value && isManualAnalysis.value) {
-    stopAnalysis();
+    stopAnalysis({ playBestMoveOnStop: false });
     isManualAnalysis.value = false;
   }
   isBlackAi.value = !isBlackAi.value;
@@ -375,7 +367,8 @@ function isCurrentAiTurnNow() {
 function checkAndTriggerAi() {
   // If the engine is thinking but it's not the AI's turn, stop the analysis first
   if (isThinking.value && !isCurrentAiTurnNow()) {
-    stopAnalysis();
+    // This is a "cancel" operation, not a "move now".
+    stopAnalysis({ playBestMoveOnStop: false });
     return;
   }
   
@@ -384,6 +377,9 @@ function checkAndTriggerAi() {
     isCurrentAiTurnNow() && 
     !isThinking.value && 
     !pendingFlip.value;
+
+  console.log(`[DEBUG] CHECK_AND_TRIGGER_AI: Checking... isEngineLoaded=${isEngineLoaded.value}, isCurrentAiTurnNow()=${isCurrentAiTurnNow()}, isThinking=${isThinking.value}, pendingFlip=${pendingFlip.value}. Outcome: ${should ? 'STARTING ANALYSIS' : 'DOING NOTHING'}`);
+  
   if (should) {
     // AI auto-play mode uses limited analysis settings (time, depth, nodes)
     isManualAnalysis.value = false; // Mark as AI auto-play analysis
@@ -404,6 +400,8 @@ function manualStartAnalysis() {
   isBlackAi.value = false;
   isManualAnalysis.value = true; // Mark as manual analysis
   
+  console.log('[DEBUG] MANUAL_START_ANALYSIS: Triggered.');
+
   const infiniteAnalysisSettings = {
     movetime: 0, // 0 means infinite thinking
     maxDepth: 0, // 0 means no depth limit
@@ -415,17 +413,21 @@ function manualStartAnalysis() {
 
 // Handle stop analysis and reset manual analysis state
 function handleStopAnalysis() {
-  stopAnalysis();
-  isManualAnalysis.value = false; // Reset manual analysis state
+  // If we are in auto-analysis mode, the stop button should act as a "Move Now" command.
+  if (isRedAi.value || isBlackAi.value) {
+    console.log('[DEBUG] HANDLE_STOP_ANALYSIS: Auto-analysis mode. Stopping with playBestMoveOnStop = true.');
+    stopAnalysis({ playBestMoveOnStop: true });
+  } else {
+    // If in manual analysis mode, the stop button just cancels the analysis.
+    console.log('[DEBUG] HANDLE_STOP_ANALYSIS: Manual analysis mode. Stopping with playBestMoveOnStop = false.');
+    stopAnalysis({ playBestMoveOnStop: false });
+  }
+  isManualAnalysis.value = false; // Reset manual analysis state regardless
 }
 
 // Undo the last move
 function handleUndoMove() {
-  const success = undoLastMove();
-  if (!success) {
-    // No moves to undo
-    console.log('No moves to undo');
-  }
+  undoLastMove();
 }
 
 // Open the about dialog
@@ -438,29 +440,59 @@ onMounted(() => {
   loadAnalysisSettings();
   watchStorageChanges();
   
-  // Listen for force stop AI event, used to force close AI when creating new game
+  // Listen for force stop AI event. This is used to stop analysis in various scenarios.
   const handleForceStopAi = (event: CustomEvent) => {
-    console.log('Force stop AI:', event.detail?.reason);
-    // Force stop engine analysis
-    if (isThinking.value) {
-      stopAnalysis();
+    console.log(`[DEBUG] HANDLE_FORCE_STOP_AI: Caught event. Reason: ${event.detail?.reason}`);
+    // For a manual move, we only stop the thinking process.
+    // We don't turn off the AI toggles, allowing the AI to potentially start thinking for the next turn.
+    if (event.detail?.reason === 'manual-move') {
+      if (isThinking.value) {
+        // This is a "cancel" operation.
+        stopAnalysis({ playBestMoveOnStop: false });
+      }
+      return; // Early return to avoid turning off AI states
     }
-    // Force close red and black AI
+    
+    // For all other reasons (new game, replay, fen input etc.), perform a full stop.
+    // The engine's state (isThinking) will be reset when it acknowledges the stop.
+    if (isThinking.value) {
+      // This is also a "cancel" operation.
+      stopAnalysis({ playBestMoveOnStop: false });
+    }
+
+    // Reset AI toggles immediately.
     isRedAi.value = false;
     isBlackAi.value = false;
-    // Reset manual analysis state to enable AI buttons
     isManualAnalysis.value = false;
-    // Clear best move
     if (engineState.bestMove) {
       engineState.bestMove.value = '';
     }
   };
   
-  window.addEventListener('force-stop-ai', handleForceStopAi as EventListener);
+  // This listener is crucial. It waits for the engine to confirm it has stopped,
+  // then it checks if a new analysis should begin.
+  const onEngineReady = () => {
+    console.log('[DEBUG] ON_ENGINE_READY: Event received. Checking what to do next.');
+    
+    // If we were in manual analysis mode, restart it for the new position.
+    if (isManualAnalysis.value) {
+      console.log('[DEBUG] ON_ENGINE_READY: Manual analysis mode detected. Restarting analysis.');
+      manualStartAnalysis();
+    } else {
+      // Otherwise, check if it's an AI's turn to move.
+      console.log('[DEBUG] ON_ENGINE_READY: Auto analysis mode detected. Checking if AI should move.');
+      checkAndTriggerAi();
+    }
+  };
   
-  // Remove event listener when component is unmounted
+  window.addEventListener('force-stop-ai', handleForceStopAi as EventListener);
+  window.addEventListener('engine-stopped-and-ready', onEngineReady);
+  
+  // Clean up listeners when the component is unmounted
   onUnmounted(() => {
     window.removeEventListener('force-stop-ai', handleForceStopAi as EventListener);
+    window.removeEventListener('engine-stopped-and-ready', onEngineReady);
+    cleanupStorageWatch();
   });
 });
 
@@ -473,10 +505,22 @@ watch(
   { immediate: true },
 );
 
+// This watcher ensures that if a manual move is made while in "manual analysis" mode,
+// a new analysis is automatically started for the resulting position.
+watch(currentMoveIndex, () => {
+  if (isManualAnalysis.value && !isThinking.value) {
+    manualStartAnalysis();
+  }
+});
+
 watch(bestMove, (move) => {
   if (!move) return;
   
+  console.log(`[DEBUG] BESTMOVE_WATCHER: Triggered with move '${move}'. isCurrentAiTurnNow()=${isCurrentAiTurnNow()}.`);
+  // Only execute best move when it's AI's turn.
+  // The isThinking check was removed because the new isStopping flag in useUciEngine handles stale bestmove commands more reliably.
   if (isEngineLoaded.value && isCurrentAiTurnNow()) {
+    console.log(`[DEBUG] BESTMOVE_WATCHER: Condition met. Playing move.`);
     setTimeout(() => {
       const ok = playMoveFromUci(move);
       bestMove.value = '';
@@ -486,7 +530,6 @@ watch(bestMove, (move) => {
         if (trimmedMove === '(none)' || trimmedMove === 'none') {
           return;
         }
-        console.warn('Illegal move, re-searching', move);
         // AI auto-play mode also uses limited analysis settings when re-searching
         isManualAnalysis.value = false; // Ensure it's marked as AI analysis
         startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
@@ -525,9 +568,9 @@ watch(
 );
 
 // Clean up the storage watcher when the component is unmounted
-onUnmounted(() => {
-  cleanupStorageWatch();
-});
+// onUnmounted(() => {
+//   cleanupStorageWatch();
+// });
 
 const validationStatusKey = computed(() => {
   if (!validationStatus.value) return 'error';

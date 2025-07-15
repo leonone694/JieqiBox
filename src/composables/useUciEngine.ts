@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
@@ -15,6 +15,8 @@ export function useUciEngine(generateFen: () => string) {
   const bestMove = ref('');
   const analysis = ref('');
   const isThinking = ref(false);
+  const isStopping = ref(false); // Flag to indicate that analysis is being manually stopped
+  const playOnStop = ref(false); // Flag to determine if the best move should be played after stopping
   const pvMoves = ref<string[]>([]);          // Real-time PV
   // MultiPV: store moves for each PV index (0-based)
   const multiPvMoves = ref<string[][]>([]);
@@ -54,6 +56,13 @@ export function useUciEngine(generateFen: () => string) {
   const startAnalysis = (settings: any = {}, moves: string[] = [], baseFen: string | null = null) => {
     if(!isEngineLoaded.value || isThinking.value) return;
     
+    isThinking.value = true;
+    isStopping.value = false; // Reset stopping flag on new analysis
+    playOnStop.value = false; // Reset play-on-stop flag
+
+    const fenToUse = baseFen ?? generateFen();
+    console.log(`[DEBUG] START_ANALYSIS: FEN=${fenToUse}, Moves=${moves.join(' ')}`);
+
     // Default settings
     const defaultSettings = {
       movetime: 1000,
@@ -65,14 +74,7 @@ export function useUciEngine(generateFen: () => string) {
     const finalSettings = { ...defaultSettings, ...settings };
         
     // Use baseFen if provided, otherwise use the FEN of the current position.
-    const fenToUse = baseFen ?? generateFen();
     const pos = `position fen ${fenToUse}${moves.length ? ' moves ' + moves.join(' ') : ''}`;
-    isThinking.value = true; 
-    bestMove.value = ''; 
-    pvMoves.value = []; 
-    multiPvMoves.value = []; // reset MultiPV cache
-    analysisLines.length = 0; // clear cached analysis lines
-    analysis.value = '思考中…';
     
     send(pos);
     
@@ -92,12 +94,16 @@ export function useUciEngine(generateFen: () => string) {
   };
 
   /* ---------- Stop Analysis ---------- */
-  const stopAnalysis = () => {
-    if(!isEngineLoaded.value || !isThinking.value) return;
+  const stopAnalysis = (options: { playBestMoveOnStop: boolean } = { playBestMoveOnStop: false }) => {
+    // Do not set isThinking to false here.
+    // The thinking process only truly ends when the engine sends a 'bestmove' response.
+    // We set a flag to indicate that we are waiting for this confirmation.
+    if(!isEngineLoaded.value || !isThinking.value || isStopping.value) return;
     
+    console.log(`[DEBUG] STOP_ANALYSIS: Sending 'stop'. playBestMoveOnStop=${options.playBestMoveOnStop}`);
+    isStopping.value = true; // Set flag to indicate we are waiting for a stop confirmation
+    playOnStop.value = options.playBestMoveOnStop; // Set flag for how to handle the resulting bestmove
     send('stop');
-    isThinking.value = false;
-    analysis.value = '分析已停止';
   };
 
 
@@ -131,7 +137,12 @@ export function useUciEngine(generateFen: () => string) {
   /* ---------- Listen to Output ---------- */
   onMounted(async() => {
     unlisten = await listen<string>('engine-output', (ev) => {
-      const ln = ev.payload; engineOutput.value.push({text: ln, kind: 'recv'});
+      const raw_ln = ev.payload;
+      console.log(`[DEBUG] ENGINE_RAW_OUTPUT: ${raw_ln}`);
+      engineOutput.value.push({text: raw_ln, kind: 'recv'});
+
+      const ln = raw_ln.trim();
+      if (!ln) return; // Ignore empty lines after trimming
 
       // -------- MultiPV parsing helpers --------
       const mpvMatch = ln.match(/\bmultipv\s+(\d+)/);
@@ -163,7 +174,44 @@ export function useUciEngine(generateFen: () => string) {
       }
 
       if(ln.startsWith('bestmove')) {
-        const mv = ln.split(' ')[1] ?? ''; 
+        const mv = ln.split(' ')[1] ?? '';
+        console.log(`[DEBUG] BESTMOVE_RECEIVED: '${mv}'. isThinking=${isThinking.value}, isStopping=${isStopping.value}.`);
+
+        // If we are not in a thinking state, this is a stray bestmove from a previous,
+        // already-terminated process. It must be ignored.
+        if (!isThinking.value) {
+          console.log(`[DEBUG] BESTMOVE_IGNORED: Stray move received while not in a 'thinking' state.`);
+          return;
+        }
+        
+        // If the 'isStopping' flag is true, this is the confirmation from the engine that
+        // the 'stop' command was received. We handle it based on the 'playOnStop' flag.
+        if (isStopping.value) {
+          console.log(`[DEBUG] STOP_CONFIRMED: Engine acknowledged stop command.`);
+          isThinking.value = false;
+          isStopping.value = false;
+
+          if (playOnStop.value) {
+            console.log(`[DEBUG] BESTMOVE_PROCESSED_ON_STOP: Setting bestMove to '${mv}'.`);
+            bestMove.value = mv; // This will trigger the watcher in AnalysisSidebar
+          } else {
+            console.log(`[DEBUG] BESTMOVE_IGNORED_ON_CANCEL: 'playOnStop' was false.`);
+            bestMove.value = ''; // Ensure bestMove is cleared
+          }
+          playOnStop.value = false; // Reset for next time
+
+          // After a successful stop, immediately check if a new AI move should be triggered.
+          // This is crucial for the AI to respond after a manual user move.
+          nextTick(() => {
+            window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'));
+          });
+
+          return;
+        }
+
+        // If we reach here, it's a legitimate bestmove from a completed analysis.
+        isThinking.value = false;
+        console.log(`[DEBUG] BESTMOVE_PROCESSED: '${mv}'.`);
         
         // Check if it's a checkmate situation (none) - use trim() to remove possible spaces
         const trimmedMv = mv.trim();
@@ -176,8 +224,6 @@ export function useUciEngine(generateFen: () => string) {
         
         bestMove.value = mv; // Set bestMove
         
-        // Stop thinking state
-        isThinking.value = false; 
         pvMoves.value = [];
         multiPvMoves.value = [];
       }
