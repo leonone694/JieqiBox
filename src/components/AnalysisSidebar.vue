@@ -448,6 +448,8 @@ onMounted(() => {
     // Force close red and black AI
     isRedAi.value = false;
     isBlackAi.value = false;
+    // Reset manual analysis state to enable AI buttons
+    isManualAnalysis.value = false;
     // Clear best move
     if (engineState.bestMove) {
       engineState.bestMove.value = '';
