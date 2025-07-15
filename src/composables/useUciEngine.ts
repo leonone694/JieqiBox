@@ -94,7 +94,11 @@ export function useUciEngine(generateFen: () => string) {
         break;
       case 'movetime':
       default:
-        send(`go movetime ${finalSettings.movetime}`);
+        if (finalSettings.movetime > 0) {
+          send(`go movetime ${finalSettings.movetime}`);
+        } else {
+          send('go infinite');
+        }
         break;
     }
   };
