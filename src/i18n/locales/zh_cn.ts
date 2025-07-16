@@ -29,7 +29,8 @@ export default {
     saveNotation: '保存棋谱',
     openNotation: '打开棋谱',
     interfaceSettings: '界面设置',
-    gameTitle: '揭棋对局'
+    gameTitle: '揭棋对局',
+    variation: '变招'
   },
 
   // UCI选项对话框

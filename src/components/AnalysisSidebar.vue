@@ -164,6 +164,8 @@ const {
   loadEngine,
   startAnalysis,
   stopAnalysis,
+  currentSearchMoves,
+  clearSearchMoves,
 } = engineState;
 
 /* ---------- Auto Play ---------- */
@@ -383,7 +385,7 @@ function checkAndTriggerAi() {
   if (should) {
     // AI auto-play mode uses limited analysis settings (time, depth, nodes)
     isManualAnalysis.value = false; // Mark as AI auto-play analysis
-    startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+    startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value, currentSearchMoves.value);
   }
 }
 function playBestMove() {
@@ -408,7 +410,7 @@ function manualStartAnalysis() {
     maxNodes: 0, // 0 means no node limit
     analysisMode: 'infinite'
   };
-  startAnalysis(infiniteAnalysisSettings, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+  startAnalysis(infiniteAnalysisSettings, engineMovesSinceLastReveal.value, baseFenForEngine.value, currentSearchMoves.value);
 }
 
 // Handle stop analysis and reset manual analysis state
@@ -539,7 +541,7 @@ watch(bestMove, (move) => {
         }
         // AI auto-play mode also uses limited analysis settings when re-searching
         isManualAnalysis.value = false; // Ensure it's marked as AI analysis
-        startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value);
+        startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value, currentSearchMoves.value);
       } else {
         nextTick(() => {
           checkAndTriggerAi();

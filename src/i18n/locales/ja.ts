@@ -29,7 +29,8 @@ export default {
     saveNotation: '棋譜を保存',
     openNotation: '棋譜を開く',
     interfaceSettings: 'インターフェース設定',
-    gameTitle: '揭棋ゲーム'
+    gameTitle: '揭棋ゲーム',
+    variation: '変化手順'
   },
 
   // UCIオプションダイアログ

@@ -1340,6 +1340,33 @@ export function useChessGame() {
     return getValidMovesForPiece(selectedPiece);
   });
 
+  // Get all legal moves for the current position (for variation analysis)
+  const getAllLegalMovesForCurrentPosition = (): string[] => {
+    const legalMoves: string[] = [];
+    const currentSidePieces = pieces.value.filter(p => getPieceSide(p) === sideToMove.value);
+    
+    // Generate UCI coordinates; if the board is flipped, coordinates need to be converted
+    const toUci = (r: number, c: number) => {
+      if (isBoardFlipped.value) {
+        // After flipping, coordinates need to be converted
+        const flippedRow = 9 - r;
+        return `${String.fromCharCode(97 + c)}${9 - flippedRow}`;
+      } else {
+        return `${String.fromCharCode(97 + c)}${9 - r}`;
+      }
+    };
+    
+    currentSidePieces.forEach(piece => {
+      const validMoves = getValidMovesForPiece(piece);
+      validMoves.forEach(move => {
+        const uciMove = toUci(piece.row, piece.col) + toUci(move.row, move.col);
+        legalMoves.push(uciMove);
+      });
+    });
+    
+    return legalMoves;
+  };
+
   // Add a helper function to convert row for history
   function convertRowForHistory(row: number): number {
     return isBoardFlipped.value ? 9 - row : row;
@@ -1399,7 +1426,7 @@ export function useChessGame() {
     loadFen, recordAndFinalize, toggleBoardFlip, isBoardFlipped, detectAndSetBoardFlip,
     registerArrowClearCallback, triggerArrowClear,
     isCurrentPositionInCheck, isInCheck, wouldBeInCheckAfterMove,
-    getValidMovesForSelectedPiece,
+    getValidMovesForSelectedPiece, getAllLegalMovesForCurrentPosition,
     undoLastMove, updateAllPieceZIndexes,
   };
 }

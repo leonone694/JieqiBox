@@ -29,7 +29,8 @@ export default {
     saveNotation: 'Lưu biên bản',
     openNotation: 'Mở biên bản',
     gameTitle: 'Ván Cờ úp',
-    interfaceSettings: 'Cài đặt giao diện'
+    interfaceSettings: 'Cài đặt giao diện',
+    variation: 'Biến thể'
   },
 
   // Hộp thoại tùy chọn UCI

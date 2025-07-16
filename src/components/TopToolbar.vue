@@ -65,6 +65,15 @@
         :title="$t('toolbar.analysisParams')"
       />
       <v-btn 
+        icon="mdi-chart-line-variant" 
+        size="small" 
+        color="secondary" 
+        variant="text"
+        @click="handleVariation"
+        :disabled="!isVariationAvailable"
+        :title="$t('toolbar.variation')"
+      />
+      <v-btn 
         icon="mdi-content-save" 
         size="small" 
         color="success" 
@@ -98,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from 'vue';
+import { ref, inject, computed, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UciOptionsDialog from './UciOptionsDialog.vue';
 import TimeDialog from './TimeDialog.vue';
@@ -118,6 +127,10 @@ const showTimeDialog = ref(false);
 const showPositionEditor = ref(false);
 const showInterfaceSettingsDialog = ref(false);
 
+// State for variation restart logic
+const isWaitingToRestartForVariation = ref(false);
+const variationRestartData = ref<{ fen: string, moves: string[] } | null>(null);
+
 // Save/Open states
 const isSaving = ref(false);
 const isOpening = ref(false);
@@ -130,12 +143,125 @@ const analysisSettings = ref({
   analysisMode: 'movetime'
 });
 
+// Variation analysis state
+const excludedMoves = ref<string[]>([]);
+
+// Check if engine is currently analyzing 
+const isAnalyzing = computed(() => engineState.isThinking?.value);
+
+// Computed property to determine if variation button should be enabled
+const isVariationAvailable = computed(() => 
+  isAnalyzing.value && 
+  engineState.pvMoves?.value?.length > 0 && 
+  engineState.pvMoves.value[0]
+);
+
+// Handle variation button click
+const handleVariation = () => {
+  console.log(`[DEBUG] Variation: Button clicked`);
+  console.log(`[DEBUG] Variation: isAnalyzing=${isAnalyzing.value}, pvMoves=`, engineState.pvMoves?.value);
+  
+  if (!isAnalyzing.value || !engineState.pvMoves?.value?.length) {
+    console.log(`[DEBUG] Variation: Early exit - not analyzing or no PV moves`);
+    return;
+  }
+  
+  // Get the first move from current PV
+  const firstPvMove = engineState.pvMoves.value[0];
+  console.log(`[DEBUG] Variation: First PV move=${firstPvMove}`);
+  if (!firstPvMove) {
+    console.log(`[DEBUG] Variation: No first PV move available`);
+    return;
+  }
+  
+  // Add to excluded moves list
+  if (!excludedMoves.value.includes(firstPvMove)) {
+    excludedMoves.value.push(firstPvMove);
+  }
+  console.log(`[DEBUG] Variation: Excluded moves list=`, excludedMoves.value);
+  
+  // Get all legal moves for current position
+  const allLegalMoves = gameState.getAllLegalMovesForCurrentPosition();
+  console.log(`[DEBUG] Variation: All legal moves (${allLegalMoves.length}):`, allLegalMoves);
+  
+  // Filter out excluded moves
+  const allowedMoves = allLegalMoves.filter((move: string) => !excludedMoves.value.includes(move));
+  console.log(`[DEBUG] Variation: Allowed moves after filtering (${allowedMoves.length}):`, allowedMoves);
+  
+  if (allowedMoves.length === 0) {
+    alert('已无更多可变的走法');
+    console.log(`[DEBUG] Variation: No allowed moves remaining`);
+    return;
+  }
+  
+  console.log(`[DEBUG] Variation: Excluding move '${firstPvMove}', allowed moves:`, allowedMoves);
+  
+  // Set state to restart analysis once engine stops
+  variationRestartData.value = {
+    fen: gameState.generateFen(),
+    moves: allowedMoves,
+  };
+  isWaitingToRestartForVariation.value = true;
+  
+  // Stop current analysis first
+  console.log(`[DEBUG] Variation: STOPPING current analysis to restart for variation.`);
+  engineState.stopAnalysis({ playBestMoveOnStop: false });
+};
+
+// Watch for engine to stop and handle variation restart or state reset
+watch(engineState.isThinking, (thinking, wasThinking) => {
+  // Case 1: We were waiting for a variation restart, and the engine has now stopped.
+  if (wasThinking && !thinking && isWaitingToRestartForVariation.value && variationRestartData.value) {
+    console.log(`[DEBUG] Variation: Engine has stopped. RESTARTING analysis for variation.`);
+    
+    const { fen, moves } = variationRestartData.value;
+    
+    const infiniteSettings = {
+      movetime: 0,
+      maxDepth: 0, 
+      maxNodes: 0,
+      analysisMode: 'infinite'
+    };
+    
+    console.log(`[DEBUG] Variation: Starting infinite analysis with ${moves.length} searchmoves.`);
+    engineState.startAnalysis(infiniteSettings, [], fen, moves);
+    
+    // Reset waiting state, but keep excludedMoves for the current variation sequence
+    isWaitingToRestartForVariation.value = false;
+    variationRestartData.value = null;
+  }
+  // Case 2: Analysis has stopped for any other reason (e.g., manual stop, new game, etc.)
+  // We check `!isWaitingToRestartForVariation` to avoid resetting during a variation sequence.
+  else if (wasThinking && !thinking && !isWaitingToRestartForVariation.value) {
+    console.log(`[DEBUG] Variation: Analysis stopped. Resetting variation state.`);
+    resetVariationState();
+  }
+});
+
+// Reset all variation-related states
+const resetVariationState = () => {
+  console.log(`[DEBUG] Variation: Full state reset initiated.`);
+  excludedMoves.value = [];
+  isWaitingToRestartForVariation.value = false;
+  variationRestartData.value = null;
+  // Also clear any active searchmoves restrictions in the engine state
+  if (engineState.clearSearchMoves) {
+    console.log(`[DEBUG] Variation: Clearing searchmoves array in engine state.`);
+    engineState.clearSearchMoves();
+  }
+};
+
+// Listen for position changes to reset variation state
+window.addEventListener('force-stop-ai', resetVariationState);
+
 // New game - stop engine analysis before starting new game
 const setupNewGame = () => {
   // Stop engine analysis before starting new game to prevent continued thinking
   if (engineState.stopAnalysis) {
     engineState.stopAnalysis();
   }
+  // Reset variation state when starting new game
+  resetVariationState();
   gameState.setupNewGame();
 };
 
@@ -155,6 +281,8 @@ const confirmFenInput = (fen: string) => {
   if (engineState.stopAnalysis) {
     engineState.stopAnalysis();
   }
+  // Reset variation state when loading new position
+  resetVariationState();
   // Only process if FEN string is not empty
   if (fen && fen.trim()) {
     gameState.confirmFenInput(fen);
@@ -181,6 +309,8 @@ const handleOpenNotation = () => {
   if (engineState.stopAnalysis) {
     engineState.stopAnalysis();
   }
+  // Reset variation state when opening notation
+  resetVariationState();
   isOpening.value = true;
   try {
     gameState.openGameNotation();
@@ -205,8 +335,15 @@ const handlePositionChanged = (_pieces: any[], _sideToMove: 'red' | 'black') => 
   if (engineState.stopAnalysis) {
     engineState.stopAnalysis();
   }
+  // Reset variation state when position changes
+  resetVariationState();
   // Callback after position editing is complete
 };
+
+// Clean up event listener when component is unmounted
+onUnmounted(() => {
+  window.removeEventListener('force-stop-ai', resetVariationState);
+});
 </script>
 
 <style lang="scss" scoped>

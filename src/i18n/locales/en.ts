@@ -29,7 +29,8 @@ export default {
     saveNotation: 'Save Notation',
     openNotation: 'Open Notation',
     gameTitle: 'Jieqi Game',
-    interfaceSettings: 'Interface Settings'
+    interfaceSettings: 'Interface Settings',
+    variation: 'Variation'
   },
 
   // UCI options dialog
