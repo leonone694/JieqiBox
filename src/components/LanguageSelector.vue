@@ -17,6 +17,7 @@
           :key="code"
           @click="changeLanguage(code)"
           :active="currentLanguage === code"
+          :class="`language-option-${code}`"
         >
           <v-list-item-title>{{ name }}</v-list-item-title>
         </v-list-item>
@@ -55,5 +56,26 @@ const changeLanguage = (langCode: string) => {
 .language-selector {
   display: flex;
   align-items: center;
+}
+
+// Language-specific font styles for each option
+.language-option-zh_cn {
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+.language-option-zh_tw {
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
+}
+
+.language-option-ja {
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+}
+
+.language-option-en {
+  font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.language-option-vi {
+  font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 </style> 
