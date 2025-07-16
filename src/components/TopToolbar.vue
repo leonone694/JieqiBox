@@ -189,7 +189,7 @@ const handleVariation = () => {
   console.log(`[DEBUG] Variation: Allowed moves after filtering (${allowedMoves.length}):`, allowedMoves);
   
   if (allowedMoves.length === 0) {
-    alert('已无更多可变的走法');
+    alert(t('toolbar.noMoreVariations'));
     console.log(`[DEBUG] Variation: No allowed moves remaining`);
     return;
   }

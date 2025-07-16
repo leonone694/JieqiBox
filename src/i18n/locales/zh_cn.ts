@@ -30,7 +30,8 @@ export default {
     openNotation: '打开棋谱',
     interfaceSettings: '界面设置',
     gameTitle: '揭棋对局',
-    variation: '变招'
+    variation: '变招',
+    noMoreVariations: '已无更多可变的走法'
   },
 
   // UCI选项对话框

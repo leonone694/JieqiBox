@@ -30,7 +30,8 @@ export default {
     openNotation: '棋譜を開く',
     interfaceSettings: 'インターフェース設定',
     gameTitle: '揭棋ゲーム',
-    variation: '変化手順'
+    variation: '変化手順',
+    noMoreVariations: 'これ以上の変化はありません'
   },
 
   // UCIオプションダイアログ

@@ -165,7 +165,6 @@ const {
   startAnalysis,
   stopAnalysis,
   currentSearchMoves,
-  clearSearchMoves,
 } = engineState;
 
 /* ---------- Auto Play ---------- */

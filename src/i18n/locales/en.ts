@@ -30,7 +30,8 @@ export default {
     openNotation: 'Open Notation',
     gameTitle: 'Jieqi Game',
     interfaceSettings: 'Interface Settings',
-    variation: 'Variation'
+    variation: 'Variation',
+    noMoreVariations: 'No more variations available'
   },
 
   // UCI options dialog

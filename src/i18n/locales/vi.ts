@@ -30,7 +30,8 @@ export default {
     openNotation: 'Mở biên bản',
     gameTitle: 'Ván Cờ úp',
     interfaceSettings: 'Cài đặt giao diện',
-    variation: 'Biến thể'
+    variation: 'Biến thể',
+    noMoreVariations: 'Không còn biến thể nào khả dụng'
   },
 
   // Hộp thoại tùy chọn UCI
