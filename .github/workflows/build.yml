@@ -102,31 +102,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libdbus-1-dev \
-            libx11-dev \
-            libxcomposite-dev \
-            libxcursor-dev \
-            libxdamage-dev \
-            libxext-dev \
-            libxfixes-dev \
-            libxi-dev \
-            libxrandr-dev \
-            libxrender-dev \
-            libxss-dev \
-            libxtst-dev \
-            pkg-config \
-            libglib2.0-dev \
-            libcairo2-dev \
-            libpango1.0-dev \
-            libatk1.0-dev \
-            libgdk-pixbuf2.0-dev \
-            libgirepository1.0-dev \
-            libgstreamer1.0-dev \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libdbus-1-dev libx11-dev libxcomposite-dev \
+            libxcursor-dev libxdamage-dev libxext-dev libxfixes-dev libxi-dev \
+            libxrandr-dev libxrender-dev libxss-dev libxtst-dev pkg-config \
+            libglib2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev \
+            libgdk-pixbuf2.0-dev libgirepository1.0-dev libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev
       - name: Install dependencies
         run: npm ci
@@ -158,33 +139,26 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Android SDK
-        id: android
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           ndk: 26.1.10909125
+          build-tools: "34.0.0"
 
       - name: Export NDK environment variables
         run: |
           NDK_PATH="${ANDROID_NDK_ROOT:-$ANDROID_NDK_LATEST_HOME}"
-          if [ -z "$NDK_PATH" ] || [ ! -d "$NDK_PATH" ]; then
-            echo "NDK not found. Current env:"
-            env | grep NDK || true
-            exit 1
-          fi
-
           echo "ANDROID_NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
           echo "NDK_HOME=$NDK_PATH"          >> "$GITHUB_ENV"
-          echo "NDK path set to $NDK_PATH"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android
 
       - name: Install JS dependencies
         run: npm ci
@@ -192,75 +166,46 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Setup Android environment variables
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
-
       - name: Init Tauri Android project
         run: |
           npm install -g @tauri-apps/cli
-          
-          echo "Current directory structure:"
-          ls -la
-          echo "src-tauri directory structure:"
-          ls -la src-tauri/
-          
-          if [ -d "src-tauri/gen/android" ]; then
-            echo "Removing existing Android project directory..."
-            rm -rf src-tauri/gen/android
-          fi
-          
-          echo "Initializing Android project..."
+          rm -rf src-tauri/gen/android || true
           npx tauri android init --ci
-          
-          echo "Android project initialization completed"
-          echo "Checking generated files:"
-          find src-tauri/gen -name "*" -type f | head -20 || echo "No files found in gen directory"
-
-      - name: Verify and setup Android project structure
-        run: |
-          echo "Checking Android project structure..."
-          ls -la src-tauri/gen/ || echo "gen directory does not exist"
-          
-          if [ -d "src-tauri/gen/android" ]; then
-            echo "Android project directory exists"
-            ls -la src-tauri/gen/android/
-            find src-tauri/gen/android -name "*.gradle" -o -name "AndroidManifest.xml" | head -10
-            
-            if [ -d "src-tauri/gen/android/app/src/main/java/com/jieqibox/app" ]; then
-              echo "Package directory structure is correct"
-            else
-              echo "Package directory structure is incorrect, creating correct structure..."
-              mkdir -p src-tauri/gen/android/app/src/main/java/com/jieqibox/app
-            fi
-          else
-            echo "Android project directory does not exist, creating it..."
-            mkdir -p src-tauri/gen/android
-            echo "Created Android project directory"
-          fi
-          
-          echo "Checking Tauri Android configuration..."
-          if [ -f "src-tauri/tauri.conf.json" ]; then
-            echo "Tauri config exists"
-            grep -A 5 -B 5 "android" src-tauri/tauri.conf.json || echo "No android config found"
-          fi
-          
-          echo "Environment variables:"
-          echo "ANDROID_HOME: $ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-          echo "JAVA_HOME: $JAVA_HOME"
-
-      - name: Build Tauri Android app
-        run: |
-          echo "Starting Android build..."
-          npx tauri android build
+      
+      - name: Build Tauri Android app (unsigned)
+        run: npx tauri android build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
-          JAVA_HOME: ${{ env.JAVA_HOME }}
+      
+      - name: Manually sign the APK
+        run: |
+          KEYSTORE_PATH=$RUNNER_TEMP/keystore.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $KEYSTORE_PATH
+          echo "Keystore file created at $KEYSTORE_PATH"
+
+          UNSIGNED_APK_PATH=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name "*-unsigned.apk" | head -n 1)
+          if [ -z "$UNSIGNED_APK_PATH" ]; then
+            echo "::error::Unsigned APK not found!"
+            find src-tauri/gen/android/app/build/outputs/apk -type f -name "*.apk"
+            exit 1
+          fi
+          echo "Found unsigned APK at: $UNSIGNED_APK_PATH"
+
+          SIGNED_APK_PATH=$(echo "$UNSIGNED_APK_PATH" | sed 's/-unsigned//')
+          echo "Signed APK will be saved to: $SIGNED_APK_PATH"
+
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks $KEYSTORE_PATH \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK_PATH" \
+            "$UNSIGNED_APK_PATH"
+          
+          echo "APK signing process completed."
+
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$SIGNED_APK_PATH"
+          echo "APK signature verified successfully."
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
@@ -268,8 +213,9 @@ jobs:
           name: jieqibox-android
           path: |
             src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+            !src-tauri/gen/android/app/build/outputs/apk/**/release/*-unsigned.apk
+            src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
           retention-days: 30
-
 
   release:
     name: Create Release
@@ -280,6 +226,7 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -288,6 +235,7 @@ jobs:
             jieqibox-macos/*.dmg
             jieqibox-linux/*.AppImage
             jieqibox-android/**/*.apk
+            jieqibox-android/**/*.aab
           draft: false
           prerelease: false
         env:
