@@ -2,7 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main, master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, master ]
 
@@ -29,6 +30,7 @@ jobs:
   build-windows:
     name: Build Windows
     runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -58,6 +60,7 @@ jobs:
   build-macos:
     name: Build macOS
     runs-on: macos-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -87,6 +90,7 @@ jobs:
   build-linux:
     name: Build Linux
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -127,6 +131,7 @@ jobs:
   build-android:
     name: Build Android
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
 

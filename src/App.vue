@@ -84,6 +84,14 @@ provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
   padding: 20px;
   gap: 20px;
   box-sizing: border-box;
+  
+  // Mobile responsive layout - switch to vertical on narrow screens
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    gap: 30px;
+  }
 }
 
 .chessboard-area {
@@ -91,5 +99,10 @@ provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
   flex-direction: column;
   align-items: center;
   padding-top: 20px;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    padding-top: 30px;
+  }
 }
 </style>

@@ -322,6 +322,12 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
   /* Disable double-click highlighting */
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    width: 90vmin;
+    max-width: 400px;
+  }
 }
 .bg{
   width:100%;
@@ -386,7 +392,25 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
 }
 .al{stroke-width:1;stroke-opacity:.9}
 
-.panel{position:absolute;bottom:-55px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.panel{
+  position:absolute;
+  bottom:-55px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:8px;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    bottom: -45px;
+    gap: 6px;
+    
+    .v-btn {
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+  }
+}
 .tip{margin-left:4px;color:#2ecc71;font-size:12px}
 
 /* Last move highlight styles */

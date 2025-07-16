@@ -355,6 +355,13 @@ onUnmounted(() => {
   background: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    padding: 6px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 .toolbar-left,
@@ -362,6 +369,15 @@ onUnmounted(() => {
   display: flex;
   gap: 4px;
   align-items: center;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    gap: 2px;
+    
+    .v-btn {
+      font-size: 12px;
+    }
+  }
 }
 
 .toolbar-center {
@@ -373,5 +389,10 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
 }
 </style>

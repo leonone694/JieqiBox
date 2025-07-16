@@ -721,6 +721,17 @@ const parsedAnalysisLines = computed(() => {
   box-sizing: border-box;
   border-left: 1px solid #ddd;
   overflow-y: auto;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    max-height: 60vh;
+    border-left: none;
+    border-top: 1px solid #ddd;
+    margin-top: 20px;
+  }
 }
 .full-btn {
   width: 100%;
@@ -752,6 +763,12 @@ const parsedAnalysisLines = computed(() => {
   font-family: 'Courier New', Courier, monospace;
   border: 1px solid #eee;
   font-size: 13px;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    height: 120px;
+    font-size: 12px;
+  }
 }
 
 .score-positive {
@@ -822,12 +839,24 @@ const parsedAnalysisLines = computed(() => {
 .autoplay-settings {
   display: flex;
   justify-content: space-between;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 .pool-manager {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
 }
 .pool-item {
   display: flex;
@@ -884,6 +913,12 @@ const parsedAnalysisLines = computed(() => {
   font-family: 'Courier New', Courier, monospace;
   font-size: 12px;
   white-space: pre-line;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    height: 120px;
+    font-size: 11px;
+  }
 }
 
 .notification {
