@@ -17,6 +17,7 @@ export type HistoryEntry = {
   type: 'move' | 'adjust';
   data: string;
   fen: string;
+  comment?: string; // User comment for this move
   lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }; // record the start and end positions of the last move
 };
 
@@ -1372,6 +1373,16 @@ export function useChessGame() {
     return isBoardFlipped.value ? 9 - row : row;
   }
 
+  // Update comment for a specific move
+  const updateMoveComment = (moveIndex: number, comment: string) => {
+    if (moveIndex >= 0 && moveIndex < history.value.length) {
+      history.value[moveIndex] = {
+        ...history.value[moveIndex],
+        comment: comment.trim() || undefined
+      };
+    }
+  };
+
   // Undo the last move (whether made by human or computer)
   const undoLastMove = () => {
     // Check if there are any moves to undo
@@ -1427,6 +1438,6 @@ export function useChessGame() {
     registerArrowClearCallback, triggerArrowClear,
     isCurrentPositionInCheck, isInCheck, wouldBeInCheckAfterMove,
     getValidMovesForSelectedPiece, getAllLegalMovesForCurrentPosition,
-    undoLastMove, updateAllPieceZIndexes,
+    undoLastMove, updateAllPieceZIndexes, updateMoveComment,
   };
 }

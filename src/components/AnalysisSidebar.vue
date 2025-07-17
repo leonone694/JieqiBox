@@ -93,6 +93,80 @@
     </div>
 
     <div class="section">
+      <h3>{{ $t('analysis.moveComments') }}</h3>
+      <div class="comments-list" ref="commentsListElement">
+        <div
+          class="comment-item"
+          :class="{ 'current-comment': currentMoveIndex === 0 }"
+        >
+          <div class="comment-header">
+            <span class="comment-number">{{ $t('analysis.opening') }}</span>
+            <v-btn 
+              density="compact" 
+              icon="mdi-pencil" 
+              size="x-small" 
+              @click="editComment(0)"
+              color="primary"
+              variant="text"
+            />
+          </div>
+          <div v-if="editingCommentIndex === 0" class="comment-edit">
+            <v-text-field
+              v-model="editingCommentText"
+              density="compact"
+              hide-details
+              :placeholder="$t('analysis.enterComment')"
+              @keyup.enter="saveComment"
+              @keyup.esc="cancelEdit"
+            />
+            <div class="comment-edit-buttons">
+              <v-btn size="x-small" @click="saveComment" color="success">{{ $t('analysis.saveComment') }}</v-btn>
+              <v-btn size="x-small" @click="cancelEdit" color="error">{{ $t('analysis.cancelComment') }}</v-btn>
+            </div>
+          </div>
+          <div v-else class="comment-text">
+            {{ getCommentText(0) || $t('analysis.noComment') }}
+          </div>
+        </div>
+        <div
+          v-for="(_, idx) in history"
+          :key="`comment-${idx}`"
+          class="comment-item"
+          :class="{ 'current-comment': currentMoveIndex === idx + 1 }"
+        >
+          <div class="comment-header">
+            <span class="comment-number">{{ getMoveNumber(idx) }}</span>
+            <v-btn 
+              density="compact" 
+              icon="mdi-pencil" 
+              size="x-small" 
+              @click="editComment(idx + 1)"
+              color="primary"
+              variant="text"
+            />
+          </div>
+          <div v-if="editingCommentIndex === idx + 1" class="comment-edit">
+            <v-text-field
+              v-model="editingCommentText"
+              density="compact"
+              hide-details
+              :placeholder="$t('analysis.enterComment')"
+              @keyup.enter="saveComment"
+              @keyup.esc="cancelEdit"
+            />
+            <div class="comment-edit-buttons">
+              <v-btn size="x-small" @click="saveComment" color="success">{{ $t('analysis.saveComment') }}</v-btn>
+              <v-btn size="x-small" @click="cancelEdit" color="error">{{ $t('analysis.cancelComment') }}</v-btn>
+            </div>
+          </div>
+          <div v-else class="comment-text">
+            {{ getCommentText(idx + 1) || $t('analysis.noComment') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <h3>{{ $t('analysis.engineLog') }}</h3>
       <div class="engine-log" ref="engineLogElement">
         <div
@@ -174,6 +248,11 @@ const isManualAnalysis = ref(false); // Track if current analysis is manual or A
 const moveListElement = ref<HTMLElement | null>(null);
 const engineLogElement = ref<HTMLElement | null>(null);
 const aboutDialogRef = ref<InstanceType<typeof AboutDialog> | null>(null);
+
+/* ---------- Comment Management ---------- */
+const editingCommentIndex = ref<number | null>(null);
+const editingCommentText = ref<string>('');
+const commentsListElement = ref<HTMLElement | null>(null);
 
 
 
@@ -434,6 +513,52 @@ function handleUndoMove() {
 // Open the about dialog
 function openAboutDialog() {
   aboutDialogRef.value?.openDialog();
+}
+
+/* ---------- Comment Management Functions ---------- */
+// Get comment text for a specific move index
+function getCommentText(moveIndex: number): string {
+  if (moveIndex === 0) {
+    return ''; // Opening position has no comment
+  }
+  const historyIndex = moveIndex - 1;
+  if (historyIndex >= 0 && historyIndex < history.value.length) {
+    return history.value[historyIndex].comment || '';
+  }
+  return '';
+}
+
+// Start editing a comment
+function editComment(moveIndex: number) {
+  editingCommentIndex.value = moveIndex;
+  editingCommentText.value = getCommentText(moveIndex);
+}
+
+// Save the current comment
+function saveComment() {
+  if (editingCommentIndex.value !== null) {
+    if (editingCommentIndex.value === 0) {
+      // Opening position - no comment to save
+      editingCommentIndex.value = null;
+      editingCommentText.value = '';
+      return;
+    }
+    
+    const historyIndex = editingCommentIndex.value - 1;
+    if (historyIndex >= 0 && historyIndex < history.value.length) {
+      // Update the comment in the history
+      gameState.updateMoveComment(historyIndex, editingCommentText.value);
+    }
+  }
+  
+  editingCommentIndex.value = null;
+  editingCommentText.value = '';
+}
+
+// Cancel editing
+function cancelEdit() {
+  editingCommentIndex.value = null;
+  editingCommentText.value = '';
 }
 
 // Load settings when the component is mounted
@@ -961,5 +1086,65 @@ const parsedAnalysisLines = computed(() => {
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid #e0e0e0;
+}
+
+/* ---------- Comment Styles ---------- */
+.comments-list {
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  font-size: 13px;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    height: 150px;
+    font-size: 12px;
+  }
+}
+
+.comment-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.comment-item.current-comment {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.comment-number {
+  font-weight: bold;
+  color: #666;
+  font-size: 12px;
+}
+
+.comment-text {
+  color: #333;
+  font-size: 13px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.comment-edit {
+  margin-top: 4px;
+}
+
+.comment-edit-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
 }
 </style>
