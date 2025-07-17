@@ -738,6 +738,12 @@ const parsedAnalysisLines = computed(() => {
 }
 .half-btn {
   width: 49%;
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    width: 48%;
+    font-size: 12px;
+  }
 }
 .section {
   padding-top: 10px;
@@ -839,11 +845,11 @@ const parsedAnalysisLines = computed(() => {
 .autoplay-settings {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   
   // Mobile responsive adjustments
   @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 }
 
