@@ -54,6 +54,7 @@
         color="primary" 
         variant="text"
         @click="showUciOptionsDialog = true"
+        :disabled="isAnalyzing"
         :title="$t('toolbar.uciSettings')"
       />
       <v-btn 
