@@ -78,7 +78,7 @@ Each move record contains:
 - `type`: The type of operation (`"move"` or `"adjust"`).
 - `data`: The operation data (move in UCI format or adjustment information).
 - `fen`: The FEN string of the board state after this move.
-- `comment`: Optional user comment for this move (string). Comments are stored in English and can be edited by users.
+- `comment`: Optional user comment for this move (string). Comments can be edited by users.
 
 ### currentMoveIndex
 
