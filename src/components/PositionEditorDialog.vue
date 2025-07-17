@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isVisible" persistent max-width="800px">
+  <v-dialog v-model="isVisible" persistent max-width="800px" :fullscreen="$vuetify.display.smAndDown">
     <v-card>
       <v-card-title>
         <span class="text-h5">{{ $t('positionEditor.title') }}</span>
@@ -24,9 +24,10 @@
             </v-col>
           </v-row>
 
-          <!-- Board Editing Area -->
+          <!-- Board Editing Area - Responsive Layout -->
           <v-row>
-            <v-col cols="8">
+            <!-- Board area - 8 columns on desktop, 12 columns on mobile -->
+            <v-col cols="12" md="8">
               <div class="position-editor-board">
                 <div class="board-grid">
                   <div 
@@ -64,8 +65,8 @@
               </div>
             </v-col>
 
-            <!-- Piece Selector Panel -->
-            <v-col cols="4">
+            <!-- Piece selector panel - 4 columns on desktop, 12 columns on mobile -->
+            <v-col cols="12" md="4">
               <div class="piece-selector">
                 <h4>{{ $t('positionEditor.addPieces') }}</h4>
                 
@@ -367,12 +368,20 @@ const applyChanges = () => {
   border-radius: 8px;
   overflow: hidden;
   background: #f5f5dc;
+  // Ensure board has appropriate max-width on mobile
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .board-grid {
   display: grid;
   grid-template-rows: repeat(10, 1fr);
   aspect-ratio: 9/10;
+  // Adjust board size on mobile
+  @media (max-width: 768px) {
+    aspect-ratio: 9/10;
+    max-width: 100%;
+  }
 }
 
 .board-row {
@@ -401,6 +410,11 @@ const applyChanges = () => {
   &.has-piece {
     background-color: #f0f8ff;
   }
+  
+  // Adjust piece size on mobile
+  @media (max-width: 768px) {
+    min-height: 30px;
+  }
 }
 
 .piece-display {
@@ -413,6 +427,12 @@ const applyChanges = () => {
 .piece-img {
   width: 30px;
   height: 30px;
+  
+  // Adjust piece image size on mobile
+  @media (max-width: 768px) {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .remove-btn {
@@ -424,6 +444,16 @@ const applyChanges = () => {
   height: 16px !important;
   min-width: 16px !important;
   min-height: 16px !important;
+  
+  // Adjust remove button size on mobile
+  @media (max-width: 768px) {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    top: -4px;
+    right: -4px;
+  }
 }
 
 .piece-selector {
@@ -432,6 +462,13 @@ const applyChanges = () => {
   border-radius: 8px;
   height: 100%;
   overflow-y: auto;
+  
+  // Adjust selector style on mobile
+  @media (max-width: 768px) {
+    height: auto;
+    margin-top: 16px;
+    max-height: 400px;
+  }
 }
 
 .piece-category {
@@ -448,6 +485,12 @@ const applyChanges = () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+  
+  // Increase columns on mobile to show more pieces
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
 }
 
 .piece-option {
@@ -469,12 +512,23 @@ const applyChanges = () => {
     width: 24px;
     height: 24px;
     margin-bottom: 4px;
+    
+    // Adjust piece image size in selector on mobile
+    @media (max-width: 768px) {
+      width: 20px;
+      height: 20px;
+    }
   }
   
   .piece-name {
     font-size: 10px;
     text-align: center;
     color: #666;
+    
+    // Adjust text size on mobile
+    @media (max-width: 768px) {
+      font-size: 8px;
+    }
   }
 }
 

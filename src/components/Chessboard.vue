@@ -63,7 +63,11 @@
       <v-btn @click="copyFenToClipboard" size="small">{{ $t('chessboard.copyFen') }}</v-btn>
       <v-btn @click="inputFenStringWithArrow"  size="small">{{ $t('chessboard.inputFen') }}</v-btn>
       <v-btn @click="setupNewGameWithArrow"    size="small">{{ $t('chessboard.newGame') }}</v-btn>
-      <span v-if="copySuccessVisible" class="tip">{{ $t('chessboard.copied') }}</span>
+    </div>
+    
+    <!-- Copy success tip - positioned absolutely to avoid layout shifts -->
+    <div v-if="copySuccessVisible" class="copy-success-tip">
+      {{ $t('chessboard.copied') }}
     </div>
     <ClearHistoryConfirmDialog
       :visible="showClearHistoryDialog"
@@ -411,7 +415,20 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
     }
   }
 }
-.tip{margin-left:4px;color:#2ecc71;font-size:12px}
+.copy-success-tip{
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #2ecc71;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
 /* Last move highlight styles */
 .last-move-highlights{
