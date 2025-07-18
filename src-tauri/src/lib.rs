@@ -1,5 +1,6 @@
 // src/lib.rs
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![allow(clippy::uninlined_format_args)]
 
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};

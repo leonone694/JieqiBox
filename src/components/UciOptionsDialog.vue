@@ -1,83 +1,89 @@
 <template>
-  <v-dialog v-model="isVisible" max-width="800px" persistent>
-    <v-card>
+  <v-dialog v-model="isVisible" :max-width="isMobile ? '95vw' : '800px'" persistent>
+    <v-card class="uci-options-card">
       <v-card-title class="dialog-title">
-        <span>{{ $t('uciOptions.title') }}</span>
+        <span class="title-text">{{ $t('uciOptions.title') }}</span>
         <v-spacer></v-spacer>
-        <v-btn icon @click="closeDialog">
+        <v-btn icon @click="closeDialog" class="close-btn">
           <v-icon color="black">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
       <v-card-text class="options-container">
         <div v-if="isLoading" class="loading-section">
-          <v-progress-circular indeterminate color="primary"></v-progress-circular>
+          <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
           <span class="loading-text">{{ $t('uciOptions.loadingText') }}</span>
         </div>
 
         <div v-else-if="!isEngineLoaded" class="empty-section">
-          <v-icon size="48" color="grey">mdi-engine-off</v-icon>
-          <p>{{ $t('uciOptions.noEngineLoaded') }}</p>
+          <v-icon size="64" color="grey">mdi-engine-off</v-icon>
+          <p class="empty-text">{{ $t('uciOptions.noEngineLoaded') }}</p>
           <v-btn 
             color="primary" 
             @click="loadEngine" 
             :loading="isEngineLoading"
             :disabled="isEngineLoading"
+            size="large"
+            class="action-btn"
           >
             {{ $t('uciOptions.loadEngine') }}
           </v-btn>
         </div>
 
         <div v-else-if="uciOptions.length === 0" class="empty-section">
-          <v-icon size="48" color="grey">mdi-cog-off</v-icon>
-          <p>{{ $t('uciOptions.noOptionsAvailable') }}</p>
-          <v-btn color="primary" @click="refreshOptions">{{ $t('uciOptions.refreshOptions') }}</v-btn>
+          <v-icon size="64" color="grey">mdi-cog-off</v-icon>
+          <p class="empty-text">{{ $t('uciOptions.noOptionsAvailable') }}</p>
+          <v-btn color="primary" @click="refreshOptions" size="large" class="action-btn">
+            {{ $t('uciOptions.refreshOptions') }}
+          </v-btn>
         </div>
 
         <div v-else class="options-list">
           <div v-for="option in uciOptions" :key="option.name" class="option-item">
             <!-- 数值类型选项 (spin) -->
-            <div v-if="option.type === 'spin'" class="option-row">
-              <label class="option-label">{{ option.name }}</label>
-              <v-slider
-                v-model="option.currentValue as number"
-                :min="option.min"
-                :max="option.max"
-                :step="1"
-                thumb-label
-                track-color="grey-lighten-1"
-                class="option-slider"
-                @update:model-value="updateOption(option.name, $event)"
-              >
-                <template #prepend>
-                  <v-text-field
-                    v-model.number="option.currentValue"
-                    :min="option.min"
-                    :max="option.max"
-                    type="number"
-                    variant="outlined"
-                    density="compact"
-                    hide-details
-                    style="width: 80px"
-                    @update:model-value="updateOption(option.name, $event)"
-                  ></v-text-field>
-                </template>
-              </v-slider>
-              <span class="option-range">{{ $t('uciOptions.range') }}: {{ option.min }} - {{ option.max }}</span>
+            <div v-if="option.type === 'spin'" class="option-row spin-option">
+              <div class="option-header">
+                <label class="option-label">{{ option.name }}</label>
+                <span class="option-range">{{ $t('uciOptions.range') }}: {{ option.min }} - {{ option.max }}</span>
+              </div>
+              <div class="option-controls">
+                <v-text-field
+                  v-model.number="option.currentValue"
+                  :min="option.min"
+                  :max="option.max"
+                  type="number"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="number-input"
+                  @update:model-value="updateOption(option.name, $event)"
+                ></v-text-field>
+                <v-slider
+                  v-model="option.currentValue as number"
+                  :min="option.min"
+                  :max="option.max"
+                  :step="1"
+                  thumb-label
+                  track-color="grey-lighten-1"
+                  class="option-slider"
+                  @update:model-value="updateOption(option.name, $event)"
+                ></v-slider>
+              </div>
             </div>
 
             <!-- 布尔类型选项 (check) -->
-            <div v-else-if="option.type === 'check'" class="option-row">
+            <div v-else-if="option.type === 'check'" class="option-row check-option">
               <label class="option-label">{{ option.name }}</label>
               <v-switch
                 v-model="option.currentValue as boolean"
                 color="primary"
+                class="option-switch"
                 @update:model-value="updateOption(option.name, $event ?? false)"
               ></v-switch>
             </div>
 
             <!-- 下拉选择类型选项 (combo) -->
-            <div v-else-if="option.type === 'combo'" class="option-row">
+            <div v-else-if="option.type === 'combo'" class="option-row combo-option">
               <label class="option-label">{{ option.name }}</label>
               <v-select
                 v-model="option.currentValue as string"
@@ -90,7 +96,7 @@
             </div>
 
             <!-- 字符串类型选项 (string) -->
-            <div v-else-if="option.type === 'string'" class="option-row">
+            <div v-else-if="option.type === 'string'" class="option-row string-option">
               <label class="option-label">{{ option.name }}</label>
               <v-text-field
                 v-model="option.currentValue as string"
@@ -102,11 +108,12 @@
             </div>
 
             <!-- 按钮类型选项 (button) -->
-            <div v-else-if="option.type === 'button'" class="option-row">
+            <div v-else-if="option.type === 'button'" class="option-row button-option">
               <label class="option-label">{{ option.name }}</label>
               <v-btn
                 color="primary"
                 variant="outlined"
+                class="execute-btn"
                 @click="executeButtonOption(option.name)"
               >
                 {{ $t('uciOptions.execute') }}
@@ -117,11 +124,22 @@
       </v-card-text>
 
       <v-card-actions class="dialog-actions">
-        <v-btn color="grey" @click="resetToDefaults">{{ $t('uciOptions.resetToDefaults') }}</v-btn>
-        <v-btn color="primary" @click="refreshOptions">{{ $t('uciOptions.refreshOptions') }}</v-btn>
-        <v-btn color="grey" @click="clearSettings">{{ $t('uciOptions.clearSettings') }}</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn color="grey" @click="closeDialog">{{ $t('common.close') }}</v-btn>
+        <div class="actions-container">
+          <div class="action-buttons">
+            <v-btn color="grey" @click="resetToDefaults" size="small" class="action-btn">
+              {{ $t('uciOptions.resetToDefaults') }}
+            </v-btn>
+            <v-btn color="primary" @click="refreshOptions" size="small" class="action-btn">
+              {{ $t('uciOptions.refreshOptions') }}
+            </v-btn>
+            <v-btn color="grey" @click="clearSettings" size="small" class="action-btn">
+              {{ $t('uciOptions.clearSettings') }}
+            </v-btn>
+          </div>
+          <v-btn color="grey" @click="closeDialog" size="small" class="close-action-btn">
+            {{ $t('common.close') }}
+          </v-btn>
+        </div>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -173,6 +191,11 @@ const {
 const isLoading = ref(false);
 const uciOptions = ref<UciOption[]>([]);
 const isWaitingForOptions = ref(false);
+
+// Detect if the device is mobile
+const isMobile = computed(() => {
+  return window.innerWidth <= 768;
+});
 
 // Computed property - dialog visibility state
 const isVisible = computed({
@@ -456,20 +479,32 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+.uci-options-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 .dialog-title {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 16px 24px;
+  padding: 16px 20px;
+  position: relative;
 
-  .v-icon {
+  .title-text {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .close-btn {
     color: white;
+    margin-right: -8px;
   }
 }
 
 .options-container {
-  max-height: 600px;
+  max-height: 70vh;
   overflow-y: auto;
-  padding: 20px;
+  padding: 16px;
 }
 
 .loading-section {
@@ -477,11 +512,12 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  padding: 40px;
+  padding: 40px 20px;
 
   .loading-text {
     color: #666;
-    font-size: 14px;
+    font-size: 16px;
+    text-align: center;
   }
 }
 
@@ -489,88 +525,242 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 40px;
+  gap: 20px;
+  padding: 40px 20px;
   color: #666;
 
-  p {
+  .empty-text {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .action-btn {
+    min-width: 120px;
   }
 }
 
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .option-item {
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px;
   background: #fafafa;
+  transition: all 0.2s ease;
 
   &:hover {
     background: #f5f5f5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 
 .option-row {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
   min-height: 48px;
 }
 
-.option-label {
-  font-weight: 500;
-  color: #333;
-  min-width: 200px;
-  font-size: 14px;
+.option-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.option-slider {
-  flex: 1;
-  margin: 0 16px;
+.option-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
+  line-height: 1.4;
 }
 
 .option-range {
   font-size: 12px;
   color: #666;
-  min-width: 120px;
+  font-weight: 400;
+}
+
+.option-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.number-input {
+  max-width: 120px;
+  align-self: flex-start;
+}
+
+.option-slider {
+  width: 100%;
+  margin: 0;
+}
+
+.option-switch {
+  align-self: flex-end;
+  margin-top: 8px;
 }
 
 .option-select,
 .option-input {
-  max-width: 300px;
-  flex: 1;
+  width: 100%;
+}
+
+.execute-btn {
+  align-self: flex-end;
+  margin-top: 8px;
+  min-width: 100px;
 }
 
 .dialog-actions {
-  padding: 16px 24px;
+  padding: 16px 20px;
   background: #f9f9f9;
   border-top: 1px solid #e0e0e0;
 
-  .v-btn {
+  .actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .action-btn {
     text-transform: none;
     font-weight: 500;
+    font-size: 14px;
+    min-width: 80px;
+  }
+
+  .close-action-btn {
+    text-transform: none;
+    font-weight: 500;
+    font-size: 14px;
+    align-self: center;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .options-container {
+    max-height: 60vh;
+    padding: 12px;
+  }
+
+  .option-item {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .option-label {
+    font-size: 15px;
+  }
+
+  .dialog-actions {
+    padding: 12px 16px;
+
+    .action-buttons {
+      gap: 6px;
+    }
+
+    .action-btn {
+      font-size: 13px;
+      min-width: 70px;
+      padding: 8px 12px;
+    }
+
+    .close-action-btn {
+      font-size: 13px;
+      min-width: 80px;
+      padding: 8px 16px;
+    }
+  }
+
+  .dialog-title {
+    padding: 12px 16px;
+
+    .title-text {
+      font-size: 16px;
+    }
+  }
+
+  .loading-section,
+  .empty-section {
+    padding: 30px 16px;
+  }
+
+  .loading-text,
+  .empty-text {
+    font-size: 14px;
+  }
+}
+
+// 超小屏幕优化
+@media (max-width: 480px) {
+  .options-container {
+    max-height: 55vh;
+    padding: 8px;
+  }
+
+  .option-item {
+    padding: 10px;
+  }
+
+  .option-label {
+    font-size: 14px;
+  }
+
+  .dialog-actions {
+    padding: 10px 12px;
+
+    .action-btn {
+      font-size: 12px;
+      min-width: 60px;
+      padding: 6px 10px;
+    }
+
+    .close-action-btn {
+      font-size: 12px;
+      min-width: 70px;
+      padding: 6px 12px;
+    }
+  }
+
+  .dialog-title {
+    padding: 10px 12px;
+
+    .title-text {
+      font-size: 15px;
+    }
   }
 }
 
 // Scrollbar styles
 .options-container::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .options-container::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .options-container::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 3px;
+  border-radius: 2px;
 
   &:hover {
     background: #a8a8a8;
