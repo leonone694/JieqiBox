@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Join the Discord](https://img.shields.io/discord/1391287860249759827?style=for-the-badge&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/d8HxM5Erad)
 
-**JieqiBox** is a cross-platform desktop application for playing and analysing Jieqi (揭棋).  
+**JieqiBox** is a cross-platform desktop application (with partial Android support) for playing and analysing Jieqi (揭棋).  
 Built with Tauri and Vue 3, it aims to be a lightweight yet capable companion for casual players and engine developers alike.
 
 You can compile a supporting engine from the official Pikafish repository at <https://github.com/official-pikafish/Pikafish/tree/jieqi> or <https://github.com/official-pikafish/Pikafish/tree/jieqi_old>.

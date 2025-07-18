@@ -6,6 +6,22 @@ import { useI18n } from 'vue-i18n';
 
 export interface EngineLine { text: string; kind: 'sent' | 'recv' }
 
+// Platform detection utility
+const isAndroid = () => {
+  // Check multiple ways to detect Android platform
+  if (typeof window !== 'undefined') {
+    // Check Tauri platform if available
+    const tauriPlatform = (window as any).__TAURI__?.platform;
+    if (tauriPlatform === 'android') return true;
+    
+    // Check user agent
+    if (navigator.userAgent.includes('Android')) return true;
+    if (/Android/i.test(navigator.userAgent)) return true;
+  }
+  
+  return false;
+};
+
 // function dbg(tag: string, ...m: any[]) { // console.log('[UCI]', tag, ...m) }
 
 export function useUciEngine(generateFen: () => string) {
@@ -27,26 +43,100 @@ export function useUciEngine(generateFen: () => string) {
   const currentEnginePath = ref(''); // current engine path
   const currentSearchMoves = ref<string[]>([]); // Current searchmoves restriction for variation analysis
 
+  // Android-specific state
+  const isAndroidPlatform = ref(isAndroid());
+  const androidEnginePath = ref('');
+  const bundleIdentifier = ref('');
+
   let unlisten: (() => void) | null = null;
+
+  /* ---------- Android Engine Path Management ---------- */
+  const getBundleIdentifier = async () => {
+    if (!isAndroidPlatform.value) return '';
+    
+    try {
+      const identifier = await invoke<string>('get_bundle_identifier');
+      bundleIdentifier.value = identifier;
+      return identifier;
+    } catch (error) {
+      console.error('Failed to get bundle identifier:', error);
+      return '';
+    }
+  };
+
+  const getAndroidEnginePath = async () => {
+    if (!isAndroidPlatform.value) return '';
+    
+    try {
+      const path = await invoke<string>('get_default_android_engine_path');
+      androidEnginePath.value = path;
+      return path;
+    } catch (error) {
+      console.error('Failed to get Android engine path:', error);
+      return '';
+    }
+  };
+
+  const scanAndroidEngines = async () => {
+    if (!isAndroidPlatform.value) return [];
+    
+    try {
+      const engines = await invoke<string[]>('scan_android_engines');
+      return engines;
+    } catch (error) {
+      console.error('Failed to scan Android engines:', error);
+      return [];
+    }
+  };
 
   /* ---------- Load Engine ---------- */
   const loadEngine = async () => {
     isEngineLoading.value = true; // Set loading to true
     try {
-      const path = await open({ multiple: false, title: '选择UCI引擎' });
-      if (typeof path === 'string' && path) {
-        engineOutput.value = []; bestMove.value = ''; analysis.value = ''; pvMoves.value = [];
-        currentEnginePath.value = path; // Store engine path
-        await invoke('spawn_engine', { path });
-        isEngineLoaded.value = true;
-        send('uci');
+      let path: string;
+      
+      if (isAndroidPlatform.value) {
+        // On Android, first sync and get the list of available engines
+        const availableEngines = await scanAndroidEngines();
         
-        // Automatically apply saved configuration after engine loads
-        setTimeout(() => {
-          applySavedSettings();
-        }, 500);
+        if (availableEngines.length > 0) {
+          // Use the first available engine's full internal path
+          path = availableEngines[0];
+        } else {
+          // If no engines found, show a message to the user
+          const userDir = await getAndroidEnginePath();
+          const bundleId = await getBundleIdentifier();
+          const externalPath = bundleId ? `/storage/emulated/0/Android/data/${bundleId}/files/engines` : '/storage/emulated/0/Android/data/[包名]/files/engines';
+          alert(`请在以下路径放置UCI引擎文件：\n${userDir}\n或\n${externalPath}\n\n应用会自动扫描并复制引擎文件到内部存储。`);
+          isEngineLoading.value = false;
+          return;
+        }
+      } else {
+        // On desktop platforms, use file dialog
+        const selectedPath = await open({ multiple: false, title: '选择UCI引擎' });
+        if (typeof selectedPath !== 'string' || !selectedPath) {
+          isEngineLoading.value = false;
+          return;
+        }
+        path = selectedPath;
       }
+
+      engineOutput.value = []; 
+      bestMove.value = ''; 
+      analysis.value = ''; 
+      pvMoves.value = [];
+      currentEnginePath.value = path; // Store engine path
+      
+      await invoke('spawn_engine', { path });
+      isEngineLoaded.value = true;
+      send('uci');
+      
+      // Automatically apply saved configuration after engine loads
+      setTimeout(() => {
+        applySavedSettings();
+      }, 500);
     } catch(e) { 
+      console.error('Failed to load engine:', e);
       alert('Failed to load engine'); 
     } finally {
       isEngineLoading.value = false; // Set loading to false
@@ -271,6 +361,6 @@ export function useUciEngine(generateFen: () => string) {
   return { 
     engineOutput, isEngineLoaded, isEngineLoading, bestMove, analysis, isThinking, pvMoves, multiPvMoves,
     loadEngine, startAnalysis, stopAnalysis, uciOptionsText, send, currentEnginePath, applySavedSettings,
-    currentSearchMoves, clearSearchMoves
+    currentSearchMoves, clearSearchMoves, bundleIdentifier
   };
 }

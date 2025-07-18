@@ -114,6 +114,3 @@ src-tauri/Cargo.lock
 
 # Generated files
 *.generated.*
-
-# Android files
-src-tauri/gen/android/

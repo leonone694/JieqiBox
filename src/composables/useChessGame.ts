@@ -1163,16 +1163,40 @@ export function useChessGame() {
     try {
       const notation = generateGameNotation();
       const content = JSON.stringify(notation, null, 2);
-      const blob = new Blob([content], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
       
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `揭棋对局_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Check if running on Android platform using the same detection logic as useUciEngine
+      const isAndroid = () => {
+        if (typeof window !== 'undefined') {
+          const tauriPlatform = (window as any).__TAURI__?.platform;
+          if (tauriPlatform === 'android') return true;
+          if (navigator.userAgent.includes('Android')) return true;
+          if (/Android/i.test(navigator.userAgent)) return true;
+        }
+        return false;
+      };
+      
+      const isAndroidPlatform = isAndroid();
+      
+              if (isAndroidPlatform) {
+        // Use Tauri command to save to Android internal storage
+        const filename = `jieqi_game_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        const { invoke } = await import('@tauri-apps/api/core');
+        const savedPath = await invoke('save_game_notation', { content, filename });
+        console.log('Game notation saved to:', savedPath);
+        alert(`棋谱已保存到Android外部存储（${savedPath}），用户可通过文件管理器访问`);
+      } else {
+        // Use browser download for desktop platforms
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `揭棋对局_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error('保存棋谱失败:', error);
       alert('保存棋谱失败，请重试');
