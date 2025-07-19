@@ -174,8 +174,6 @@ jobs:
       - name: Init Tauri Android project
         run: |
           npm install -g @tauri-apps/cli
-          rm -rf src-tauri/gen/android || true
-          npx tauri android init --ci
       
       - name: Build Tauri Android app (unsigned)
         run: npx tauri android build
