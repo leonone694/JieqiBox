@@ -501,7 +501,7 @@ async fn spawn_engine_internal(
 
 
 #[tauri::command]
-async fn open_external_url(url: String) -> Result<(), String> {
+async fn open_external_url(url: String, app: AppHandle) -> Result<(), String> {
     // Use different commands to open browser based on operating system
     let result = if cfg!(target_os = "windows") {
         Command::new("cmd")
@@ -512,8 +512,9 @@ async fn open_external_url(url: String) -> Result<(), String> {
             .arg(&url)
             .spawn()
     } else if cfg!(target_os = "android") {
-        // On Android, we need to use the Android intent system
-        // This will be handled by the frontend using the Android WebView
+        // On Android, emit an event to trigger external browser opening
+        // This will be handled by the Android native code
+        let _ = app.emit("open-external-url", url);
         return Ok(());
     } else {
         // Linux and other Unix systems

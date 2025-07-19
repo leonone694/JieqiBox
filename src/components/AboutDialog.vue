@@ -79,8 +79,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 // Import version from package.json
 import packageJson from '../../package.json';
@@ -99,12 +100,42 @@ const openDialog = () => {
 // Method to open an external link using Tauri's API
 const openExternalLink = async (url: string) => {
   try {
-    // Invoke the Rust backend command to open the URL in the default browser
-    await invoke('open_external_url', { url });
+    // Check if running on Android platform
+    if (window.ExternalUrlInterface) {
+      // Use Android JavaScript interface to open external browser
+      window.ExternalUrlInterface.openExternalUrl(url);
+    } else {
+      // Use Tauri's API for other platforms
+      await invoke('open_external_url', { url });
+    }
   } catch (error) {
     console.error('Failed to open external link:', error);
   }
 };
+
+// Event listener for Android external URL opening
+let unlistenExternalUrl: (() => void) | null = null;
+
+onMounted(async () => {
+  try {
+    // Listen for external URL events from Tauri (Android platform)
+    unlistenExternalUrl = await listen('open-external-url', (event) => {
+      const url = event.payload as string;
+      if (window.ExternalUrlInterface) {
+        window.ExternalUrlInterface.openExternalUrl(url);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to set up external URL listener:', error);
+  }
+});
+
+onUnmounted(() => {
+  // Clean up event listener
+  if (unlistenExternalUrl) {
+    unlistenExternalUrl();
+  }
+});
 
 // Expose the openDialog method to the parent component
 defineExpose({

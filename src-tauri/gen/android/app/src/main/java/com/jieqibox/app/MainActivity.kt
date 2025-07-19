@@ -47,6 +47,9 @@ class MainActivity : TauriActivity() {
         super.onWebViewCreate(webView)
         this.webView = webView
         webView.addJavascriptInterface(SafFileInterface(), "SafFileInterface")
+        
+        // Listen for external URL opening events from Tauri
+        webView.addJavascriptInterface(ExternalUrlInterface(), "ExternalUrlInterface")
     }
     
     // JavaScript interface for SAF file selection
@@ -56,6 +59,17 @@ class MainActivity : TauriActivity() {
             Log.d(TAG, "Received SAF file selection request from JavaScript")
             runOnUiThread {
                 this@MainActivity.requestSafFileSelection()
+            }
+        }
+    }
+    
+    // JavaScript interface for external URL opening
+    inner class ExternalUrlInterface {
+        @JavascriptInterface
+        fun openExternalUrl(url: String) {
+            Log.d(TAG, "Received external URL opening request: $url")
+            runOnUiThread {
+                this@MainActivity.openExternalUrl(url)
             }
         }
     }
@@ -144,6 +158,26 @@ class MainActivity : TauriActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error sending SAF file result to JavaScript", e)
+        }
+    }
+    
+    // Open external URL in default browser
+    private fun openExternalUrl(url: String) {
+        try {
+            Log.d(TAG, "Opening external URL: $url")
+            
+            // Create intent to open URL in external browser
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            
+            // Check if there's an app that can handle this intent
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+                Log.d(TAG, "Successfully opened URL in external browser")
+            } else {
+                Log.e(TAG, "No app found to handle URL: $url")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error opening external URL: $url", e)
         }
     }
 }
