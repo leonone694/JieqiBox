@@ -54,6 +54,7 @@ export default {
   timeDialog: {
     title: 'エンジン解析パラメータ設定',
     movetime: '手の時間 (ミリ秒)',
+    maxThinkTime: '最大思考時間 (ミリ秒)',
     maxDepth: '最大深さ',
     maxNodes: '最大ノード数',
     analysisMode: '解析モード',
@@ -62,7 +63,8 @@ export default {
     confirmClearSettings: 'すべての解析パラメータ設定をクリアしますか？この操作は元に戻せません。',
     settingsCleared: '解析パラメータ設定をクリアしました',
     analysisModes: {
-      movetime: '時間による解析',
+      movetime: '手の時間による解析',
+      maxThinkTime: '最大思考時間による解析',
       depth: '深さによる解析',
       nodes: 'ノード数による解析'
     }

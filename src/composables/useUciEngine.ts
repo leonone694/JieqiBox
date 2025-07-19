@@ -330,6 +330,7 @@ export function useUciEngine(generateFen: () => string) {
     // Default settings
     const defaultSettings = {
       movetime: 1000,
+      maxThinkTime: 5000,
       maxDepth: 20,
       maxNodes: 1000000,
       analysisMode: 'movetime'
@@ -355,6 +356,13 @@ export function useUciEngine(generateFen: () => string) {
         break;
       case 'nodes':
         goCommand = `go nodes ${finalSettings.maxNodes}${searchMovesStr}`;
+        break;
+      case 'maxThinkTime':
+        if (finalSettings.maxThinkTime > 0) {
+          goCommand = `go wtime ${finalSettings.maxThinkTime} btime ${finalSettings.maxThinkTime} movestogo 1${searchMovesStr}`;
+        } else {
+          goCommand = `go infinite${searchMovesStr}`;
+        }
         break;
       case 'movetime':
       default:

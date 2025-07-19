@@ -288,6 +288,7 @@ const commentsListElement = ref<HTMLElement | null>(null);
 // Analysis settings
 const analysisSettings = ref({
   movetime: 1000,
+  maxThinkTime: 5000,
   maxDepth: 20,
   maxNodes: 1000000,
   analysisMode: 'movetime'
@@ -306,6 +307,7 @@ const loadAnalysisSettings = () => {
       const settings = JSON.parse(savedSettings);
       analysisSettings.value = {
         movetime: settings.movetime || 1000,
+        maxThinkTime: settings.maxThinkTime || 5000,
         maxDepth: settings.maxDepth || 20,
         maxNodes: settings.maxNodes || 1000000,
         analysisMode: settings.analysisMode || 'movetime'
@@ -326,6 +328,7 @@ const watchStorageChanges = () => {
         const settings = JSON.parse(e.newValue);
         analysisSettings.value = {
           movetime: settings.movetime || 1000,
+          maxThinkTime: settings.maxThinkTime || 5000,
           maxDepth: settings.maxDepth || 20,
           maxNodes: settings.maxNodes || 1000000,
           analysisMode: settings.analysisMode || 'movetime'
@@ -345,12 +348,14 @@ const watchStorageChanges = () => {
         
         // Check if there are any changes
         if (settings.movetime !== currentSettings.movetime ||
+            settings.maxThinkTime !== currentSettings.maxThinkTime ||
             settings.maxDepth !== currentSettings.maxDepth ||
             settings.maxNodes !== currentSettings.maxNodes ||
             settings.analysisMode !== currentSettings.analysisMode) {
           
           analysisSettings.value = {
             movetime: settings.movetime || 1000,
+            maxThinkTime: settings.maxThinkTime || 5000,
             maxDepth: settings.maxDepth || 20,
             maxNodes: settings.maxNodes || 1000000,
             analysisMode: settings.analysisMode || 'movetime'
@@ -512,6 +517,7 @@ function manualStartAnalysis() {
   
   const infiniteAnalysisSettings = {
     movetime: 0, // 0 means infinite thinking
+    maxThinkTime: 0, // 0 means no time limit
     maxDepth: 0, // 0 means no depth limit
     maxNodes: 0, // 0 means no node limit
     analysisMode: 'infinite'

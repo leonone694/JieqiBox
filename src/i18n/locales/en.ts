@@ -54,6 +54,7 @@ export default {
   timeDialog: {
     title: 'Engine Analysis Parameters Settings',
     movetime: 'Move Time (ms)',
+    maxThinkTime: 'Max Think Time (ms)',
     maxDepth: 'Max Depth',
     maxNodes: 'Max Nodes',
     analysisMode: 'Analysis Mode',
@@ -62,7 +63,8 @@ export default {
     confirmClearSettings: 'Are you sure you want to clear all analysis parameter configurations? This action cannot be undone.',
     settingsCleared: 'Analysis parameter configurations cleared',
     analysisModes: {
-      movetime: 'Analyze by Time',
+      movetime: 'Analyze by Move Time',
+      maxThinkTime: 'Analyze by Max Think Time',
       depth: 'Analyze by Depth',
       nodes: 'Analyze by Nodes'
     }

@@ -54,6 +54,7 @@ export default {
   timeDialog: {
     title: '引擎分析參數設定',
     movetime: '步時 (毫秒)',
+    maxThinkTime: '最大思考時間 (毫秒)',
     maxDepth: '最大層數',
     maxNodes: '最大節點數',
     analysisMode: '分析模式',
@@ -62,7 +63,8 @@ export default {
     confirmClearSettings: '確定要清除所有分析參數配置嗎？此操作不可恢復。',
     settingsCleared: '已清除分析參數配置',
     analysisModes: {
-      movetime: '按時間分析',
+      movetime: '按步時分析',
+      maxThinkTime: '按最大思考時間分析',
       depth: '按層數分析',
       nodes: '按節點數分析'
     }

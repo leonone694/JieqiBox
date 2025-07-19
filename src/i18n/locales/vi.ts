@@ -55,6 +55,7 @@ export default {
   timeDialog: {
     title: 'Cài đặt tham số phân tích động cơ',
     movetime: 'Thời gian nước đi (ms)',
+    maxThinkTime: 'Thời gian suy nghĩ tối đa (ms)',
     maxDepth: 'Độ sâu tối đa',
     maxNodes: 'Số nút tối đa',
     analysisMode: 'Chế độ phân tích',
@@ -64,7 +65,8 @@ export default {
       'Bạn có chắc chắn muốn xóa tất cả cấu hình tham số phân tích không? Hành động này không thể hoàn tác.',
     settingsCleared: 'Đã xóa cấu hình tham số phân tích',
     analysisModes: {
-      movetime: 'Phân tích theo thời gian',
+      movetime: 'Phân tích theo thời gian nước đi',
+      maxThinkTime: 'Phân tích theo thời gian suy nghĩ tối đa',
       depth: 'Phân tích theo độ sâu',
       nodes: 'Phân tích theo số nút'
     }

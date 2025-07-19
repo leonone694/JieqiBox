@@ -10,7 +10,7 @@
       </v-card-title>
 
       <v-card-text class="settings-container">
-        <div class="setting-item">
+        <div class="setting-item" v-if="analysisMode === 'movetime'">
           <label class="setting-label">{{ $t('timeDialog.movetime') }}</label>
           <v-text-field
             v-model.number="movetime"
@@ -26,7 +26,23 @@
           ></v-text-field>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item" v-if="analysisMode === 'maxThinkTime'">
+          <label class="setting-label">{{ $t('timeDialog.maxThinkTime') }}</label>
+          <v-text-field
+            v-model.number="maxThinkTime"
+            type="number"
+            variant="outlined"
+            density="compact"
+            :min="100"
+            :max="60000"
+            :step="100"
+            hide-details
+            class="setting-input"
+            @update:model-value="updateSettings"
+          ></v-text-field>
+        </div>
+
+        <div class="setting-item" v-if="analysisMode === 'depth'">
           <label class="setting-label">{{ $t('timeDialog.maxDepth') }}</label>
           <v-text-field
             v-model.number="maxDepth"
@@ -42,7 +58,7 @@
           ></v-text-field>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item" v-if="analysisMode === 'nodes'">
           <label class="setting-label">{{ $t('timeDialog.maxNodes') }}</label>
           <v-text-field
             v-model.number="maxNodes"
@@ -91,6 +107,7 @@ const { t } = useI18n();
 // Analysis mode options
 const analysisModes = computed(() => [
   { title: t('timeDialog.analysisModes.movetime'), value: 'movetime' },
+  { title: t('timeDialog.analysisModes.maxThinkTime'), value: 'maxThinkTime' },
   { title: t('timeDialog.analysisModes.depth'), value: 'depth' },
   { title: t('timeDialog.analysisModes.nodes'), value: 'nodes' }
 ]);
@@ -111,6 +128,7 @@ const emit = defineEmits<{
 // Analysis settings interface
 interface AnalysisSettings {
   movetime: number;
+  maxThinkTime: number;
   maxDepth: number;
   maxNodes: number;
   analysisMode: string;
@@ -118,6 +136,7 @@ interface AnalysisSettings {
 
 // Reactive data
 const movetime = ref(1000);
+const maxThinkTime = ref(5000);
 const maxDepth = ref(20);
 const maxNodes = ref(1000000);
 const analysisMode = ref('movetime');
@@ -137,6 +156,7 @@ const loadSettings = () => {
   if (savedSettings) {
     const settings = JSON.parse(savedSettings);
     movetime.value = settings.movetime || 1000;
+    maxThinkTime.value = settings.maxThinkTime || 5000;
     maxDepth.value = settings.maxDepth || 20;
     maxNodes.value = settings.maxNodes || 1000000;
     analysisMode.value = settings.analysisMode || 'movetime';
@@ -147,6 +167,7 @@ const loadSettings = () => {
 const saveSettings = () => {
   const settings = {
     movetime: movetime.value,
+    maxThinkTime: maxThinkTime.value,
     maxDepth: maxDepth.value,
     maxNodes: maxNodes.value,
     analysisMode: analysisMode.value
@@ -159,6 +180,7 @@ const updateSettings = () => {
   saveSettings();
   const settings: AnalysisSettings = {
     movetime: movetime.value,
+    maxThinkTime: maxThinkTime.value,
     maxDepth: maxDepth.value,
     maxNodes: maxNodes.value,
     analysisMode: analysisMode.value
@@ -170,6 +192,7 @@ const updateSettings = () => {
 // Reset to default values
 const resetToDefaults = () => {
   movetime.value = 1000;
+  maxThinkTime.value = 5000;
   maxDepth.value = 20;
   maxNodes.value = 1000000;
   analysisMode.value = 'movetime';
@@ -181,6 +204,7 @@ const clearSettings = () => {
   if (confirm(t('timeDialog.confirmClearSettings'))) {
     // Reset to default values
     movetime.value = 1000;
+    maxThinkTime.value = 5000;
     maxDepth.value = 20;
     maxNodes.value = 1000000;
     analysisMode.value = 'movetime';
@@ -211,6 +235,7 @@ onMounted(() => {
 defineExpose({
   getSettings: () => ({
     movetime: movetime.value,
+    maxThinkTime: maxThinkTime.value,
     maxDepth: maxDepth.value,
     maxNodes: maxNodes.value,
     analysisMode: analysisMode.value

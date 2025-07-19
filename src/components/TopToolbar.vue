@@ -139,6 +139,7 @@ const isOpening = ref(false);
 // Analysis settings
 const analysisSettings = ref({
   movetime: 1000,
+  maxThinkTime: 5000,
   maxDepth: 20,
   maxNodes: 1000000,
   analysisMode: 'movetime'
@@ -219,6 +220,7 @@ watch(engineState.isThinking, (thinking, wasThinking) => {
     
     const infiniteSettings = {
       movetime: 0,
+      maxThinkTime: 0,
       maxDepth: 0, 
       maxNodes: 0,
       analysisMode: 'infinite'
