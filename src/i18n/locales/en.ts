@@ -149,6 +149,7 @@ export default {
     stopAnalysis: 'Stop Analysis',
     engineNotLoaded: 'Engine Not Loaded',
     loadEngine: 'Load Engine',
+    loadEngineSaf: 'Load Engine (SAF)',
     analysisResults: 'Analysis Results',
     bestMove: 'Best Move',
     score: 'Score',

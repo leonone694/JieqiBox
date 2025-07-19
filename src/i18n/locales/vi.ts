@@ -152,6 +152,7 @@ export default {
     stopAnalysis: 'Dừng phân tích',
     engineNotLoaded: 'Chưa tải động cơ',
     loadEngine: 'Tải động cơ',
+    loadEngineSaf: 'Tải động cơ (SAF)',
     analysisResults: 'Kết quả phân tích',
     bestMove: 'Nước đi tốt nhất',
     score: 'Điểm số',

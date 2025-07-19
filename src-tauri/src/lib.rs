@@ -375,6 +375,131 @@ async fn scan_android_engines(app: AppHandle) -> Result<Vec<String>, String> {
     }
 }
 
+/// Request SAF file selection for engine loading
+#[tauri::command]
+async fn request_saf_file_selection(app: AppHandle) -> Result<(), String> {
+    if !cfg!(target_os = "android") {
+        return Err("This function is only available on Android".to_string());
+    }
+
+    // Emit event to request SAF file selection from Android native code
+    let _ = app.emit("request-saf-file-selection", "engine");
+    Ok(())
+}
+
+/// Handle SAF file selection result from Android native code
+#[tauri::command]
+async fn handle_saf_file_result(
+    uri: String,
+    filename: String,
+    result: String,
+    app: AppHandle,
+    process_state: tauri::State<'_, EngineProcess>,
+) -> Result<String, String> {
+    if !cfg!(target_os = "android") {
+        return Err("This function is only available on Android".to_string());
+    }
+
+    let _ = app.emit("engine-output", format!("[DEBUG] Received SAF file result: URI={}, filename={}, result={}", uri, filename, result));
+
+    // Check if we got a valid result
+    if result.is_empty() || result.contains("error") || result.contains("failed") {
+        let error_msg = format!("SAF file selection failed: {}", result);
+        let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
+        return Err(error_msg);
+    }
+
+    // The result contains the internal path where the file was copied
+    let internal_path = result;
+    let _ = app.emit("engine-output", format!("[DEBUG] Successfully copied SAF file to: {}", internal_path));
+
+    // Automatically load the engine with the copied file
+    match spawn_engine_internal(internal_path.clone(), app.clone(), process_state).await {
+        Ok(_) => {
+            let _ = app.emit("engine-output", format!("[DEBUG] Successfully loaded engine from SAF file: {}", internal_path));
+            Ok(internal_path)
+        }
+        Err(e) => {
+            let error_msg = format!("Failed to load engine from SAF file: {}", e);
+            let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
+            Err(error_msg)
+        }
+    }
+}
+
+/// Internal function to spawn engine (extracted from spawn_engine for reuse)
+async fn spawn_engine_internal(
+    path: String,
+    app: AppHandle,
+    process_state: tauri::State<'_, EngineProcess>,
+) -> Result<(), String> {
+    let _ = app.emit("engine-output", format!("[DEBUG] Spawning engine with provided path: {}", path));
+    
+    // On Android, the path provided should already be the absolute internal path.
+    let final_path = path;
+
+    let _ = app.emit("engine-output", format!("[DEBUG] Validating engine file: {}", final_path));
+
+    // Validate engine file
+    if let Err(e) = check_android_engine_file(&final_path) {
+        let _ = app.emit("engine-output", format!("[DEBUG] Engine file validation failed: {}", e));
+        return Err(e);
+    }
+    let _ = app.emit("engine-output", "[DEBUG] Engine file validation passed.");
+    
+    // If there's an existing process, terminate it first
+    if let Some(child) = process_state.lock().unwrap().take() {
+        let _ = app.emit("engine-output", "[DEBUG] Terminating existing engine process.");
+        let _ = child.kill();
+    }
+
+    // The command is simply the path to the executable.
+    let command = final_path;
+    let _ = app.emit("engine-output", format!("[DEBUG] Attempting to spawn executable: {}", command));
+
+    // Start new process
+    let (mut rx, child) = match app.shell().command(command).spawn() {
+        Ok(result) => {
+            let _ = app.emit("engine-output", "[DEBUG] Engine process spawned successfully.");
+            result
+        }
+        Err(e) => {
+            let error_msg = format!("Failed to spawn engine: {e}");
+            let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
+            return Err(error_msg);
+        }
+    };
+
+    *process_state.lock().unwrap() = Some(child);
+
+    let _ = app.emit("engine-output", "[DEBUG] Engine process started, forwarding output.");
+    
+    let app_clone = app.clone();
+    async_runtime::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(buf) | CommandEvent::Stderr(buf) => {
+                    // Decode from GBK on Windows, UTF-8 on other platforms
+                    let text = if cfg!(target_os = "windows") {
+                        let (cow, _encoding_used, _had_errors) = GBK.decode(&buf);
+                        cow.into_owned()
+                    } else {
+                        // Use UTF-8 for Android and other platforms
+                        String::from_utf8_lossy(&buf).into_owned()
+                    };
+                    let _ = app_clone.emit("engine-output", text);
+                }
+                _ => {}
+            }
+        }
+    });
+
+    let _ = app.emit("engine-output", "[DEBUG] Engine spawn setup complete.");
+    Ok(())
+}
+
+
+
 #[tauri::command]
 async fn open_external_url(url: String) -> Result<(), String> {
     // Use different commands to open browser based on operating system
@@ -417,8 +542,11 @@ pub fn run() {
             check_android_file_permissions,
             scan_android_engines,
             save_game_notation,
-            get_bundle_identifier
+            get_bundle_identifier,
+            request_saf_file_selection,
+            handle_saf_file_result
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

@@ -149,6 +149,7 @@ export default {
     stopAnalysis: '停止分析',
     engineNotLoaded: '引擎未載入',
     loadEngine: '載入引擎',
+    loadEngineSaf: '載入引擎（SAF）',
     analysisResults: '分析結果',
     bestMove: '最佳著法',
     score: '評分',

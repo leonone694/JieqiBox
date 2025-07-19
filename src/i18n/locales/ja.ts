@@ -149,6 +149,7 @@ export default {
     stopAnalysis: '解析停止',
     engineNotLoaded: 'エンジンが読み込まれていません',
     loadEngine: 'エンジンを読み込み',
+    loadEngineSaf: 'エンジン読み込み（SAF）',
     analysisResults: '解析結果',
     bestMove: '最善手',
     score: '評価値',

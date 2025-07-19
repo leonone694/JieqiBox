@@ -3,6 +3,18 @@
     <v-btn @click="loadEngine" :color="isEngineLoaded ? 'success' : 'primary'" class="full-btn">
       {{ isEngineLoaded ? $t('analysis.engineLoaded') : $t('analysis.loadEngine') }}
     </v-btn>
+    
+    <!-- SAF file selection button for Android -->
+    <v-btn 
+      v-if="isAndroidPlatform" 
+      @click="loadEngineWithSaf" 
+      :color="isEngineLoaded ? 'success' : 'secondary'" 
+      class="full-btn"
+      :disabled="isEngineLoading"
+    >
+      {{ isEngineLoaded ? $t('analysis.engineLoaded') : $t('analysis.loadEngineSaf') }}
+    </v-btn>
+    
     <v-btn @click="manualStartAnalysis" :disabled="!isEngineLoaded || isThinking" color="primary" class="full-btn">
       {{ isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis') }}
     </v-btn>
@@ -232,6 +244,7 @@ const engineState = inject('engine-state') as any;
 const {
   engineOutput,
   isEngineLoaded,
+  isEngineLoading,
   analysis,
   bestMove,
   isThinking,
@@ -239,6 +252,10 @@ const {
   startAnalysis,
   stopAnalysis,
   currentSearchMoves,
+  pvMoves,
+  currentEnginePath,
+  send,
+  applySavedSettings,
 } = engineState;
 
 /* ---------- Auto Play ---------- */
@@ -248,6 +265,17 @@ const isManualAnalysis = ref(false); // Track if current analysis is manual or A
 const moveListElement = ref<HTMLElement | null>(null);
 const engineLogElement = ref<HTMLElement | null>(null);
 const aboutDialogRef = ref<InstanceType<typeof AboutDialog> | null>(null);
+
+/* ---------- Android Platform Detection ---------- */
+const isAndroidPlatform = computed(() => {
+  if (typeof window !== 'undefined') {
+    const tauriPlatform = (window as any).__TAURI__?.platform;
+    if (tauriPlatform === 'android') return true;
+    if (navigator.userAgent.includes('Android')) return true;
+    if (/Android/i.test(navigator.userAgent)) return true;
+  }
+  return false;
+});
 
 /* ---------- Comment Management ---------- */
 const editingCommentIndex = ref<number | null>(null);
@@ -509,6 +537,73 @@ function handleStopAnalysis() {
 function handleUndoMove() {
   undoLastMove();
 }
+
+// Load engine using SAF file selection (Android only)
+const loadEngineWithSaf = async () => {
+  if (!isAndroidPlatform.value) return;
+  
+  try {
+    // Use JavaScript interface to request SAF file selection
+    if (typeof (window as any).SafFileInterface !== 'undefined') {
+      (window as any).SafFileInterface.startFileSelection();
+    } else {
+      // Fallback to Tauri command if JavaScript interface is not available
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('request_saf_file_selection');
+    }
+    
+    // Listen for SAF file selection result
+    const handleSafFileResult = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('[DEBUG] Received SAF file result:', customEvent.detail);
+      
+      const { result } = customEvent.detail;
+      if (result && typeof result === 'string' && result.length > 0) {
+        // Successfully got a file, now load it as an engine
+        console.log('[DEBUG] Loading engine from SAF file:', result);
+        
+        // Load the engine using the internal path
+        loadEngineFromPath(result);
+      } else {
+        console.log('[DEBUG] SAF file selection failed or cancelled');
+        alert('文件选择失败或已取消');
+      }
+      
+      // Remove event listener
+      window.removeEventListener('saf-file-result', handleSafFileResult);
+    };
+    
+    window.addEventListener('saf-file-result', handleSafFileResult);
+    
+  } catch (error) {
+    console.error('Failed to request SAF file selection:', error);
+    alert('打开文件选择器失败');
+  }
+};
+
+// Load engine from a specific path
+const loadEngineFromPath = async (path: string) => {
+  try {
+    engineOutput.value = []; 
+    bestMove.value = ''; 
+    analysis.value = ''; 
+    pvMoves.value = [];
+    currentEnginePath.value = path; // Store engine path
+    
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('spawn_engine', { path });
+    isEngineLoaded.value = true;
+    send('uci');
+    
+    // Automatically apply saved configuration after engine loads
+    setTimeout(() => {
+      applySavedSettings();
+    }, 500);
+  } catch(e) { 
+    console.error('Failed to load engine from path:', e);
+    alert('加载引擎失败'); 
+  }
+};
 
 // Open the about dialog
 function openAboutDialog() {
