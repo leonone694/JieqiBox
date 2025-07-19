@@ -18,6 +18,7 @@
           @click="changeLanguage(code)"
           :active="currentLanguage === code"
           :class="`language-option-${code}`"
+          :lang="code"
         >
           <v-list-item-title>{{ name }}</v-list-item-title>
         </v-list-item>
