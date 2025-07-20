@@ -406,7 +406,7 @@
         }
 
         // Use a combination of offsetLeft and offsetX/Y for precise positioning
-        const left = chartCanvas.value.offsetLeft + e.offsetX + 15
+        const left = chartCanvas.value.offsetLeft + e.offsetX - 15
         const top = chartCanvas.value.offsetTop + e.offsetY + 15
         tooltipStyle.value = { left: `${left}px`, top: `${top}px` }
       } else {
