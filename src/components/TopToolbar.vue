@@ -366,11 +366,19 @@
   }
 
   // Handle analysis settings changes
-  const handleSettingsChanged = (settings: any) => {
+  const handleSettingsChanged = async (settings: any) => {
     // console.log('TopToolbar: 收到设置变化:', settings);
     analysisSettings.value = settings
-    // Save to local storage immediately to ensure AnalysisSidebar detects the change
-    localStorage.setItem('analysis-settings', JSON.stringify(settings))
+    // Save to config file immediately to ensure AnalysisSidebar detects the change
+    try {
+      const { useConfigManager } = await import(
+        '../composables/useConfigManager'
+      )
+      const configManager = useConfigManager()
+      await configManager.updateAnalysisSettings(settings)
+    } catch (error) {
+      console.error('Failed to save analysis settings:', error)
+    }
   }
 
   // Handle position changes - stop engine analysis when position is edited

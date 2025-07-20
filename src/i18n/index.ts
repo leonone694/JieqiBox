@@ -4,16 +4,26 @@ import zh_tw from './locales/zh_tw'
 import en from './locales/en'
 import vi from './locales/vi'
 import ja from './locales/ja'
+import { useConfigManager } from '../composables/useConfigManager'
 
 // Get user's preferred language
 const getDefaultLocale = () => {
-  // Get saved language setting from localStorage
-  const savedLocale = localStorage.getItem('locale')
-  if (
-    savedLocale &&
-    ['zh_cn', 'zh_tw', 'en', 'vi', 'ja'].includes(savedLocale)
-  ) {
-    return savedLocale
+  try {
+    // Try to get saved language setting from config manager
+    const configManager = useConfigManager()
+    const savedLocale = configManager.getLocale()
+    if (
+      savedLocale &&
+      ['zh_cn', 'zh_tw', 'en', 'vi', 'ja'].includes(savedLocale)
+    ) {
+      return savedLocale
+    }
+  } catch (error) {
+    // Fallback if config manager is not available yet
+    console.warn(
+      'Config manager not available during i18n initialization:',
+      error
+    )
   }
 
   // Detect browser language

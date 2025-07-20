@@ -326,8 +326,8 @@ export function useUciEngine(generateFen: () => string) {
       send('uci')
 
       // Automatically apply saved configuration after engine loads
-      setTimeout(() => {
-        applySavedSettings()
+      setTimeout(async () => {
+        await applySavedSettings()
       }, 500)
     } catch (e) {
       console.error('Failed to load engine:', e)
@@ -461,30 +461,30 @@ export function useUciEngine(generateFen: () => string) {
   }
 
   /* ---------- Apply Saved Settings ---------- */
-  const applySavedSettings = () => {
+  const applySavedSettings = async () => {
     if (!isEngineLoaded.value || !currentEnginePath.value) return
 
-    // Apply analysis settings
-    const analysisSettings = localStorage.getItem('analysis-settings')
-    if (analysisSettings) {
-    }
+    try {
+      // Import config manager dynamically to avoid circular dependency
+      const { useConfigManager } = await import('./useConfigManager')
+      const configManager = useConfigManager()
 
-    // Apply UCI options settings
-    const enginePathHash = btoa(currentEnginePath.value).replace(
-      /[^a-zA-Z0-9]/g,
-      ''
-    )
-    const uciOptionsKey = `uci-options-${enginePathHash}`
-    const savedUciOptions = localStorage.getItem(uciOptionsKey)
+      // Ensure config is loaded
+      await configManager.loadConfig()
 
-    if (savedUciOptions) {
-      try {
-        const options = JSON.parse(savedUciOptions)
-        Object.entries(options).forEach(([name, value]) => {
-          const command = `setoption name ${name} value ${value}`
-          send(command)
-        })
-      } catch (e) {}
+      // Apply UCI options settings
+      const enginePathHash = btoa(currentEnginePath.value).replace(
+        /[^a-zA-Z0-9]/g,
+        ''
+      )
+      const savedUciOptions = configManager.getUciOptions(enginePathHash)
+
+      Object.entries(savedUciOptions).forEach(([name, value]) => {
+        const command = `setoption name ${name} value ${value}`
+        send(command)
+      })
+    } catch (error) {
+      console.error('Failed to apply saved settings:', error)
     }
   }
 

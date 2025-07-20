@@ -114,3 +114,6 @@ src-tauri/Cargo.lock
 
 # Generated files
 *.generated.*
+
+# GUI config file
+src-tauri/config.ini

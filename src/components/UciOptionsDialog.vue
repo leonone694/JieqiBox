@@ -200,6 +200,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, watch, inject } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { useConfigManager } from '../composables/useConfigManager'
 
   // UCI option interface definition
   interface UciOption {
@@ -239,6 +240,9 @@
     currentEnginePath,
   } = engineState
 
+  // Configuration manager
+  const configManager = useConfigManager()
+
   // Reactive data
   const isLoading = ref(false)
   const uciOptions = ref<UciOption[]>([])
@@ -255,14 +259,10 @@
     set: (value: boolean) => emit('update:modelValue', value),
   })
 
-  // Local storage key - using a hash of the engine path
-  const storageKey = computed(() => {
-    if (!currentEnginePath.value) return 'uci-options-default'
-    const enginePathHash = btoa(currentEnginePath.value).replace(
-      /[^a-zA-Z0-9]/g,
-      ''
-    )
-    return `uci-options-${enginePathHash}`
+  // Engine path hash for config storage
+  const enginePathHash = computed(() => {
+    if (!currentEnginePath.value) return 'default'
+    return btoa(currentEnginePath.value).replace(/[^a-zA-Z0-9]/g, '')
   })
 
   // Send UCI command to the engine
@@ -359,25 +359,22 @@
     return option
   }
 
-  // Load saved option values from local storage
+  // Load saved option values from config file
   const loadSavedOptions = () => {
-    const savedOptions = localStorage.getItem(storageKey.value)
-    if (savedOptions) {
-      const parsedOptions = JSON.parse(savedOptions)
+    const savedOptions = configManager.getUciOptions(enginePathHash.value)
 
-      // Apply the saved values to the current options
-      uciOptions.value.forEach(option => {
-        if (parsedOptions[option.name] !== undefined) {
-          option.currentValue = parsedOptions[option.name]
-          // Immediately send the set command to the engine
-          sendOptionToEngine(option.name, option.currentValue)
-        }
-      })
-    }
+    // Apply the saved values to the current options
+    uciOptions.value.forEach(option => {
+      if (savedOptions[option.name] !== undefined) {
+        option.currentValue = savedOptions[option.name]
+        // Immediately send the set command to the engine
+        sendOptionToEngine(option.name, option.currentValue)
+      }
+    })
   }
 
-  // Save option values to local storage
-  const saveOptionsToStorage = () => {
+  // Save option values to config file
+  const saveOptionsToStorage = async () => {
     const optionsToSave: Record<string, string | number | boolean> = {}
 
     uciOptions.value.forEach(option => {
@@ -386,7 +383,7 @@
       }
     })
 
-    localStorage.setItem(storageKey.value, JSON.stringify(optionsToSave))
+    await configManager.updateUciOptions(enginePathHash.value, optionsToSave)
   }
 
   // Send option set command to the engine
@@ -399,14 +396,17 @@
   }
 
   // Function to update an option's value
-  const updateOption = (name: string, value: string | number | boolean) => {
+  const updateOption = async (
+    name: string,
+    value: string | number | boolean
+  ) => {
     const option = uciOptions.value.find(opt => opt.name === name)
     if (option) {
       option.currentValue = value
       // Immediately send the set command to the engine
       sendOptionToEngine(name, value)
-      // Save to local storage
-      saveOptionsToStorage()
+      // Save to config file
+      await saveOptionsToStorage()
     }
   }
 
@@ -417,7 +417,7 @@
   }
 
   // Function to reset to default values
-  const resetToDefaults = () => {
+  const resetToDefaults = async () => {
     uciOptions.value.forEach(option => {
       option.currentValue = option.defaultValue
       // Send reset command to the engine
@@ -426,8 +426,8 @@
       }
     })
 
-    // Clear local storage
-    localStorage.removeItem(storageKey.value)
+    // Clear config storage
+    await configManager.clearUciOptions(enginePathHash.value)
   }
 
   // Function to refresh UCI options
@@ -507,7 +507,10 @@
   })
 
   // Initialization after component is mounted
-  onMounted(() => {
+  onMounted(async () => {
+    // Load configuration first
+    await configManager.loadConfig()
+
     // If the engine is already loaded, get options immediately
     if (isEngineLoaded.value) {
       setTimeout(() => {
@@ -517,10 +520,10 @@
   })
 
   // Function to clear settings
-  const clearSettings = () => {
+  const clearSettings = async () => {
     if (confirm(t('uciOptions.confirmClearSettings'))) {
-      // Clear local storage
-      localStorage.removeItem(storageKey.value)
+      // Clear config storage
+      await configManager.clearUciOptions(enginePathHash.value)
 
       // Reset all options to their default values
       uciOptions.value.forEach(option => {

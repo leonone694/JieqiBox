@@ -30,8 +30,10 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { useConfigManager } from '../composables/useConfigManager'
 
   const { t, locale } = useI18n()
+  const configManager = useConfigManager()
 
   // Current language
   const currentLanguage = computed(() => locale.value)
@@ -46,10 +48,14 @@
   }))
 
   // Change language
-  const changeLanguage = (langCode: string) => {
+  const changeLanguage = async (langCode: string) => {
     locale.value = langCode
-    // Save to localStorage
-    localStorage.setItem('locale', langCode)
+    // Save to config file
+    try {
+      await configManager.updateLocale(langCode)
+    } catch (error) {
+      console.error('Failed to save language setting:', error)
+    }
   }
 </script>
 

@@ -111,8 +111,10 @@
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { useConfigManager } from '../composables/useConfigManager'
 
   const { t } = useI18n()
+  const configManager = useConfigManager()
 
   // Analysis mode options
   const analysisModes = computed(() => [
@@ -160,24 +162,23 @@
     set: (value: boolean) => emit('update:modelValue', value),
   })
 
-  // Local storage key name
-  const storageKey = 'analysis-settings'
-
-  // Load settings from local storage
-  const loadSettings = () => {
-    const savedSettings = localStorage.getItem(storageKey)
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings)
+  // Load settings from config file
+  const loadSettings = async () => {
+    try {
+      await configManager.loadConfig()
+      const settings = configManager.getAnalysisSettings()
       movetime.value = settings.movetime || 1000
       maxThinkTime.value = settings.maxThinkTime || 5000
       maxDepth.value = settings.maxDepth || 20
       maxNodes.value = settings.maxNodes || 1000000
       analysisMode.value = settings.analysisMode || 'movetime'
+    } catch (error) {
+      console.error('Failed to load analysis settings:', error)
     }
   }
 
-  // Save settings to local storage
-  const saveSettings = () => {
+  // Save settings to config file
+  const saveSettings = async () => {
     const settings = {
       movetime: movetime.value,
       maxThinkTime: maxThinkTime.value,
@@ -185,12 +186,16 @@
       maxNodes: maxNodes.value,
       analysisMode: analysisMode.value,
     }
-    localStorage.setItem(storageKey, JSON.stringify(settings))
+    try {
+      await configManager.updateAnalysisSettings(settings)
+    } catch (error) {
+      console.error('Failed to save analysis settings:', error)
+    }
   }
 
   // Update settings and notify parent component
-  const updateSettings = () => {
-    saveSettings()
+  const updateSettings = async () => {
+    await saveSettings()
     const settings: AnalysisSettings = {
       movetime: movetime.value,
       maxThinkTime: maxThinkTime.value,
@@ -203,17 +208,17 @@
   }
 
   // Reset to default values
-  const resetToDefaults = () => {
+  const resetToDefaults = async () => {
     movetime.value = 1000
     maxThinkTime.value = 5000
     maxDepth.value = 20
     maxNodes.value = 1000000
     analysisMode.value = 'movetime'
-    updateSettings()
+    await updateSettings()
   }
 
   // Clear settings
-  const clearSettings = () => {
+  const clearSettings = async () => {
     if (confirm(t('timeDialog.confirmClearSettings'))) {
       // Reset to default values
       movetime.value = 1000
@@ -222,26 +227,23 @@
       maxNodes.value = 1000000
       analysisMode.value = 'movetime'
 
-      // Clear local storage
-      localStorage.removeItem(storageKey)
-
-      // Notify parent component that settings have changed
-      updateSettings()
+      // Clear config storage - no need to remove specific key, just save defaults
+      await updateSettings()
 
       // console.log(t('timeDialog.settingsCleared'));
     }
   }
 
   // Close the dialog
-  const closeDialog = () => {
+  const closeDialog = async () => {
     // Ensure current settings are saved when closing the dialog
-    saveSettings()
+    await saveSettings()
     isVisible.value = false
   }
 
   // Load settings after the component is mounted
-  onMounted(() => {
-    loadSettings()
+  onMounted(async () => {
+    await loadSettings()
   })
 
   // Expose methods to the parent component

@@ -1,18 +1,15 @@
 import { ref, watch } from 'vue'
+import { useConfigManager } from './useConfigManager'
 
-const INTERFACE_SETTINGS_KEY = 'interface-settings'
+// Configuration manager
+const configManager = useConfigManager()
 
 /**
- * Gets the initial settings from localStorage.
- * @returns {object} - Object containing initial values for showCoordinates and parseUciInfo
+ * Get initial settings from the config manager
+ * @returns {object} - Object containing initial values for interface settings
  */
-const getInitialSettings = (): {
-  showCoordinates: boolean
-  parseUciInfo: boolean
-  showAnimations: boolean
-  showPositionChart: boolean
-} => {
-  // Only access localStorage in client environment
+const getInitialSettings = () => {
+  // Only access in client environment
   if (typeof window === 'undefined') {
     return {
       showCoordinates: false,
@@ -22,33 +19,23 @@ const getInitialSettings = (): {
     }
   }
 
-  const savedSettings = localStorage.getItem(INTERFACE_SETTINGS_KEY)
-  if (savedSettings) {
-    try {
-      const settings = JSON.parse(savedSettings)
-      return {
-        showCoordinates: !!settings.showCoordinates,
-        parseUciInfo: settings.parseUciInfo !== false, // Default to true
-        showAnimations: settings.showAnimations !== false, // Default to true
-        showPositionChart: !!settings.showPositionChart, // Default to false
-      }
-    } catch (e) {
-      console.error('Failed to parse interface settings:', e)
-      // Return default values on parsing failure
-      return {
-        showCoordinates: false,
-        parseUciInfo: true,
-        showAnimations: true,
-        showPositionChart: false,
-      }
+  try {
+    const settings = configManager.getInterfaceSettings()
+    return {
+      showCoordinates: !!settings.showCoordinates,
+      parseUciInfo: settings.parseUciInfo !== false, // Default to true
+      showAnimations: settings.showAnimations !== false, // Default to true
+      showPositionChart: !!settings.showPositionChart, // Default to false
     }
-  }
-  // Return default values if no saved settings found
-  return {
-    showCoordinates: false,
-    parseUciInfo: true,
-    showAnimations: true,
-    showPositionChart: false,
+  } catch (e) {
+    console.error('Failed to get interface settings:', e)
+    // Return default values on error
+    return {
+      showCoordinates: false,
+      parseUciInfo: true,
+      showAnimations: true,
+      showPositionChart: false,
+    }
   }
 }
 
@@ -59,39 +46,73 @@ const {
   showAnimations: initialShowAnimations,
   showPositionChart: initialShowPositionChart,
 } = getInitialSettings()
+
 const showCoordinates = ref<boolean>(initialShowCoordinates)
 const parseUciInfo = ref<boolean>(initialParseUciInfo)
 const showAnimations = ref<boolean>(initialShowAnimations)
 const showPositionChart = ref<boolean>(initialShowPositionChart)
 
-// Watch for changes to showCoordinates and parseUciInfo and persist to localStorage
+// Flag to track if config is loaded
+const isConfigLoaded = ref(false)
+
+// Watch for changes and persist to config file
 watch(
   [showCoordinates, parseUciInfo, showAnimations, showPositionChart],
-  ([
+  async ([
     newShowCoordinates,
     newParseUciInfo,
     newShowAnimations,
     newShowPositionChart,
   ]) => {
+    // Only save if config is already loaded to avoid overwriting during initialization
+    if (!isConfigLoaded.value) return
+
     const settings = {
       showCoordinates: newShowCoordinates,
       parseUciInfo: newParseUciInfo,
       showAnimations: newShowAnimations,
       showPositionChart: newShowPositionChart,
     }
-    localStorage.setItem(INTERFACE_SETTINGS_KEY, JSON.stringify(settings))
+
+    try {
+      await configManager.updateInterfaceSettings(settings)
+    } catch (error) {
+      console.error('Failed to save interface settings:', error)
+    }
   }
 )
 
-/**
- * Provides reactive state for interface settings.
- * @returns {{showCoordinates: import('vue').Ref<boolean>, parseUciInfo: import('vue').Ref<boolean>}} - Object containing reactive state for interface settings
- */
+// Interface settings composable
 export function useInterfaceSettings() {
+  // Load configuration and update reactive refs
+  const loadSettings = async () => {
+    try {
+      await configManager.loadConfig()
+      const settings = configManager.getInterfaceSettings()
+
+      // Update reactive refs
+      showCoordinates.value = !!settings.showCoordinates
+      parseUciInfo.value = settings.parseUciInfo !== false
+      showAnimations.value = settings.showAnimations !== false
+      showPositionChart.value = !!settings.showPositionChart
+
+      isConfigLoaded.value = true
+    } catch (error) {
+      console.error('Failed to load interface settings:', error)
+      isConfigLoaded.value = true // Still mark as loaded to enable saving
+    }
+  }
+
+  // Initialize settings on first import
+  if (typeof window !== 'undefined') {
+    loadSettings()
+  }
+
   return {
     showCoordinates,
     parseUciInfo,
     showAnimations,
     showPositionChart,
+    loadSettings,
   }
 }

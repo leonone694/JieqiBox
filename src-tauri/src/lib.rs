@@ -130,6 +130,70 @@ async fn save_game_notation(content: String, filename: String, app: AppHandle) -
     Ok(file_path_str)
 }
 
+/// Get the configuration file path based on platform
+fn get_config_file_path(app: &AppHandle) -> Result<String, String> {
+    if cfg!(target_os = "android") {
+        // On Android, save to internal app data directory
+        let bundle_identifier = &app.config().identifier;
+        Ok(format!("/data/data/{}/files/config.ini", bundle_identifier))
+    } else {
+        // On desktop, save to current directory
+        Ok("config.ini".to_string())
+    }
+}
+
+/// Load configuration from file
+#[tauri::command]
+async fn load_config(app: AppHandle) -> Result<String, String> {
+    let config_path = get_config_file_path(&app)?;
+    let path = Path::new(&config_path);
+    
+    if !path.exists() {
+        // Return empty string if config file doesn't exist
+        return Ok(String::new());
+    }
+    
+    match fs::read_to_string(path) {
+        Ok(content) => Ok(content),
+        Err(e) => Err(format!("Failed to read config file: {}", e)),
+    }
+}
+
+/// Save configuration to file
+#[tauri::command]
+async fn save_config(content: String, app: AppHandle) -> Result<(), String> {
+    let config_path = get_config_file_path(&app)?;
+    let path = Path::new(&config_path);
+    
+    // Create parent directory if it doesn't exist
+    if let Some(parent) = path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            return Err(format!("Failed to create config directory: {}", e));
+        }
+    }
+    
+    match fs::write(path, content) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to write config file: {}", e)),
+    }
+}
+
+/// Clear configuration file
+#[tauri::command]
+async fn clear_config(app: AppHandle) -> Result<(), String> {
+    let config_path = get_config_file_path(&app)?;
+    let path = Path::new(&config_path);
+    
+    if path.exists() {
+        match fs::remove_file(path) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to delete config file: {}", e)),
+        }
+    } else {
+        Ok(()) // File doesn't exist, nothing to clear
+    }
+}
+
 /// Get the user-accessible engine directory path
 #[cfg(target_os = "android")]
 fn get_user_engine_directory() -> String {
@@ -545,6 +609,9 @@ pub fn run() {
             send_to_engine, 
             open_external_url,
             save_game_notation,
+            load_config,
+            save_config,
+            clear_config,
             #[cfg(target_os = "android")]
             get_bundle_identifier,
             #[cfg(target_os = "android")]

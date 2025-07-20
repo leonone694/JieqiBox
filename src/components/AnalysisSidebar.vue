@@ -1,69 +1,112 @@
 <template>
   <div class="sidebar">
+    <!-- Engine loading button group -->
+    <div v-if="isAndroidPlatform" class="button-group">
+      <v-btn
+        @click="loadEngine"
+        :color="isEngineLoaded ? 'success' : 'primary'"
+        class="grouped-btn"
+        size="small"
+      >
+        {{
+          isEngineLoaded
+            ? $t('analysis.engineLoaded')
+            : $t('analysis.loadEngine')
+        }}
+      </v-btn>
+      <v-btn
+        @click="loadEngineWithSaf"
+        :color="isEngineLoaded ? 'success' : 'secondary'"
+        class="grouped-btn"
+        size="small"
+        :disabled="isEngineLoading"
+      >
+        {{
+          isEngineLoaded
+            ? $t('analysis.engineLoaded')
+            : $t('analysis.loadEngineSaf')
+        }}
+      </v-btn>
+    </div>
+
+    <!-- Single load engine button (non-Android systems) -->
     <v-btn
+      v-if="!isAndroidPlatform"
       @click="loadEngine"
       :color="isEngineLoaded ? 'success' : 'primary'"
       class="full-btn"
+      size="small"
     >
       {{
         isEngineLoaded ? $t('analysis.engineLoaded') : $t('analysis.loadEngine')
       }}
     </v-btn>
 
-    <!-- SAF file selection button for Android -->
-    <v-btn
-      v-if="isAndroidPlatform"
-      @click="loadEngineWithSaf"
-      :color="isEngineLoaded ? 'success' : 'secondary'"
-      class="full-btn"
-      :disabled="isEngineLoading"
-    >
-      {{
-        isEngineLoaded
-          ? $t('analysis.engineLoaded')
-          : $t('analysis.loadEngineSaf')
-      }}
-    </v-btn>
+    <!-- Analysis control and execution button group -->
+    <div class="button-group">
+      <v-btn
+        @click="manualStartAnalysis"
+        :disabled="!isEngineLoaded || isThinking"
+        color="primary"
+        class="grouped-btn"
+        size="small"
+      >
+        {{
+          isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis')
+        }}
+      </v-btn>
+      <v-btn
+        @click="handleStopAnalysis"
+        :disabled="!isEngineLoaded || !isThinking"
+        color="warning"
+        class="grouped-btn"
+        size="small"
+      >
+        {{ $t('analysis.stopAnalysis') }}
+      </v-btn>
+      <v-btn
+        @click="playBestMove"
+        :disabled="!bestMove"
+        color="secondary"
+        class="grouped-btn"
+        size="small"
+      >
+        {{ $t('analysis.playBestMove') }}
+      </v-btn>
+    </div>
 
-    <v-btn
-      @click="manualStartAnalysis"
-      :disabled="!isEngineLoaded || isThinking"
-      color="primary"
-      class="full-btn"
-    >
-      {{ isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis') }}
-    </v-btn>
-    <v-btn
-      @click="handleStopAnalysis"
-      :disabled="!isEngineLoaded || !isThinking"
-      color="warning"
-      class="full-btn"
-    >
-      {{ $t('analysis.stopAnalysis') }}
-    </v-btn>
-    <v-btn
-      @click="playBestMove"
-      :disabled="!bestMove"
-      color="secondary"
-      class="full-btn"
-    >
-      {{ $t('analysis.playBestMove') }}
-    </v-btn>
+    <!-- Undo move and flip board button group -->
+    <div class="button-group">
+      <v-btn
+        @click="handleUndoMove"
+        :disabled="currentMoveIndex <= 0"
+        color="error"
+        class="grouped-btn"
+        size="small"
+      >
+        {{ $t('analysis.undoMove') }}
+      </v-btn>
+      <v-btn
+        @click="toggleBoardFlip"
+        color="primary"
+        class="grouped-btn"
+        size="small"
+      >
+        {{
+          isBoardFlipped
+            ? $t('analysis.flipBoardBack') || '恢复方向'
+            : $t('analysis.flipBoard') || '翻转棋盘'
+        }}
+      </v-btn>
+    </div>
 
-    <v-btn
-      @click="handleUndoMove"
-      :disabled="currentMoveIndex <= 0"
-      color="error"
-      class="full-btn"
-    >
-      {{ $t('analysis.undoMove') }}
-    </v-btn>
-
+    <!-- AI auto-play settings -->
     <div class="autoplay-settings">
       <v-btn
         @click="toggleRedAi"
         :color="isRedAi ? 'error' : 'primary'"
         class="half-btn"
+        size="small"
         :disabled="isManualAnalysis"
       >
         {{ isRedAi ? $t('analysis.redAiOn') : $t('analysis.redAiOff') }}
@@ -72,19 +115,12 @@
         @click="toggleBlackAi"
         :color="isBlackAi ? 'error' : 'primary'"
         class="half-btn"
+        size="small"
         :disabled="isManualAnalysis"
       >
         {{ isBlackAi ? $t('analysis.blackAiOn') : $t('analysis.blackAiOff') }}
       </v-btn>
     </div>
-
-    <v-btn @click="toggleBoardFlip" color="primary" class="full-btn">
-      {{
-        isBoardFlipped
-          ? $t('analysis.flipBoardBack') || '恢复方向'
-          : $t('analysis.flipBoard') || '翻转棋盘'
-      }}
-    </v-btn>
 
     <v-switch
       v-model="flipMode"
@@ -297,6 +333,7 @@
         color="info"
         variant="outlined"
         class="full-btn"
+        size="small"
         prepend-icon="mdi-information"
       >
         {{ $t('analysis.about') }}
@@ -405,32 +442,47 @@
       : []
   })
 
-  // Load analysis settings from local storage
-  const loadAnalysisSettings = () => {
-    const savedSettings = localStorage.getItem('analysis-settings')
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings)
-        analysisSettings.value = {
-          movetime: settings.movetime || 1000,
-          maxThinkTime: settings.maxThinkTime || 5000,
-          maxDepth: settings.maxDepth || 20,
-          maxNodes: settings.maxNodes || 1000000,
-          analysisMode: settings.analysisMode || 'movetime',
-        }
-      } catch (e) {}
+  // Load analysis settings from config file
+  const loadAnalysisSettings = async () => {
+    try {
+      const configManager = (
+        await import('../composables/useConfigManager')
+      ).useConfigManager()
+      await configManager.loadConfig()
+      const settings = configManager.getAnalysisSettings()
+      analysisSettings.value = {
+        movetime: settings.movetime || 1000,
+        maxThinkTime: settings.maxThinkTime || 5000,
+        maxDepth: settings.maxDepth || 20,
+        maxNodes: settings.maxNodes || 1000000,
+        analysisMode: settings.analysisMode || 'movetime',
+      }
+    } catch (error) {
+      console.error('Failed to load analysis settings:', error)
     }
   }
 
-  // Listen for local storage changes and update analysis settings in real-time
-  let storageCheckInterval: number | null = null
+  // Listen for config changes and update analysis settings in real-time
+  let configCheckInterval: number | null = null
 
-  const watchStorageChanges = () => {
-    // Listen for storage events (for cross-tab sync)
-    window.addEventListener('storage', e => {
-      if (e.key === 'analysis-settings' && e.newValue) {
-        try {
-          const settings = JSON.parse(e.newValue)
+  const watchConfigChanges = () => {
+    // Listen for settings changes within the same page (via interval check)
+    configCheckInterval = setInterval(async () => {
+      try {
+        const configManager = (
+          await import('../composables/useConfigManager')
+        ).useConfigManager()
+        const settings = configManager.getAnalysisSettings()
+        const currentSettings = analysisSettings.value
+
+        // Check if there are any changes
+        if (
+          settings.movetime !== currentSettings.movetime ||
+          settings.maxThinkTime !== currentSettings.maxThinkTime ||
+          settings.maxDepth !== currentSettings.maxDepth ||
+          settings.maxNodes !== currentSettings.maxNodes ||
+          settings.analysisMode !== currentSettings.analysisMode
+        ) {
           analysisSettings.value = {
             movetime: settings.movetime || 1000,
             maxThinkTime: settings.maxThinkTime || 5000,
@@ -438,44 +490,18 @@
             maxNodes: settings.maxNodes || 1000000,
             analysisMode: settings.analysisMode || 'movetime',
           }
-        } catch (e) {}
+        }
+      } catch (error) {
+        // Ignore errors during config checking
       }
-    })
-
-    // Listen for settings changes within the same page (via interval check)
-    storageCheckInterval = setInterval(() => {
-      const savedSettings = localStorage.getItem('analysis-settings')
-      if (savedSettings) {
-        try {
-          const settings = JSON.parse(savedSettings)
-          const currentSettings = analysisSettings.value
-
-          // Check if there are any changes
-          if (
-            settings.movetime !== currentSettings.movetime ||
-            settings.maxThinkTime !== currentSettings.maxThinkTime ||
-            settings.maxDepth !== currentSettings.maxDepth ||
-            settings.maxNodes !== currentSettings.maxNodes ||
-            settings.analysisMode !== currentSettings.analysisMode
-          ) {
-            analysisSettings.value = {
-              movetime: settings.movetime || 1000,
-              maxThinkTime: settings.maxThinkTime || 5000,
-              maxDepth: settings.maxDepth || 20,
-              maxNodes: settings.maxNodes || 1000000,
-              analysisMode: settings.analysisMode || 'movetime',
-            }
-          }
-        } catch (e) {}
-      }
-    }, 50) // Check every 50ms for better responsiveness
+    }, 100) // Check every 100ms for better responsiveness
   }
 
-  // Clean up the storage watcher
-  const cleanupStorageWatch = () => {
-    if (storageCheckInterval) {
-      clearInterval(storageCheckInterval)
-      storageCheckInterval = null
+  // Clean up the config watcher
+  const cleanupConfigWatch = () => {
+    if (configCheckInterval) {
+      clearInterval(configCheckInterval)
+      configCheckInterval = null
     }
   }
 
@@ -800,7 +826,7 @@
   // Load settings when the component is mounted
   onMounted(() => {
     loadAnalysisSettings()
-    watchStorageChanges()
+    watchConfigChanges()
 
     // Debug: Check history entries on mount
     debugHistoryEntries()
@@ -877,7 +903,7 @@
         handleForceStopAi as EventListener
       )
       window.removeEventListener('engine-stopped-and-ready', onEngineReady)
-      cleanupStorageWatch()
+      cleanupConfigWatch()
     })
   })
 
@@ -1155,11 +1181,11 @@
   .sidebar {
     width: 320px;
     height: 90vh;
-    padding: 15px;
+    padding: 12px;
     background-color: #f4f6f8;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     box-sizing: border-box;
     border-left: 1px solid #ddd;
     overflow-y: auto;
@@ -1173,29 +1199,52 @@
       border-left: none;
       border-top: 1px solid #ddd;
       margin-top: 20px;
+      padding: 10px;
+      gap: 6px;
     }
   }
   .full-btn {
     width: 100%;
   }
+
+  .button-group {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+
+    // Mobile responsive adjustments
+    @media (max-width: 768px) {
+      gap: 4px;
+    }
+  }
+
+  .grouped-btn {
+    flex: 1;
+
+    // Mobile responsive adjustments
+    @media (max-width: 768px) {
+      font-size: 11px;
+    }
+  }
+
   .half-btn {
     width: 49%;
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {
       width: 48%;
-      font-size: 12px;
+      font-size: 11px;
     }
   }
   .section {
-    padding-top: 10px;
+    padding-top: 6px;
     border-top: 1px solid #e0e0e0;
   }
   .section h3,
   .section-title {
-    margin: 0 0 10px;
-    padding-bottom: 5px;
-    font-size: 1rem;
+    margin: 0 0 6px;
+    padding-bottom: 3px;
+    font-size: 0.9rem;
     color: #333;
     display: flex;
     justify-content: space-between;
@@ -1308,23 +1357,23 @@
   .autoplay-settings {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {
-      gap: 6px;
+      gap: 4px;
     }
   }
 
   .pool-manager {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+      gap: 4px;
     }
   }
   .pool-item {
@@ -1332,22 +1381,23 @@
     align-items: center;
     justify-content: space-between;
     background: #fff;
-    padding: 2px 5px;
+    padding: 1px 4px;
     border-radius: 4px;
     border: 1px solid #eee;
   }
   .pool-piece-img {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
   .pool-count {
     font-weight: bold;
-    font-size: 1rem;
-    width: 20px;
+    font-size: 0.9rem;
+    width: 18px;
     text-align: center;
   }
   .custom-switch {
-    margin-top: -10px;
+    margin-top: -6px;
+    margin-bottom: -4px;
   }
   .notation-controls {
     display: flex;
@@ -1422,7 +1472,7 @@
 
   .about-section {
     margin-top: auto;
-    padding-top: 16px;
+    padding-top: 8px;
     border-top: 1px solid #e0e0e0;
   }
 

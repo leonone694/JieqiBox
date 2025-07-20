@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { provide, computed, watch } from 'vue'
+  import { provide, computed, watch, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import TopToolbar from './components/TopToolbar.vue'
   import Chessboard from './components/Chessboard.vue'
@@ -9,8 +9,10 @@
   import { useChessGame } from './composables/useChessGame'
   import { useUciEngine } from './composables/useUciEngine'
   import { useInterfaceSettings } from './composables/useInterfaceSettings'
+  import { useConfigManager } from './composables/useConfigManager'
 
   const { locale } = useI18n()
+  const configManager = useConfigManager()
 
   // Set HTML lang attribute based on current language
   const htmlLang = computed(() => {
@@ -59,6 +61,23 @@
 
   // Set global engine state for useChessGame to access
   ;(window as any).__ENGINE_STATE__ = engine
+
+  // Load configuration when app mounts
+  onMounted(async () => {
+    try {
+      await configManager.loadConfig()
+      // Set locale from config
+      const savedLocale = configManager.getLocale()
+      if (
+        savedLocale &&
+        ['zh_cn', 'zh_tw', 'en', 'vi', 'ja'].includes(savedLocale)
+      ) {
+        locale.value = savedLocale
+      }
+    } catch (error) {
+      console.error('Failed to load configuration on app startup:', error)
+    }
+  })
 </script>
 
 <template>
