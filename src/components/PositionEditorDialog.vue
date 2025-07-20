@@ -365,8 +365,22 @@
   const resetPosition = () => {
     if (gameState.loadFen) {
       gameState.loadFen(START_FEN, false)
-      editingPieces.value = JSON.parse(JSON.stringify(gameState.pieces.value))
-      editingSideToMove.value = 'red'
+      
+      setTimeout(() => {
+        const originalPieces = gameState.pieces.value.map((piece: any) => ({
+          ...piece,
+          id: piece.id,
+          isKnown: piece.isKnown,
+          name: piece.isKnown
+            ? piece.name
+            : piece.row >= 5
+              ? 'red_unknown'
+              : 'black_unknown',
+        }))
+        
+        editingPieces.value = originalPieces
+        editingSideToMove.value = 'red'
+      }, 0)
     }
   }
 
