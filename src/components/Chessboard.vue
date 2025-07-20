@@ -1,78 +1,87 @@
 <template>
-  <div class="chessboard-container">
-    <img src="@/assets/xiangqi.png" class="bg" alt="board" />
+  <div class="chessboard-wrapper" :class="{ 'has-chart': showPositionChart }">
+    <div class="chessboard-container">
+      <img src="@/assets/xiangqi.png" class="bg" alt="board" />
 
-    <!-- Pieces -->
-    <div class="pieces" @click="boardClick">
-      <img v-for="p in pieces" :key="p.id"
-           :src="img(p)" class="piece"
-           :class="{selected:p.id===selectedPieceId,animated:isAnimating && showAnimations,inCheck:p.id===checkedKingId}"
-           :style="rcStyle(p.row,p.col,p.zIndex)" />
-      <!-- Each piece's zIndex: cannon capture > checked king/general > lower row pieces > others -->
-    </div>
-
-    <!-- Last move highlights -->
-    <div class="last-move-highlights" v-if="lastMovePositions">
-      <div class="highlight from" :style="rcStyle(displayRow(lastMovePositions.from.row), lastMovePositions.from.col)"></div>
-      <div class="highlight to" :style="rcStyle(displayRow(lastMovePositions.to.row), lastMovePositions.to.col)"></div>
-    </div>
-
-    <!-- Valid moves indicators -->
-    <div class="valid-moves-indicators" v-if="validMovesForSelectedPiece.length > 0">
-      <div v-for="(move, index) in validMovesForSelectedPiece" 
-           :key="`valid-move-${index}`"
-           class="valid-move-dot"
-           :style="rcStyle(move.row, move.col)">
+      <!-- Pieces -->
+      <div class="pieces" @click="boardClick">
+        <img v-for="p in pieces" :key="p.id"
+             :src="img(p)" class="piece"
+             :class="{selected:p.id===selectedPieceId,animated:isAnimating && showAnimations,inCheck:p.id===checkedKingId}"
+             :style="rcStyle(p.row,p.col,p.zIndex)" />
+        <!-- Each piece's zIndex: cannon capture > checked king/general > lower row pieces > others -->
       </div>
-    </div>
 
-    <!-- Rank and file labels -->
-    <div class="board-labels" v-if="showCoordinates">
-      <div class="rank-labels">
-        <span v-for="(rank, index) in ranks" :key="rank" :style="rankLabelStyle(index)">{{ rank }}</span>
+      <!-- Last move highlights -->
+      <div class="last-move-highlights" v-if="lastMovePositions">
+        <div class="highlight from" :style="rcStyle(displayRow(lastMovePositions.from.row), lastMovePositions.from.col)"></div>
+        <div class="highlight to" :style="rcStyle(displayRow(lastMovePositions.to.row), lastMovePositions.to.col)"></div>
       </div>
-      <div class="file-labels">
-        <span v-for="(file, index) in files" :key="file" :style="fileLabelStyle(index)">{{ file }}</span>
+
+      <!-- Valid moves indicators -->
+      <div class="valid-moves-indicators" v-if="validMovesForSelectedPiece.length > 0">
+        <div v-for="(move, index) in validMovesForSelectedPiece" 
+             :key="`valid-move-${index}`"
+             class="valid-move-dot"
+             :style="rcStyle(move.row, move.col)">
+        </div>
       </div>
-    </div>
 
-    <!-- Arrows (support MultiPV) -->
-    <svg class="ar" viewBox="0 0 90 100" preserveAspectRatio="none">
-      <defs>
-        <marker v-for="(color, idx) in arrowColors" :key="`marker-${idx}`"
-          :id="`ah-${idx}`" markerWidth="2.5" markerHeight="2.5" refX="1.5" refY="1.25" orient="auto">
-          <polygon points="0 0, 2.5 1.25, 0 2.5" :fill="color"/>
-        </marker>
-      </defs>
-      <template v-for="(a, idx) in arrs" :key="`arrow-${idx}`">
-        <line
-          :x1="a.x1" :y1="a.y1" :x2="a.x2" :y2="a.y2"
-          :style="{ stroke: arrowColor(idx) }"
-          :marker-end="`url(#ah-${idx % arrowColors.length})`" class="al" />
-        <text v-if="arrs.length > 1"
-          :x="(a.x1 + a.x2) / 2"
-          :y="(a.y1 + a.y2) / 2"
-          :fill="arrowColor(idx)"
-          class="arrow-label"
-        >{{ a.pv }}</text>
-      </template>
-    </svg>
+      <!-- Rank and file labels -->
+      <div class="board-labels" v-if="showCoordinates">
+        <div class="rank-labels">
+          <span v-for="(rank, index) in ranks" :key="rank" :style="rankLabelStyle(index)">{{ rank }}</span>
+        </div>
+        <div class="file-labels">
+          <span v-for="(file, index) in files" :key="file" :style="fileLabelStyle(index)">{{ file }}</span>
+        </div>
+      </div>
 
-    <!-- Panel -->
-    <div class="panel">
-      <v-btn @click="copyFenToClipboard" size="small">{{ $t('chessboard.copyFen') }}</v-btn>
-      <v-btn @click="inputFenStringWithArrow"  size="small">{{ $t('chessboard.inputFen') }}</v-btn>
-      <v-btn @click="setupNewGameWithArrow"    size="small">{{ $t('chessboard.newGame') }}</v-btn>
+      <!-- Arrows (support MultiPV) -->
+      <svg class="ar" viewBox="0 0 90 100" preserveAspectRatio="none">
+        <defs>
+          <marker v-for="(color, idx) in arrowColors" :key="`marker-${idx}`"
+            :id="`ah-${idx}`" markerWidth="2.5" markerHeight="2.5" refX="1.5" refY="1.25" orient="auto">
+            <polygon points="0 0, 2.5 1.25, 0 2.5" :fill="color"/>
+          </marker>
+        </defs>
+        <template v-for="(a, idx) in arrs" :key="`arrow-${idx}`">
+          <line
+            :x1="a.x1" :y1="a.y1" :x2="a.x2" :y2="a.y2"
+            :style="{ stroke: arrowColor(idx) }"
+            :marker-end="`url(#ah-${idx % arrowColors.length})`" class="al" />
+          <text v-if="arrs.length > 1"
+            :x="(a.x1 + a.x2) / 2"
+            :y="(a.y1 + a.y2) / 2"
+            :fill="arrowColor(idx)"
+            class="arrow-label"
+          >{{ a.pv }}</text>
+        </template>
+      </svg>
+
+      <!-- Panel -->
+      <div class="panel">
+        <v-btn @click="copyFenToClipboard" size="small">{{ $t('chessboard.copyFen') }}</v-btn>
+        <v-btn @click="inputFenStringWithArrow"  size="small">{{ $t('chessboard.inputFen') }}</v-btn>
+        <v-btn @click="setupNewGameWithArrow"    size="small">{{ $t('chessboard.newGame') }}</v-btn>
+      </div>
+      
+      <!-- Copy success tip - positioned absolutely to avoid layout shifts -->
+      <div v-if="copySuccessVisible" class="copy-success-tip">
+        {{ $t('chessboard.copied') }}
+      </div>
+      <ClearHistoryConfirmDialog
+        :visible="showClearHistoryDialog"
+        :onConfirm="onConfirmClearHistory"
+        :onCancel="onCancelClearHistory"
+      />
     </div>
     
-    <!-- Copy success tip - positioned absolutely to avoid layout shifts -->
-    <div v-if="copySuccessVisible" class="copy-success-tip">
-      {{ $t('chessboard.copied') }}
-    </div>
-    <ClearHistoryConfirmDialog
-      :visible="showClearHistoryDialog"
-      :onConfirm="onConfirmClearHistory"
-      :onCancel="onCancelClearHistory"
+    <!-- Position Chart -->
+    <PositionChart 
+      v-if="showPositionChart"
+      :history="history" 
+      :current-move-index="currentMoveIndex"
     />
   </div>
 </template>
@@ -82,6 +91,7 @@ import { inject, ref, watch, computed, watchEffect } from 'vue';
 import type { Piece } from '@/composables/useChessGame';
 import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
 import ClearHistoryConfirmDialog from './ClearHistoryConfirmDialog.vue';
+import PositionChart from './PositionChart.vue';
 
 /* ===== Layout ===== */
 const PAD_X=11,PAD_Y=11, COLS=9,ROWS=10, GX=100-PAD_X, GY=100-PAD_Y, OX=PAD_X/2, OY=PAD_Y/2;
@@ -92,7 +102,7 @@ const ranks = computed(() => {
   return gs.isBoardFlipped.value ? baseRanks.slice().reverse() : baseRanks;
 });
 
-const { showCoordinates, showAnimations } = useInterfaceSettings();
+const { showCoordinates, showAnimations, showPositionChart } = useInterfaceSettings();
 
 /* ===== Injections ===== */
 const gs: any = inject('game-state');
@@ -100,7 +110,7 @@ const es = inject('engine-state') as { pvMoves: any; bestMove: any; isThinking: 
 
 const { pieces,selectedPieceId,copySuccessVisible,copyFenToClipboard,
         inputFenString,handleBoardClick,setupNewGame,isAnimating,lastMovePositions,
-        registerArrowClearCallback } = gs;
+        registerArrowClearCallback,history,currentMoveIndex } = gs;
 const { bestMove,isThinking,multiPvMoves } = es;
 
 // Inject isCurrentPositionInCheck
@@ -313,9 +323,37 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
 </script>
 
 <style scoped lang="scss">
-.chessboard-container{
+.chessboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 70vmin;
+  margin: 0 auto;
+  
+  // When position chart is visible, adjust gap
+  &.has-chart {
+    gap: 12px;
+    width: 100%;
+    max-width: 70vmin;
+  }
+  
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    gap: 12px;
+    max-width: 90vmin;
+    
+    &.has-chart {
+      gap: 8px;
+      max-width: 90vmin;
+    }
+  }
+}
+
+.chessboard-container {
   position:relative;
-  width:70vmin;
+  width:100%;
   aspect-ratio:9/10;
   margin:auto;
   /* Disable text selection and double-click highlighting */
@@ -329,8 +367,7 @@ const displayRow = (r:number)=> gs.isBoardFlipped.value ? 9 - r : r;
   
   // Mobile responsive adjustments
   @media (max-width: 768px) {
-    width: 90vmin;
-    max-width: 400px;
+    width: 100%;
   }
 }
 .bg{

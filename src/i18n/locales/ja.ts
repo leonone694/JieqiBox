@@ -199,6 +199,16 @@ export default {
     copyFen: 'FENをコピー',
     inputFen: 'FENを入力',
     newGame: '新しいゲーム',
+    copied: '✓ コピーしました',
+  },
+
+  // 形勢グラフ
+  positionChart: {
+    title: '形勢グラフ',
+    showMoveLabels: '手のラベルを表示',
+    opening: '開始局面',
+    noData: '分析データがありません',
+    newGame: '新しいゲーム',
     copied: '✓ コピーしました'
   },
 
@@ -217,7 +227,8 @@ export default {
     title: 'インターフェース設定',
     showCoordinates: '行と列の番号を表示',
     parseUciInfo: 'UCI情報を解析',
-    showAnimations: '駒の動きのアニメーションを有効にする'
+    showAnimations: '駒の動きのアニメーションを有効にする',
+    showPositionChart: '局面図を表示'
   },
 
   // UCIメッセージ

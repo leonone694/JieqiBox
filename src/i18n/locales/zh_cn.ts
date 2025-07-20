@@ -199,6 +199,16 @@ export default {
     copyFen: '复制FEN',
     inputFen: '输入FEN',
     newGame: '新对局',
+    copied: '✓ 已复制',
+  },
+
+  // 局势图
+  positionChart: {
+    title: '局势图',
+    showMoveLabels: '显示着法标签',
+    opening: '开局',
+    noData: '暂无分析数据',
+    newGame: '新对局',
     copied: '✓ 已复制'
   },
 
@@ -217,7 +227,8 @@ export default {
     title: '界面设置',
     showCoordinates: '显示行列序号',
     parseUciInfo: '解析UCI信息',
-    showAnimations: '开启走子动画'
+    showAnimations: '开启走子动画',
+    showPositionChart: '显示局势图'
   },
   
   // UCI消息

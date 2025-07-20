@@ -199,6 +199,16 @@ export default {
     copyFen: '複製FEN',
     inputFen: '輸入FEN',
     newGame: '新對局',
+    copied: '✓ 已複製',
+  },
+
+  // 局勢圖
+  positionChart: {
+    title: '局勢圖',
+    showMoveLabels: '顯示著法標籤',
+    opening: '開局',
+    noData: '暫無分析數據',
+    newGame: '新對局',
     copied: '✓ 已複製'
   },
 
@@ -217,7 +227,8 @@ export default {
     title: '介面設定',
     showCoordinates: '顯示座標',
     parseUciInfo: '解析UCI資訊',
-    showAnimations: '開啟走子動畫'
+    showAnimations: '開啟走子動畫',
+    showPositionChart: '顯示局勢圖'
   },
 
   // UCI訊息

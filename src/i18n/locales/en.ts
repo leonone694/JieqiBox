@@ -199,6 +199,16 @@ export default {
     copyFen: 'Copy FEN',
     inputFen: 'Input FEN',
     newGame: 'New Game',
+    copied: '✓ Copied',
+  },
+
+  // Position chart
+  positionChart: {
+    title: 'Position Chart',
+    showMoveLabels: 'Show Move Labels',
+    opening: 'Opening',
+    noData: 'No analysis data available',
+    newGame: 'New Game',
     copied: '✓ Copied'
   },
 
@@ -217,7 +227,8 @@ export default {
     title: 'Interface Settings',
     showCoordinates: 'Show rank and file numbers',
     parseUciInfo: 'Parse UCI Info',
-    showAnimations: 'Enable move animations'
+    showAnimations: 'Enable move animations',
+    showPositionChart: 'Show position chart'
   },
 
   // UCI messages

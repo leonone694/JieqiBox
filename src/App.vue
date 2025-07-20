@@ -8,6 +8,7 @@ import FlipPromptDialog from './components/FlipPromptDialog.vue';
 
 import { useChessGame } from './composables/useChessGame';
 import { useUciEngine } from './composables/useUciEngine';
+import { useInterfaceSettings } from './composables/useInterfaceSettings';
 
 const { locale } = useI18n();
 
@@ -42,8 +43,8 @@ const game = useChessGame();
 // Pass generateFen to ensure engine receives correct FEN format
 const engine = useUciEngine(game.generateFen);
 
-// Note: Removed incorrect engine connection code
-// game.connectEngine(engine.startAnalysis);
+// Get interface settings
+const { showPositionChart } = useInterfaceSettings();
 
 // Provide global state
 provide('game-state', game);
@@ -60,7 +61,7 @@ provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
   <div class="app-container" :lang="htmlLang">
     <TopToolbar />
     <div class="main-layout">
-      <div class="chessboard-area">
+      <div class="chessboard-area" :class="{ 'with-chart': showPositionChart }">
         <Chessboard />
       </div>
       <AnalysisSidebar />
@@ -93,7 +94,7 @@ provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    gap: 30px;
+    gap: 15px; // Reduced gap for mobile
   }
 }
 
@@ -103,9 +104,25 @@ provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
   align-items: center;
   padding-top: 20px;
   
+  // On desktop, when position chart is shown, make chessboard smaller
+  &.with-chart {
+    .chessboard-wrapper {
+      transform: scale(0.75);
+      transform-origin: top center;
+    }
+  }
+  
   // Mobile responsive adjustments
   @media (max-width: 768px) {
-    padding-top: 30px;
+    padding-top: 0;
+    width: 100%;
+
+    // On mobile, disable the scaling when chart is shown
+    &.with-chart {
+      .chessboard-wrapper {
+        transform: none;
+      }
+    }
   }
 }
 </style>

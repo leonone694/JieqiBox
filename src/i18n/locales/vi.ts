@@ -202,6 +202,16 @@ export default {
     copyFen: 'Sao chép FEN',
     inputFen: 'Nhập FEN',
     newGame: 'Ván mới',
+    copied: '✓ Đã sao chép',
+  },
+
+  // Biểu đồ vị trí
+  positionChart: {
+    title: 'Biểu đồ vị trí',
+    showMoveLabels: 'Hiển thị nhãn nước đi',
+    opening: 'Khai cuộc',
+    noData: 'Không có dữ liệu phân tích',
+    newGame: 'Ván mới',
     copied: '✓ Đã sao chép'
   },
 
@@ -219,7 +229,8 @@ export default {
     title: 'Cài đặt giao diện',
     showCoordinates: 'Hiển thị số hàng và cột',
     parseUciInfo: 'Phân tích thông tin UCI',
-    showAnimations: 'Bật hoạt ảnh di chuyển quân cờ'
+    showAnimations: 'Bật hoạt ảnh di chuyển quân cờ',
+    showPositionChart: 'Hiển thị biểu đồ vị trí'
   },
 
   // Tin nhắn UCI
