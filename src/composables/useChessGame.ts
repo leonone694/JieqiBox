@@ -400,7 +400,10 @@ export function useChessGame() {
       const isAiMove = (window as any).__LAST_AI_MOVE__ === data
       console.log('[DEBUG] RECORD_AND_FINALIZE: Is AI move:', isAiMove)
 
-      if (engineState && (engineState.isThinking?.value || isAiMove)) {
+      // Get isManualAnalysis from global state
+      const isManualAnalysis = (window as any).__MANUAL_ANALYSIS__ || { value: false }
+
+      if (engineState && (engineState.isThinking?.value || isAiMove || isManualAnalysis.value)) {
         console.log(
           '[DEBUG] RECORD_AND_FINALIZE: Engine was thinking or this is an AI move, extracting data...'
         )
