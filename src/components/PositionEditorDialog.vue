@@ -365,7 +365,7 @@
   const resetPosition = () => {
     if (gameState.loadFen) {
       gameState.loadFen(START_FEN, false)
-      
+
       setTimeout(() => {
         const originalPieces = gameState.pieces.value.map((piece: any) => ({
           ...piece,
@@ -377,7 +377,7 @@
               ? 'red_unknown'
               : 'black_unknown',
         }))
-        
+
         editingPieces.value = originalPieces
         editingSideToMove.value = 'red'
       }, 0)

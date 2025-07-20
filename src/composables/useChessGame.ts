@@ -401,9 +401,14 @@ export function useChessGame() {
       console.log('[DEBUG] RECORD_AND_FINALIZE: Is AI move:', isAiMove)
 
       // Get isManualAnalysis from global state
-      const isManualAnalysis = (window as any).__MANUAL_ANALYSIS__ || { value: false }
+      const isManualAnalysis = (window as any).__MANUAL_ANALYSIS__ || {
+        value: false,
+      }
 
-      if (engineState && (engineState.isThinking?.value || isAiMove || isManualAnalysis.value)) {
+      if (
+        engineState &&
+        (engineState.isThinking?.value || isAiMove || isManualAnalysis.value)
+      ) {
         console.log(
           '[DEBUG] RECORD_AND_FINALIZE: Engine was thinking or this is an AI move, extracting data...'
         )
@@ -667,185 +672,17 @@ export function useChessGame() {
     movePiece(piece, row, col)
   }
 
-  // Check if the specified position is in check
-  const isInCheck = (
-    kingRow: number,
-    kingCol: number,
-    kingSide: 'red' | 'black'
-  ): boolean => {
-    const opponentSide = kingSide === 'red' ? 'black' : 'red'
-
-    // Check if any opponent piece can attack the king's position
-    for (const piece of pieces.value) {
-      if (getPieceSide(piece) !== opponentSide) continue
-
-      const role = piece.isKnown ? piece.name.split('_')[1] : piece.initialRole
-      const dRow = Math.abs(kingRow - piece.row)
-      const dCol = Math.abs(kingCol - piece.col)
-
-      // Skip unrevealed pieces (they cannot check)
-      if (!piece.isKnown) continue
-
-      const countPiecesBetween = (
-        r1: number,
-        c1: number,
-        r2: number,
-        c2: number
-      ): number => {
-        let count = 0
-        if (r1 === r2) {
-          for (let c = Math.min(c1, c2) + 1; c < Math.max(c1, c2); c++) {
-            if (pieces.value.some(p => p.row === r1 && p.col === c)) count++
-          }
-        } else if (c1 === c2) {
-          for (let r = Math.min(r1, r2) + 1; r < Math.max(r1, r2); r++) {
-            if (pieces.value.some(p => p.col === c1 && p.row === r)) count++
-          }
-        }
-        return count
-      }
-
-      switch (role) {
-        case 'king':
-          // Kings cannot face each other directly (must have pieces between them)
-          if (dRow > 0 && dCol > 0) continue // Not in same row or column
-          if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) === 0)
-            return true // Can check if no pieces between
-          continue // Cannot check if pieces between
-        case 'advisor':
-          if (dRow !== 1 || dCol !== 1) continue
-          return true
-        case 'elephant':
-          if (dRow !== 2 || dCol !== 2) continue
-          return true
-        case 'horse':
-          if (!((dRow === 2 && dCol === 1) || (dRow === 1 && dCol === 2)))
-            continue
-          const legRow =
-            piece.row + (dRow === 2 ? (kingRow - piece.row) / 2 : 0)
-          const legCol =
-            piece.col + (dCol === 2 ? (kingCol - piece.col) / 2 : 0)
-          if (pieces.value.some(p => p.row === legRow && p.col === legCol))
-            continue
-          return true
-        case 'chariot':
-          if (dRow > 0 && dCol > 0) continue
-          if (countPiecesBetween(piece.row, piece.col, kingRow, kingCol) > 0)
-            continue
-          return true
-        case 'cannon':
-          if (dRow > 0 && dCol > 0) {
-            continue
-          }
-          const piecesBetween = countPiecesBetween(
-            piece.row,
-            piece.col,
-            kingRow,
-            kingCol
-          )
-          if (piecesBetween !== 1) {
-            continue
-          }
-          return true
-        case 'pawn':
-          // Pawn's check detection needs to consider the board flip state
-          const pawnSide = getPieceSide(piece)
-          let isOverRiver
-          if (isBoardFlipped.value) {
-            isOverRiver = pawnSide === 'red' ? piece.row <= 4 : piece.row >= 5
-          } else {
-            isOverRiver = pawnSide === 'red' ? piece.row <= 4 : piece.row >= 5
-          }
-
-          let canCheck = false
-          if (isOverRiver) {
-            // Can check horizontally after crossing the river
-            if (isBoardFlipped.value) {
-              canCheck =
-                (pawnSide === 'red'
-                  ? kingRow - piece.row === 1 && dCol === 0
-                  : piece.row - kingRow === 1 && dCol === 0) ||
-                (dRow === 0 && dCol === 1)
-            } else {
-              canCheck =
-                (pawnSide === 'red'
-                  ? piece.row - kingRow === 1 && dCol === 0
-                  : kingRow - piece.row === 1 && dCol === 0) ||
-                (dRow === 0 && dCol === 1)
-            }
-          } else {
-            // Can only check forward before crossing the river
-            if (isBoardFlipped.value) {
-              canCheck =
-                pawnSide === 'red'
-                  ? kingRow - piece.row === 1 && dCol === 0
-                  : piece.row - kingRow === 1 && dCol === 0
-            } else {
-              canCheck =
-                pawnSide === 'red'
-                  ? piece.row - kingRow === 1 && dCol === 0
-                  : kingRow - piece.row === 1 && dCol === 0
-            }
-          }
-
-          if (!canCheck) continue
-          return true
-      }
-    }
-    return false
-  }
-
-  // Check if the current position is in check
-  const isCurrentPositionInCheck = (side: 'red' | 'black'): boolean => {
-    // Find the king of the specified side
-    const king = pieces.value.find(p => {
-      if (!p.isKnown) return false
-      const role = p.name.split('_')[1]
-      return role === 'king' && getPieceSide(p) === side
-    })
-
-    if (!king) {
-      return false // King not found
-    }
-
-    const inCheck = isInCheck(king.row, king.col, side)
-    return inCheck
-  }
-
-  // Simulate the move and check if the king is still in check
-  const wouldBeInCheckAfterMove = (
-    piece: Piece,
-    targetRow: number,
-    targetCol: number
-  ): boolean => {
-    const pieceSide = getPieceSide(piece)
-    const originalRow = piece.row
-    const originalCol = piece.col
-    const targetPiece = pieces.value.find(
-      p => p.row === targetRow && p.col === targetCol
-    )
-
-    // Temporarily make the move
-    if (targetPiece) {
-      pieces.value = pieces.value.filter(p => p.id !== targetPiece.id)
-    }
-    piece.row = targetRow
-    piece.col = targetCol
-
-    // Check if still in check
-    const stillInCheck = isCurrentPositionInCheck(pieceSide)
-
-    // Revert the board state
-    piece.row = originalRow
-    piece.col = originalCol
-    if (targetPiece) {
-      pieces.value.push(targetPiece)
-    }
-
-    return stillInCheck
-  }
-
-  const isMoveValid = (
+  /**
+   * Helper function to check if a move is mechanically valid according to the rules of a piece.
+   * This function checks for things like blocked horse legs, elephant eyes, and cannon jumps.
+   * It does NOT check whether the move would put the player's own king in check.
+   * This logic is shared by both isMoveValid and isInCheck to ensure consistency.
+   * @param piece The piece to move.
+   * @param targetRow The destination row.
+   * @param targetCol The destination column.
+   * @returns {boolean} True if the move is mechanically possible.
+   */
+  const isMoveMechanicallyValid = (
     piece: Piece,
     targetRow: number,
     targetCol: number
@@ -863,6 +700,7 @@ export function useChessGame() {
     const targetPiece = pieces.value.find(
       p => p.row === targetRow && p.col === targetCol
     )
+    // A piece cannot capture a piece of the same side.
     if (targetPiece && getPieceSide(targetPiece) === pieceSide) {
       return false
     }
@@ -875,10 +713,12 @@ export function useChessGame() {
     ): number => {
       let count = 0
       if (r1 === r2) {
+        // Horizontal move
         for (let c = Math.min(c1, c2) + 1; c < Math.max(c1, c2); c++) {
           if (pieces.value.some(p => p.row === r1 && p.col === c)) count++
         }
       } else if (c1 === c2) {
+        // Vertical move
         for (let r = Math.min(r1, r2) + 1; r < Math.max(r1, r2); r++) {
           if (pieces.value.some(p => p.col === c1 && p.row === r)) count++
         }
@@ -892,8 +732,8 @@ export function useChessGame() {
         // King's move validation needs to consider the board flip state
         let kingTargetRowMin, kingTargetRowMax
         if (isBoardFlipped.value) {
-          // Flipped: Red is at the bottom (rows 0-4), Black is at the top (rows 5-9)
-          kingTargetRowMin = pieceSide === 'red' ? 0 : 5
+          // Flipped: Red is at the bottom (rows 0-2), Black is at the top (rows 7-9)
+          kingTargetRowMin = pieceSide === 'red' ? 0 : 7
           kingTargetRowMax = pieceSide === 'red' ? 2 : 9
         } else {
           // Normal: Red is at the top (rows 7-9), Black is at the bottom (rows 0-2)
@@ -916,40 +756,24 @@ export function useChessGame() {
         // Prohibit unrevealed advisors from making specific moves
         if (isDarkAdvisor) {
           if (
-            piece.row === 0 &&
-            piece.col === 3 &&
-            targetRow === 1 &&
-            targetCol === 2
+            (piece.row === 0 &&
+              piece.col === 3 &&
+              targetRow === 1 &&
+              targetCol === 2) ||
+            (piece.row === 0 &&
+              piece.col === 5 &&
+              targetRow === 1 &&
+              targetCol === 6) ||
+            (piece.row === 9 &&
+              piece.col === 3 &&
+              targetRow === 8 &&
+              targetCol === 2) ||
+            (piece.row === 9 &&
+              piece.col === 5 &&
+              targetRow === 8 &&
+              targetCol === 6)
           ) {
-            moveValid = false
-            break
-          }
-          if (
-            piece.row === 0 &&
-            piece.col === 5 &&
-            targetRow === 1 &&
-            targetCol === 6
-          ) {
-            moveValid = false
-            break
-          }
-          if (
-            piece.row === 9 &&
-            piece.col === 3 &&
-            targetRow === 8 &&
-            targetCol === 2
-          ) {
-            moveValid = false
-            break
-          }
-          if (
-            piece.row === 9 &&
-            piece.col === 5 &&
-            targetRow === 8 &&
-            targetCol === 6
-          ) {
-            moveValid = false
-            break
+            return false // Explicitly invalid move for unrevealed advisor
           }
         }
         moveValid = dRow === 1 && dCol === 1
@@ -959,6 +783,7 @@ export function useChessGame() {
           moveValid = false
           break
         }
+        // Check for a blocking piece in the "elephant's eye"
         const eyeRow = piece.row + (targetRow - piece.row) / 2
         const eyeCol = piece.col + (targetCol - piece.col) / 2
         if (pieces.value.some(p => p.row === eyeRow && p.col === eyeCol)) {
@@ -972,6 +797,7 @@ export function useChessGame() {
           moveValid = false
           break
         }
+        // Check for a blocking piece in the "horse's leg"
         const legRow =
           piece.row + (dRow === 2 ? (targetRow - piece.row) / 2 : 0)
         const legCol =
@@ -985,6 +811,7 @@ export function useChessGame() {
           moveValid = false
           break
         }
+        // Chariot moves in a straight line, must be no pieces in between
         moveValid =
           countPiecesBetween(piece.row, piece.col, targetRow, targetCol) === 0
         break
@@ -999,9 +826,11 @@ export function useChessGame() {
           targetRow,
           targetCol
         )
+        // If capturing, there must be exactly one piece (the "screen") in between.
         if (targetPiece) {
           moveValid = piecesBetween === 1
         } else {
+          // If moving to an empty square, there must be no pieces in between.
           moveValid = piecesBetween === 0
         }
         break
@@ -1010,20 +839,21 @@ export function useChessGame() {
         let isOverRiver
         isOverRiver = pieceSide === 'red' ? piece.row <= 4 : piece.row >= 5
         if (isBoardFlipped.value) {
-          isOverRiver = !isOverRiver
+          // On a flipped board, the river logic is inverted
+          isOverRiver = pieceSide === 'red' ? piece.row >= 5 : piece.row <= 4
         }
 
         if (isOverRiver) {
           // Can move sideways after crossing the river
           if (isBoardFlipped.value) {
-            // Flipped: Red pawns move down (row increases), Black pawns move up (row decreases)
+            // Flipped: Red pawns move "down" (row increases), Black pawns move "up" (row decreases)
             moveValid =
               (pieceSide === 'red'
                 ? targetRow - piece.row === 1 && dCol === 0
                 : piece.row - targetRow === 1 && dCol === 0) ||
               (dRow === 0 && dCol === 1)
           } else {
-            // Normal: Red pawns move down (row decreases), Black pawns move up (row increases)
+            // Normal: Red pawns move "down" (row decreases), Black pawns move "up" (row increases)
             moveValid =
               (pieceSide === 'red'
                 ? piece.row - targetRow === 1 && dCol === 0
@@ -1033,13 +863,13 @@ export function useChessGame() {
         } else {
           // Can only move forward before crossing the river
           if (isBoardFlipped.value) {
-            // Flipped: Red pawns move down (row increases), Black pawns move up (row decreases)
+            // Flipped: Red pawns move "down" (row increases), Black pawns move "up" (row decreases)
             moveValid =
               pieceSide === 'red'
                 ? targetRow - piece.row === 1 && dCol === 0
                 : piece.row - targetRow === 1 && dCol === 0
           } else {
-            // Normal: Red pawns move down (row decreases), Black pawns move up (row increases)
+            // Normal: Red pawns move "down" (row decreases), Black pawns move "up" (row increases)
             moveValid =
               pieceSide === 'red'
                 ? piece.row - targetRow === 1 && dCol === 0
@@ -1048,16 +878,149 @@ export function useChessGame() {
         }
         break
     }
+    return moveValid
+  }
 
-    // If the basic move is invalid, return false directly
-    if (!moveValid) {
+  /**
+   * Checks if the specified position is in check by an opponent piece.
+   * This function now calls `isMoveMechanicallyValid` for each opponent piece
+   * to see if any can legally attack the king's square.
+   * @param kingRow The king's row.
+   * @param kingCol The king's column.
+   * @param kingSide The side of the king being checked.
+   * @returns {boolean} True if the king is in check.
+   */
+  const isInCheck = (
+    kingRow: number,
+    kingCol: number,
+    kingSide: 'red' | 'black'
+  ): boolean => {
+    const opponentSide = kingSide === 'red' ? 'black' : 'red'
+
+    // Check if any opponent piece can attack the king's position
+    for (const piece of pieces.value) {
+      if (getPieceSide(piece) !== opponentSide) continue
+      // Skip unrevealed pieces as they cannot check
+      if (!piece.isKnown) continue
+
+      // The king is in check if any opponent piece can make a valid mechanical move
+      // to the king's square. This includes capturing the king.
+      // We also need to handle the special "flying king" check rule.
+      const role = piece.isKnown ? piece.name.split('_')[1] : piece.initialRole
+      if (role === 'king') {
+        // Special case: Flying King rule
+        // If kings are on the same column and there are no pieces between them.
+        if (piece.col === kingCol) {
+          let piecesBetween = 0
+          for (
+            let r = Math.min(piece.row, kingRow) + 1;
+            r < Math.max(piece.row, kingRow);
+            r++
+          ) {
+            if (pieces.value.some(p => p.row === r && p.col === kingCol)) {
+              piecesBetween++
+            }
+          }
+          if (piecesBetween === 0) return true
+        }
+        // Kings cannot check each other otherwise, so we continue to the next piece.
+        continue
+      }
+
+      // For all other pieces, we check if they can move to the king's square.
+      if (isMoveMechanicallyValid(piece, kingRow, kingCol)) {
+        return true // This piece is checking the king
+      }
+    }
+
+    return false // No opponent piece can attack the king's position
+  }
+
+  // Check if the current position is in check
+  const isCurrentPositionInCheck = (side: 'red' | 'black'): boolean => {
+    // Find the king of the specified side
+    const king = pieces.value.find(p => {
+      if (!p.isKnown) return false
+      const role = p.name.split('_')[1]
+      return role === 'king' && getPieceSide(p) === side
+    })
+
+    if (!king) {
+      // If the king is captured (or not on board), the game is over.
+      // For check validation purposes, we can consider this not in check.
       return false
     }
 
-    // If your king is still in check after this move, the move is illegal
+    return isInCheck(king.row, king.col, side)
+  }
+
+  // Simulate the move and check if the king is still in check
+  const wouldBeInCheckAfterMove = (
+    piece: Piece,
+    targetRow: number,
+    targetCol: number
+  ): boolean => {
+    const pieceSide = getPieceSide(piece)
+    const originalRow = piece.row
+    const originalCol = piece.col
+    const targetPiece = pieces.value.find(
+      p => p.row === targetRow && p.col === targetCol
+    )
+
+    // Temporarily make the move
+    // 1. Remove the captured piece, if any
+    const originalPieces = [...pieces.value]
+    if (targetPiece) {
+      pieces.value = pieces.value.filter(p => p.id !== targetPiece.id)
+    }
+    // 2. Move the piece
+    const movedPiece = pieces.value.find(p => p.id === piece.id)
+    if (movedPiece) {
+      movedPiece.row = targetRow
+      movedPiece.col = targetCol
+    }
+
+    // Check if the current side's king is in check after the move
+    const inCheck = isCurrentPositionInCheck(pieceSide)
+
+    // Revert the board state to its original form
+    pieces.value = originalPieces
+    // Ensure the original piece reference is updated back, as it might be stale
+    const originalPieceRef = pieces.value.find(p => p.id === piece.id)
+    if (originalPieceRef) {
+      originalPieceRef.row = originalRow
+      originalPieceRef.col = originalCol
+    }
+
+    return inCheck
+  }
+
+  /**
+   * Checks if a move is fully legal. A move is legal if:
+   * 1. It is mechanically valid (follows the piece's movement rules).
+   * 2. It does not result in the player's own king being in check.
+   * @param piece The piece to move.
+   * @param targetRow The destination row.
+   * @param targetCol The destination column.
+   * @returns {boolean} True if the move is fully legal.
+   */
+  const isMoveValid = (
+    piece: Piece,
+    targetRow: number,
+    targetCol: number
+  ): boolean => {
+    // First, check if the move is mechanically possible using the shared helper function.
+    if (!isMoveMechanicallyValid(piece, targetRow, targetCol)) {
+      return false
+    }
+
+    // Then, check if this move would put the player's own king in check.
+    // If it does, the move is illegal.
     if (wouldBeInCheckAfterMove(piece, targetRow, targetCol)) {
       return false
     }
+
+    // If both checks pass, the move is valid.
     return true
   }
 

@@ -406,7 +406,7 @@
   const isRedAi = ref(false)
   const isBlackAi = ref(false)
   const isManualAnalysis = ref(false) // Track if current analysis is manual or AI auto-play
-  
+
   // Expose isManualAnalysis to global state for useChessGame access
   ;(window as any).__MANUAL_ANALYSIS__ = isManualAnalysis
   const moveListElement = ref<HTMLElement | null>(null)
