@@ -345,15 +345,12 @@ export function useChessGame() {
       selectedPieceId.value = null
       lastMovePositions.value = null // Clear highlights when loading FEN
 
-      // Detect and set correct flip state BEFORE assigning dark piece identities
+      // Detect and set correct flip state
       detectAndSetBoardFlip()
 
       // Reset zIndex for all pieces and update based on position
       pieces.value.forEach(p => (p.zIndex = undefined))
       updateAllPieceZIndexes()
-
-      // Detect and set correct flip state
-      detectAndSetBoardFlip()
 
       // Trigger arrow clear event
       triggerArrowClear()
