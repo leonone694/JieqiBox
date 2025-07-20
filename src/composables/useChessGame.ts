@@ -1648,6 +1648,9 @@ export function useChessGame() {
 
   // Detect board state and automatically set the flip state
   const detectAndSetBoardFlip = () => {
+    // Record whether the board is flipped before detection
+    const isBoardFlippedBeforeDetection = isBoardFlipped.value
+
     // Detect if the board should be flipped based on the current position
     // This is used to ensure the board orientation matches the FEN format
     const redKing = pieces.value.find(p => p.name === 'red_king')
@@ -1662,6 +1665,11 @@ export function useChessGame() {
         // The flip state needs to be adjusted
         isBoardFlipped.value = shouldBeFlipped
       }
+    }
+
+    // If the board was flipped before detection, flip it back
+    if (isBoardFlippedBeforeDetection) {
+      toggleBoardFlip()
     }
   }
 
