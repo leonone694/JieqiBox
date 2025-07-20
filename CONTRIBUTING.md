@@ -24,6 +24,7 @@ Thank you for your interest in contributing to JieqiBox! This document provides 
 ### Commit Messages
 
 Use conventional commit format:
+
 ```
 type(scope): description
 
@@ -33,6 +34,7 @@ type(scope): description
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -100,4 +102,4 @@ For feature requests:
 
 By contributing to JieqiBox, you agree that your contributions will be licensed under the MIT License.
 
-Thank you for contributing to JieqiBox! 🎉 
+Thank you for contributing to JieqiBox! 🎉

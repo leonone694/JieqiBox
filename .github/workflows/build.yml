@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*'
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -152,7 +152,7 @@ jobs:
         with:
           api-level: 34
           ndk: 26.1.10909125
-          build-tools: "34.0.0"
+          build-tools: '34.0.0'
 
       - name: Export NDK environment variables
         run: |
@@ -174,12 +174,12 @@ jobs:
       - name: Init Tauri Android project
         run: |
           npm install -g @tauri-apps/cli
-      
+
       - name: Build Tauri Android app (unsigned)
         run: npx tauri android build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Manually sign the APK
         run: |
           KEYSTORE_PATH=$RUNNER_TEMP/keystore.jks
@@ -204,7 +204,7 @@ jobs:
             --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
             --out "$SIGNED_APK_PATH" \
             "$UNSIGNED_APK_PATH"
-          
+
           echo "APK signing process completed."
 
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$SIGNED_APK_PATH"

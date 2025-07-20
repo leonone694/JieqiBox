@@ -15,7 +15,7 @@ export default {
     error: 'Error',
     success: 'Success',
     warning: 'Warning',
-    info: 'Info'
+    info: 'Info',
   },
 
   // Top toolbar
@@ -31,7 +31,7 @@ export default {
     gameTitle: 'Jieqi Game',
     interfaceSettings: 'Interface Settings',
     variation: 'Variation',
-    noMoreVariations: 'No more variations available'
+    noMoreVariations: 'No more variations available',
   },
 
   // UCI options dialog
@@ -46,8 +46,9 @@ export default {
     execute: 'Execute',
     resetToDefaults: 'Reset to Defaults',
     clearSettings: 'Clear Settings',
-    confirmClearSettings: 'Are you sure you want to clear all UCI option configurations for the current engine? This action cannot be undone.',
-    settingsCleared: 'UCI option configurations cleared'
+    confirmClearSettings:
+      'Are you sure you want to clear all UCI option configurations for the current engine? This action cannot be undone.',
+    settingsCleared: 'UCI option configurations cleared',
   },
 
   // Time dialog
@@ -60,14 +61,15 @@ export default {
     analysisMode: 'Analysis Mode',
     resetToDefaults: 'Reset to Defaults',
     clearSettings: 'Clear Settings',
-    confirmClearSettings: 'Are you sure you want to clear all analysis parameter configurations? This action cannot be undone.',
+    confirmClearSettings:
+      'Are you sure you want to clear all analysis parameter configurations? This action cannot be undone.',
     settingsCleared: 'Analysis parameter configurations cleared',
     analysisModes: {
       movetime: 'Analyze by Move Time',
       maxThinkTime: 'Analyze by Max Think Time',
       depth: 'Analyze by Depth',
-      nodes: 'Analyze by Nodes'
-    }
+      nodes: 'Analyze by Nodes',
+    },
   },
 
   // Position editor dialog
@@ -83,7 +85,7 @@ export default {
     piece: 'Piece',
     validationStatus: {
       normal: 'Normal',
-      error: 'Error: Dark piece count mismatch'
+      error: 'Error: Dark piece count mismatch',
     },
     cancel: 'Cancel',
     applyChanges: 'Apply Changes',
@@ -104,8 +106,8 @@ export default {
       black_pawn: 'Black Pawn',
       unknown: 'Dark Piece',
       red_unknown: 'Red Dark Piece',
-      black_unknown: 'Black Dark Piece'
-    }
+      black_unknown: 'Black Dark Piece',
+    },
   },
 
   // FEN input dialog
@@ -113,7 +115,7 @@ export default {
     title: 'Input FEN String',
     placeholder: 'Please input FEN string...',
     confirm: 'Confirm',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
   },
 
   // Flip prompt dialog
@@ -121,27 +123,28 @@ export default {
     title: 'Flip Piece Prompt',
     message: 'Please select the piece to flip',
     confirm: 'Confirm',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
   },
 
   // About dialog
   about: {
     title: 'About JieqiBox',
     version: 'Version',
-    description: 'A modern Jieqi analysis and game desktop application built with Tauri and Vue 3.',
+    description:
+      'A modern Jieqi analysis and game desktop application built with Tauri and Vue 3.',
     features: 'Features',
     featuresList: [
       'Jieqi Game Support',
       'UCI Engine Analysis',
       'Notation Save and Load',
       'Position Editor',
-      'FEN String Support'
+      'FEN String Support',
     ],
     author: 'Author',
     license: 'License',
     github: 'GitHub',
     downloadLatest: 'Download Latest Version',
-    viewLicense: 'View License Details'
+    viewLicense: 'View License Details',
   },
 
   // Analysis sidebar
@@ -181,7 +184,7 @@ export default {
     engineLog: 'Engine Log',
     about: 'About',
     flipBoard: 'Flip Board',
-    flipBoardBack: 'Restore Orientation'
+    flipBoardBack: 'Restore Orientation',
   },
 
   // Error messages
@@ -191,7 +194,7 @@ export default {
     engineNotLoaded: 'Engine not loaded, cannot send command',
     engineSendUnavailable: 'Engine send method unavailable',
     darkPiecesMismatch: 'Error: {darkCount} dark pieces > {poolCount} pool',
-    pieceCountExceeded: 'Error: {pieceName} total count exceeded!'
+    pieceCountExceeded: 'Error: {pieceName} total count exceeded!',
   },
 
   // Chessboard bottom
@@ -209,7 +212,7 @@ export default {
     opening: 'Opening',
     noData: 'No analysis data available',
     newGame: 'New Game',
-    copied: '✓ Copied'
+    copied: '✓ Copied',
   },
 
   // Language selection
@@ -219,7 +222,7 @@ export default {
     zh_tw: '繁體中文',
     en: 'English',
     vi: 'Tiếng Việt',
-    ja: '日本語'
+    ja: '日本語',
   },
 
   // Interface settings dialog
@@ -228,7 +231,7 @@ export default {
     showCoordinates: 'Show rank and file numbers',
     parseUciInfo: 'Parse UCI Info',
     showAnimations: 'Enable move animations',
-    showPositionChart: 'Show position chart'
+    showPositionChart: 'Show position chart',
   },
 
   // UCI messages
@@ -247,14 +250,15 @@ export default {
     checkmate: 'Checkmate! No moves available.',
     bestMove: 'Best Move: {move}',
     noMoves: 'No moves available',
-    engineReady: 'Engine is ready'
+    engineReady: 'Engine is ready',
   },
 
   // Game operation confirmation
   gameConfirm: {
     clearHistoryTitle: 'Clear Subsequent History',
-    clearHistoryMessage: 'You are making a move in a historical position. This will clear all subsequent move history. Are you sure you want to continue?',
+    clearHistoryMessage:
+      'You are making a move in a historical position. This will clear all subsequent move history. Are you sure you want to continue?',
     confirm: 'Confirm',
-    cancel: 'Cancel'
-  }
-} 
+    cancel: 'Cancel',
+  },
+}

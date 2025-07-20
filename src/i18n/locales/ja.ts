@@ -15,7 +15,7 @@ export default {
     error: 'エラー',
     success: '成功',
     warning: '警告',
-    info: '情報'
+    info: '情報',
   },
 
   // 上部ツールバー
@@ -31,7 +31,7 @@ export default {
     interfaceSettings: 'インターフェース設定',
     gameTitle: '揭棋ゲーム',
     variation: '変化手順',
-    noMoreVariations: 'これ以上の変化はありません'
+    noMoreVariations: 'これ以上の変化はありません',
   },
 
   // UCIオプションダイアログ
@@ -46,8 +46,9 @@ export default {
     execute: '実行',
     resetToDefaults: 'デフォルトに戻す',
     clearSettings: '設定をクリア',
-    confirmClearSettings: '現在のエンジンのすべてのUCIオプション設定をクリアしますか？この操作は元に戻せません。',
-    settingsCleared: 'UCIオプション設定をクリアしました'
+    confirmClearSettings:
+      '現在のエンジンのすべてのUCIオプション設定をクリアしますか？この操作は元に戻せません。',
+    settingsCleared: 'UCIオプション設定をクリアしました',
   },
 
   // 時間ダイアログ
@@ -60,14 +61,15 @@ export default {
     analysisMode: '解析モード',
     resetToDefaults: 'デフォルトに戻す',
     clearSettings: '設定をクリア',
-    confirmClearSettings: 'すべての解析パラメータ設定をクリアしますか？この操作は元に戻せません。',
+    confirmClearSettings:
+      'すべての解析パラメータ設定をクリアしますか？この操作は元に戻せません。',
     settingsCleared: '解析パラメータ設定をクリアしました',
     analysisModes: {
       movetime: '手の時間による解析',
       maxThinkTime: '最大思考時間による解析',
       depth: '深さによる解析',
-      nodes: 'ノード数による解析'
-    }
+      nodes: 'ノード数による解析',
+    },
   },
 
   // 局面編集ダイアログ
@@ -83,7 +85,7 @@ export default {
     piece: '駒',
     validationStatus: {
       normal: '正常',
-      error: 'エラー: 暗子の数が一致しません'
+      error: 'エラー: 暗子の数が一致しません',
     },
     cancel: 'キャンセル',
     applyChanges: '変更を適用',
@@ -104,8 +106,8 @@ export default {
       black_pawn: '黒卒',
       unknown: '暗子',
       red_unknown: '赤暗子',
-      black_unknown: '黒暗子'
-    }
+      black_unknown: '黒暗子',
+    },
   },
 
   // FEN入力ダイアログ
@@ -113,7 +115,7 @@ export default {
     title: 'FEN文字列を入力',
     placeholder: 'FEN文字列を入力してください...',
     confirm: '確認',
-    cancel: 'キャンセル'
+    cancel: 'キャンセル',
   },
 
   // 駒をめくるプロンプトダイアログ
@@ -121,27 +123,28 @@ export default {
     title: '駒をめくるプロンプト',
     message: 'めくる駒を選択してください',
     confirm: '確認',
-    cancel: 'キャンセル'
+    cancel: 'キャンセル',
   },
 
   // についてダイアログ
   about: {
     title: 'JieqiBoxについて',
     version: 'バージョン',
-    description: 'TauriとVue 3で構築された現代的な揭棋解析とゲームデスクトップアプリケーション。',
+    description:
+      'TauriとVue 3で構築された現代的な揭棋解析とゲームデスクトップアプリケーション。',
     features: '機能',
     featuresList: [
       '揭棋ゲームサポート',
       'UCIエンジン解析',
       '棋譜の保存と読み込み',
       '局面編集',
-      'FEN文字列サポート'
+      'FEN文字列サポート',
     ],
     author: '作者',
     license: 'ライセンス',
     github: 'GitHub',
     downloadLatest: '最新バージョンをダウンロード',
-    viewLicense: 'ライセンス詳細を表示'
+    viewLicense: 'ライセンス詳細を表示',
   },
 
   // 解析サイドバー
@@ -181,17 +184,18 @@ export default {
     engineLog: 'エンジンログ',
     about: 'について',
     flipBoard: '盤を反転',
-    flipBoardBack: '向きを復元'
+    flipBoardBack: '向きを復元',
   },
 
   // エラーメッセージ
   errors: {
     saveNotationFailed: '棋譜の保存に失敗しました',
     openNotationFailed: '棋譜の読み込みに失敗しました',
-    engineNotLoaded: 'エンジンが読み込まれていないため、コマンドを送信できません',
+    engineNotLoaded:
+      'エンジンが読み込まれていないため、コマンドを送信できません',
     engineSendUnavailable: 'エンジンのsendメソッドが利用できません',
     darkPiecesMismatch: 'エラー: {darkCount}暗子 > {poolCount}池',
-    pieceCountExceeded: 'エラー: {pieceName} 総数超過!'
+    pieceCountExceeded: 'エラー: {pieceName} 総数超過!',
   },
 
   // 盤下部
@@ -209,7 +213,7 @@ export default {
     opening: '開始局面',
     noData: '分析データがありません',
     newGame: '新しいゲーム',
-    copied: '✓ コピーしました'
+    copied: '✓ コピーしました',
   },
 
   // 言語選択
@@ -219,7 +223,7 @@ export default {
     zh_tw: '繁體中文',
     en: 'English',
     vi: 'Tiếng Việt',
-    ja: '日本語'
+    ja: '日本語',
   },
 
   // インターフェース設定
@@ -228,7 +232,7 @@ export default {
     showCoordinates: '行と列の番号を表示',
     parseUciInfo: 'UCI情報を解析',
     showAnimations: '駒の動きのアニメーションを有効にする',
-    showPositionChart: '局面図を表示'
+    showPositionChart: '局面図を表示',
   },
 
   // UCIメッセージ
@@ -247,14 +251,15 @@ export default {
     checkmate: 'チェックメイト！利用可能な動きがありません。',
     bestMove: '最善手: {move}',
     noMoves: '利用可能な動きがありません',
-    engineReady: 'エンジンは準備ができました'
+    engineReady: 'エンジンは準備ができました',
   },
 
   // ゲーム操作確認
   gameConfirm: {
     clearHistoryTitle: '後続の棋譜をクリア',
-    clearHistoryMessage: '履歴局面で手を指しています。これにより、後続のすべての棋譜記録がクリアされます。続行しますか？',
+    clearHistoryMessage:
+      '履歴局面で手を指しています。これにより、後続のすべての棋譜記録がクリアされます。続行しますか？',
     confirm: '確認',
-    cancel: 'キャンセル'
-  }
-} 
+    cancel: 'キャンセル',
+  },
+}

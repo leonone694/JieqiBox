@@ -28,55 +28,63 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+  import { computed } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
-const { t, locale } = useI18n()
+  const { t, locale } = useI18n()
 
-// Current language
-const currentLanguage = computed(() => locale.value)
+  // Current language
+  const currentLanguage = computed(() => locale.value)
 
-// Available languages
-const availableLanguages = computed(() => ({
-  zh_cn: t('languages.zh_cn'),
-  zh_tw: t('languages.zh_tw'),
-  en: t('languages.en'),
-  vi: t('languages.vi'),
-  ja: t('languages.ja')
-}))
+  // Available languages
+  const availableLanguages = computed(() => ({
+    zh_cn: t('languages.zh_cn'),
+    zh_tw: t('languages.zh_tw'),
+    en: t('languages.en'),
+    vi: t('languages.vi'),
+    ja: t('languages.ja'),
+  }))
 
-// Change language
-const changeLanguage = (langCode: string) => {
-  locale.value = langCode
-  // Save to localStorage
-  localStorage.setItem('locale', langCode)
-}
+  // Change language
+  const changeLanguage = (langCode: string) => {
+    locale.value = langCode
+    // Save to localStorage
+    localStorage.setItem('locale', langCode)
+  }
 </script>
 
 <style lang="scss" scoped>
-.language-selector {
-  display: flex;
-  align-items: center;
-}
+  .language-selector {
+    display: flex;
+    align-items: center;
+  }
 
-// Language-specific font styles for each option
-.language-option-zh_cn {
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-}
+  // Language-specific font styles for each option
+  .language-option-zh_cn {
+    font-family:
+      'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+      sans-serif;
+  }
 
-.language-option-zh_tw {
-  font-family: 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei', sans-serif;
-}
+  .language-option-zh_tw {
+    font-family:
+      'Noto Sans TC', 'PingFang TC', 'Hiragino Sans TC', 'Microsoft JhengHei',
+      sans-serif;
+  }
 
-.language-option-ja {
-  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
-}
+  .language-option-ja {
+    font-family:
+      'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic',
+      'Meiryo', sans-serif;
+  }
 
-.language-option-en {
-  font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-}
+  .language-option-en {
+    font-family:
+      'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
 
-.language-option-vi {
-  font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-}
-</style> 
+  .language-option-vi {
+    font-family:
+      'Noto Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+</style>

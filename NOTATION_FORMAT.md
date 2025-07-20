@@ -77,6 +77,7 @@ The game notation file uses the JSON format with a `.json` file extension.
 ### moves
 
 Each move record contains:
+
 - `type`: The type of operation (`"move"` or `"adjust"`).
 - `data`: The operation data (move in UCI format or adjustment information).
 - `fen`: The FEN string of the board state after this move.
@@ -93,6 +94,7 @@ The index of the current move, used to restore the game position.
 The FEN string format is: `[Board] [Unrevealed Pool] [Side to Move] [Other Info]`
 
 ### Board Part
+
 - Uppercase letters: Red's revealed pieces (R: Chariot, N: Horse, B: Elephant, A: Advisor, K: King, C: Cannon, P: Pawn).
 - Lowercase letters: Black's revealed pieces (r: Chariot, n: Horse, b: Elephant, a: Advisor, k: King, c: Cannon, p: Pawn).
 - `X`: Red's unrevealed piece.
@@ -101,12 +103,15 @@ The FEN string format is: `[Board] [Unrevealed Pool] [Side to Move] [Other Info]
 - `/`: Row separator.
 
 ### Unrevealed Pool Part
+
 The format is `[PieceChar][Count]`, for example, `A2B2N2R2C2P5a2b2n2r2c2p5`.
+
 - Uppercase letters: Red's unrevealed pieces.
 - Lowercase letters: Black's unrevealed pieces.
 - Numbers: The count of that specific piece.
 
 ### Side to Move Part
+
 - `w`: Red's turn to move.
 - `b`: Black's turn to move.
 
@@ -125,8 +130,20 @@ The format is `[PieceChar][Count]`, for example, `A2B2N2R2C2P5a2b2n2r2c2p5`.
     "flipMode": "random",
     "currentFen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
     "unrevealedPieceCounts": {
-      "R": 2, "N": 2, "B": 2, "A": 2, "C": 2, "P": 5, "K": 1,
-      "r": 2, "n": 2, "b": 2, "a": 2, "c": 2, "p": 5, "k": 1
+      "R": 2,
+      "N": 2,
+      "B": 2,
+      "A": 2,
+      "C": 2,
+      "P": 5,
+      "K": 1,
+      "r": 2,
+      "n": 2,
+      "b": 2,
+      "a": 2,
+      "c": 2,
+      "p": 5,
+      "k": 1
     },
     "totalMoves": 0,
     "currentSide": "red"

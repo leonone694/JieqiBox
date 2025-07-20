@@ -27,7 +27,9 @@
         </div>
 
         <div class="setting-item" v-if="analysisMode === 'maxThinkTime'">
-          <label class="setting-label">{{ $t('timeDialog.maxThinkTime') }}</label>
+          <label class="setting-label">{{
+            $t('timeDialog.maxThinkTime')
+          }}</label>
           <v-text-field
             v-model.number="maxThinkTime"
             type="number"
@@ -75,7 +77,9 @@
         </div>
 
         <div class="setting-item">
-          <label class="setting-label">{{ $t('timeDialog.analysisMode') }}</label>
+          <label class="setting-label">{{
+            $t('timeDialog.analysisMode')
+          }}</label>
           <v-select
             v-model="analysisMode"
             :items="analysisModes"
@@ -89,206 +93,215 @@
       </v-card-text>
 
       <v-card-actions class="dialog-actions">
-        <v-btn color="grey" @click="resetToDefaults">{{ $t('timeDialog.resetToDefaults') }}</v-btn>
-        <v-btn color="error" @click="clearSettings">{{ $t('timeDialog.clearSettings') }}</v-btn>
+        <v-btn color="grey" @click="resetToDefaults">{{
+          $t('timeDialog.resetToDefaults')
+        }}</v-btn>
+        <v-btn color="error" @click="clearSettings">{{
+          $t('timeDialog.clearSettings')
+        }}</v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="primary" @click="closeDialog">{{ $t('common.confirm') }}</v-btn>
+        <v-btn color="primary" @click="closeDialog">{{
+          $t('common.confirm')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useI18n } from 'vue-i18n';
+  import { ref, computed, onMounted } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n();
+  const { t } = useI18n()
 
-// Analysis mode options
-const analysisModes = computed(() => [
-  { title: t('timeDialog.analysisModes.movetime'), value: 'movetime' },
-  { title: t('timeDialog.analysisModes.maxThinkTime'), value: 'maxThinkTime' },
-  { title: t('timeDialog.analysisModes.depth'), value: 'depth' },
-  { title: t('timeDialog.analysisModes.nodes'), value: 'nodes' }
-]);
+  // Analysis mode options
+  const analysisModes = computed(() => [
+    { title: t('timeDialog.analysisModes.movetime'), value: 'movetime' },
+    {
+      title: t('timeDialog.analysisModes.maxThinkTime'),
+      value: 'maxThinkTime',
+    },
+    { title: t('timeDialog.analysisModes.depth'), value: 'depth' },
+    { title: t('timeDialog.analysisModes.nodes'), value: 'nodes' },
+  ])
 
-// Component properties definition
-interface Props {
-  modelValue: boolean;
-}
-
-const props = defineProps<Props>();
-
-// Component events definition
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  'settings-changed': [settings: AnalysisSettings];
-}>();
-
-// Analysis settings interface
-interface AnalysisSettings {
-  movetime: number;
-  maxThinkTime: number;
-  maxDepth: number;
-  maxNodes: number;
-  analysisMode: string;
-}
-
-// Reactive data
-const movetime = ref(1000);
-const maxThinkTime = ref(5000);
-const maxDepth = ref(20);
-const maxNodes = ref(1000000);
-const analysisMode = ref('movetime');
-
-// Computed property - dialog visibility state
-const isVisible = computed({
-  get: () => props.modelValue,
-  set: (value: boolean) => emit('update:modelValue', value)
-});
-
-// Local storage key name
-const storageKey = 'analysis-settings';
-
-// Load settings from local storage
-const loadSettings = () => {
-  const savedSettings = localStorage.getItem(storageKey);
-  if (savedSettings) {
-    const settings = JSON.parse(savedSettings);
-    movetime.value = settings.movetime || 1000;
-    maxThinkTime.value = settings.maxThinkTime || 5000;
-    maxDepth.value = settings.maxDepth || 20;
-    maxNodes.value = settings.maxNodes || 1000000;
-    analysisMode.value = settings.analysisMode || 'movetime';
+  // Component properties definition
+  interface Props {
+    modelValue: boolean
   }
-};
 
-// Save settings to local storage
-const saveSettings = () => {
-  const settings = {
-    movetime: movetime.value,
-    maxThinkTime: maxThinkTime.value,
-    maxDepth: maxDepth.value,
-    maxNodes: maxNodes.value,
-    analysisMode: analysisMode.value
-  };
-  localStorage.setItem(storageKey, JSON.stringify(settings));
-};
+  const props = defineProps<Props>()
 
-// Update settings and notify parent component
-const updateSettings = () => {
-  saveSettings();
-  const settings: AnalysisSettings = {
-    movetime: movetime.value,
-    maxThinkTime: maxThinkTime.value,
-    maxDepth: maxDepth.value,
-    maxNodes: maxNodes.value,
-    analysisMode: analysisMode.value
-  };
-  emit('settings-changed', settings);
-  // console.log('TimeDialog: 设置已更新并保存:', settings);
-};
+  // Component events definition
+  const emit = defineEmits<{
+    'update:modelValue': [value: boolean]
+    'settings-changed': [settings: AnalysisSettings]
+  }>()
 
-// Reset to default values
-const resetToDefaults = () => {
-  movetime.value = 1000;
-  maxThinkTime.value = 5000;
-  maxDepth.value = 20;
-  maxNodes.value = 1000000;
-  analysisMode.value = 'movetime';
-  updateSettings();
-};
-
-// Clear settings
-const clearSettings = () => {
-  if (confirm(t('timeDialog.confirmClearSettings'))) {
-    // Reset to default values
-    movetime.value = 1000;
-    maxThinkTime.value = 5000;
-    maxDepth.value = 20;
-    maxNodes.value = 1000000;
-    analysisMode.value = 'movetime';
-    
-    // Clear local storage
-    localStorage.removeItem(storageKey);
-    
-    // Notify parent component that settings have changed
-    updateSettings();
-    
-    // console.log(t('timeDialog.settingsCleared'));
+  // Analysis settings interface
+  interface AnalysisSettings {
+    movetime: number
+    maxThinkTime: number
+    maxDepth: number
+    maxNodes: number
+    analysisMode: string
   }
-};
 
-// Close the dialog
-const closeDialog = () => {
-  // Ensure current settings are saved when closing the dialog
-  saveSettings();
-  isVisible.value = false;
-};
+  // Reactive data
+  const movetime = ref(1000)
+  const maxThinkTime = ref(5000)
+  const maxDepth = ref(20)
+  const maxNodes = ref(1000000)
+  const analysisMode = ref('movetime')
 
-// Load settings after the component is mounted
-onMounted(() => {
-  loadSettings();
-});
-
-// Expose methods to the parent component
-defineExpose({
-  getSettings: () => ({
-    movetime: movetime.value,
-    maxThinkTime: maxThinkTime.value,
-    maxDepth: maxDepth.value,
-    maxNodes: maxNodes.value,
-    analysisMode: analysisMode.value
+  // Computed property - dialog visibility state
+  const isVisible = computed({
+    get: () => props.modelValue,
+    set: (value: boolean) => emit('update:modelValue', value),
   })
-});
+
+  // Local storage key name
+  const storageKey = 'analysis-settings'
+
+  // Load settings from local storage
+  const loadSettings = () => {
+    const savedSettings = localStorage.getItem(storageKey)
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      movetime.value = settings.movetime || 1000
+      maxThinkTime.value = settings.maxThinkTime || 5000
+      maxDepth.value = settings.maxDepth || 20
+      maxNodes.value = settings.maxNodes || 1000000
+      analysisMode.value = settings.analysisMode || 'movetime'
+    }
+  }
+
+  // Save settings to local storage
+  const saveSettings = () => {
+    const settings = {
+      movetime: movetime.value,
+      maxThinkTime: maxThinkTime.value,
+      maxDepth: maxDepth.value,
+      maxNodes: maxNodes.value,
+      analysisMode: analysisMode.value,
+    }
+    localStorage.setItem(storageKey, JSON.stringify(settings))
+  }
+
+  // Update settings and notify parent component
+  const updateSettings = () => {
+    saveSettings()
+    const settings: AnalysisSettings = {
+      movetime: movetime.value,
+      maxThinkTime: maxThinkTime.value,
+      maxDepth: maxDepth.value,
+      maxNodes: maxNodes.value,
+      analysisMode: analysisMode.value,
+    }
+    emit('settings-changed', settings)
+    // console.log('TimeDialog: 设置已更新并保存:', settings);
+  }
+
+  // Reset to default values
+  const resetToDefaults = () => {
+    movetime.value = 1000
+    maxThinkTime.value = 5000
+    maxDepth.value = 20
+    maxNodes.value = 1000000
+    analysisMode.value = 'movetime'
+    updateSettings()
+  }
+
+  // Clear settings
+  const clearSettings = () => {
+    if (confirm(t('timeDialog.confirmClearSettings'))) {
+      // Reset to default values
+      movetime.value = 1000
+      maxThinkTime.value = 5000
+      maxDepth.value = 20
+      maxNodes.value = 1000000
+      analysisMode.value = 'movetime'
+
+      // Clear local storage
+      localStorage.removeItem(storageKey)
+
+      // Notify parent component that settings have changed
+      updateSettings()
+
+      // console.log(t('timeDialog.settingsCleared'));
+    }
+  }
+
+  // Close the dialog
+  const closeDialog = () => {
+    // Ensure current settings are saved when closing the dialog
+    saveSettings()
+    isVisible.value = false
+  }
+
+  // Load settings after the component is mounted
+  onMounted(() => {
+    loadSettings()
+  })
+
+  // Expose methods to the parent component
+  defineExpose({
+    getSettings: () => ({
+      movetime: movetime.value,
+      maxThinkTime: maxThinkTime.value,
+      maxDepth: maxDepth.value,
+      maxNodes: maxNodes.value,
+      analysisMode: analysisMode.value,
+    }),
+  })
 </script>
 
 <style lang="scss" scoped>
-.dialog-title {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 16px 24px;
-  
-  .v-icon {
+  .dialog-title {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    padding: 16px 24px;
+
+    .v-icon {
+      color: white;
+    }
   }
-}
 
-.settings-container {
-  padding: 20px;
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  
-  &:last-child {
-    margin-bottom: 0;
+  .settings-container {
+    padding: 20px;
   }
-}
 
-.setting-label {
-  font-weight: 500;
-  color: #333;
-  min-width: 120px;
-  font-size: 14px;
-}
+  .setting-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
 
-.setting-input {
-  flex: 1;
-  max-width: 200px;
-}
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 
-.dialog-actions {
-  padding: 16px 24px;
-  background: #f9f9f9;
-  border-top: 1px solid #e0e0e0;
-  
-  .v-btn {
-    text-transform: none;
+  .setting-label {
     font-weight: 500;
+    color: #333;
+    min-width: 120px;
+    font-size: 14px;
   }
-}
+
+  .setting-input {
+    flex: 1;
+    max-width: 200px;
+  }
+
+  .dialog-actions {
+    padding: 16px 24px;
+    background: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+
+    .v-btn {
+      text-transform: none;
+      font-weight: 500;
+    }
+  }
 </style>

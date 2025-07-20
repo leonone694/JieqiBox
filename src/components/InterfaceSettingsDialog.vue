@@ -26,21 +26,24 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="primary" text @click="closeDialog">{{ $t('common.close') }}</v-btn>
+        <v-btn color="primary" text @click="closeDialog">{{
+          $t('common.close')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { useInterfaceSettings } from '@/composables/useInterfaceSettings';
+  import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
 
-const isDialogVisible = defineModel<boolean>();
+  const isDialogVisible = defineModel<boolean>()
 
-// Get showCoordinates and parseUciInfo from shared state
-const { showCoordinates, parseUciInfo, showAnimations, showPositionChart } = useInterfaceSettings();
+  // Get showCoordinates and parseUciInfo from shared state
+  const { showCoordinates, parseUciInfo, showAnimations, showPositionChart } =
+    useInterfaceSettings()
 
-const closeDialog = () => {
-  isDialogVisible.value = false;
-};
+  const closeDialog = () => {
+    isDialogVisible.value = false
+  }
 </script>

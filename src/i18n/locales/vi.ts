@@ -31,7 +31,7 @@ export default {
     gameTitle: 'Ván Cờ úp',
     interfaceSettings: 'Cài đặt giao diện',
     variation: 'Biến thể',
-    noMoreVariations: 'Không còn biến thể nào khả dụng'
+    noMoreVariations: 'Không còn biến thể nào khả dụng',
   },
 
   // Hộp thoại tùy chọn UCI
@@ -48,7 +48,7 @@ export default {
     clearSettings: 'Xóa cài đặt',
     confirmClearSettings:
       'Bạn có chắc chắn muốn xóa tất cả cấu hình tùy chọn UCI cho động cơ hiện tại không? Hành động này không thể hoàn tác.',
-    settingsCleared: 'Đã xóa cấu hình tùy chọn UCI'
+    settingsCleared: 'Đã xóa cấu hình tùy chọn UCI',
   },
 
   // Hộp thoại thời gian
@@ -68,8 +68,8 @@ export default {
       movetime: 'Phân tích theo thời gian nước đi',
       maxThinkTime: 'Phân tích theo thời gian suy nghĩ tối đa',
       depth: 'Phân tích theo độ sâu',
-      nodes: 'Phân tích theo số nút'
-    }
+      nodes: 'Phân tích theo số nút',
+    },
   },
 
   // Hộp thoại chỉnh sửa vị trí
@@ -85,7 +85,7 @@ export default {
     piece: 'Quân cờ',
     validationStatus: {
       normal: 'Bình thường',
-      error: 'Lỗi: Số lượng quân úp không khớp'
+      error: 'Lỗi: Số lượng quân úp không khớp',
     },
     cancel: 'Hủy',
     applyChanges: 'Áp dụng thay đổi',
@@ -106,8 +106,8 @@ export default {
       black_pawn: 'Tốt đen',
       unknown: 'Quân úp',
       red_unknown: 'Quân úp đỏ',
-      black_unknown: 'Quân úp đen'
-    }
+      black_unknown: 'Quân úp đen',
+    },
   },
 
   // Hộp thoại nhập FEN
@@ -115,7 +115,7 @@ export default {
     title: 'Nhập chuỗi FEN',
     placeholder: 'Vui lòng nhập chuỗi FEN...',
     confirm: 'Xác nhận',
-    cancel: 'Hủy'
+    cancel: 'Hủy',
   },
 
   // Hộp thoại nhắc lật quân
@@ -123,7 +123,7 @@ export default {
     title: 'Nhắc lật quân',
     message: 'Vui lòng chọn quân cờ để lật',
     confirm: 'Xác nhận',
-    cancel: 'Hủy'
+    cancel: 'Hủy',
   },
 
   // Hộp thoại về
@@ -138,13 +138,13 @@ export default {
       'Phân tích động cơ UCI',
       'Lưu và tải biên bản',
       'Chỉnh sửa vị trí',
-      'Hỗ trợ chuỗi FEN'
+      'Hỗ trợ chuỗi FEN',
     ],
     author: 'Tác giả',
     license: 'Giấy phép',
     github: 'GitHub',
     downloadLatest: 'Tải xuống phiên bản mới nhất',
-    viewLicense: 'Xem chi tiết giấy phép'
+    viewLicense: 'Xem chi tiết giấy phép',
   },
 
   // Thanh bên phân tích
@@ -184,7 +184,7 @@ export default {
     engineLog: 'Nhật ký động cơ',
     about: 'Về',
     flipBoard: 'Lật bàn cờ',
-    flipBoardBack: 'Khôi phục hướng'
+    flipBoardBack: 'Khôi phục hướng',
   },
 
   // Thông báo lỗi
@@ -194,7 +194,7 @@ export default {
     engineNotLoaded: 'Chưa tải động cơ, không thể gửi lệnh',
     engineSendUnavailable: 'Phương thức send của động cơ không khả dụng',
     darkPiecesMismatch: 'Lỗi: {darkCount} quân úp > {poolCount} trong kho',
-    pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!'
+    pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!',
   },
 
   // Phần dưới bàn cờ
@@ -212,7 +212,7 @@ export default {
     opening: 'Khai cuộc',
     noData: 'Không có dữ liệu phân tích',
     newGame: 'Ván mới',
-    copied: '✓ Đã sao chép'
+    copied: '✓ Đã sao chép',
   },
 
   // Lựa chọn ngôn ngữ
@@ -222,7 +222,7 @@ export default {
     zh_tw: '繁體中文',
     en: 'English',
     vi: 'Tiếng Việt',
-    ja: '日本語'
+    ja: '日本語',
   },
 
   interfaceSettings: {
@@ -230,7 +230,7 @@ export default {
     showCoordinates: 'Hiển thị số hàng và cột',
     parseUciInfo: 'Phân tích thông tin UCI',
     showAnimations: 'Bật hoạt ảnh di chuyển quân cờ',
-    showPositionChart: 'Hiển thị biểu đồ vị trí'
+    showPositionChart: 'Hiển thị biểu đồ vị trí',
   },
 
   // Tin nhắn UCI
@@ -249,14 +249,15 @@ export default {
     checkmate: 'Chiếu hết! Không có nước đi nào.',
     bestMove: 'Nước đi tốt nhất: {move}',
     noMoves: 'Không có nước đi nào',
-    engineReady: 'Engine đã sẵn sàng'
+    engineReady: 'Engine đã sẵn sàng',
   },
 
   // Xác nhận thao tác trò chơi
   gameConfirm: {
     clearHistoryTitle: 'Xóa lịch sử tiếp theo',
-    clearHistoryMessage: 'Bạn đang thực hiện nước đi trong vị trí lịch sử. Điều này sẽ xóa tất cả lịch sử nước đi tiếp theo. Bạn có chắc chắn muốn tiếp tục không?',
+    clearHistoryMessage:
+      'Bạn đang thực hiện nước đi trong vị trí lịch sử. Điều này sẽ xóa tất cả lịch sử nước đi tiếp theo. Bạn có chắc chắn muốn tiếp tục không?',
     confirm: 'Xác nhận',
-    cancel: 'Hủy'
-  }
+    cancel: 'Hủy',
+  },
 }

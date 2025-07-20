@@ -1,13 +1,17 @@
 <template>
   <!-- Custom draggable dialog overlay -->
-  <div v-if="isDialogVisible" class="custom-dialog-overlay" @click="handleOverlayClick">
-    <div 
-      v-if="gameState.pendingFlip.value" 
+  <div
+    v-if="isDialogVisible"
+    class="custom-dialog-overlay"
+    @click="handleOverlayClick"
+  >
+    <div
+      v-if="gameState.pendingFlip.value"
       class="custom-draggable-dialog"
       :style="dialogStyle"
       @click.stop
     >
-      <div 
+      <div
         class="dialog-title-bar"
         @mousedown="startDrag"
         @touchstart="startDrag"
@@ -24,7 +28,11 @@
             @click="selectPiece(item.name)"
           >
             <div class="piece-option">
-              <img :src="getPieceImageUrl(item.name)" :alt="item.name" class="piece-image" />
+              <img
+                :src="getPieceImageUrl(item.name)"
+                :alt="item.name"
+                class="piece-image"
+              />
               <div>{{ item.count }}</div>
             </div>
           </div>
@@ -44,286 +52,292 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref, onMounted, onUnmounted } from 'vue';
+  import { computed, inject, ref, onMounted, onUnmounted } from 'vue'
 
-const gameState: any = inject('game-state');
+  const gameState: any = inject('game-state')
 
-// Drag state management
-const isDragging = ref(false);
-const dragOffset = ref({ x: 0, y: 0 });
-const dialogPosition = ref({ x: 0, y: 0 });
+  // Drag state management
+  const isDragging = ref(false)
+  const dragOffset = ref({ x: 0, y: 0 })
+  const dialogPosition = ref({ x: 0, y: 0 })
 
-const isDialogVisible = computed(() => gameState.pendingFlip.value !== null);
+  const isDialogVisible = computed(() => gameState.pendingFlip.value !== null)
 
-// Calculate dialog position for dragging
-const dialogStyle = computed(() => ({
-  position: 'fixed' as const,
-  top: `${dialogPosition.value.y}px`,
-  left: `${dialogPosition.value.x}px`,
-  transform: 'none',
-  margin: '0',
-  zIndex: 9999
-}));
+  // Calculate dialog position for dragging
+  const dialogStyle = computed(() => ({
+    position: 'fixed' as const,
+    top: `${dialogPosition.value.y}px`,
+    left: `${dialogPosition.value.x}px`,
+    transform: 'none',
+    margin: '0',
+    zIndex: 9999,
+  }))
 
-const availablePieces = computed(() => {
-  if (!gameState.pendingFlip.value) return [];
-  const requiredSide = gameState.pendingFlip.value.side;
-  
-  return Object.entries(gameState.unrevealedPieceCounts.value)
-    .map(([char, count]) => {
-      const name = gameState.getPieceNameFromChar(char);
-      return { name, char, count };
-    })
-    .filter(item => {
-      const pieceSide = item.name.startsWith('red') ? 'red' : 'black';
-      return pieceSide === requiredSide && (item.count as number) > 0;
-    });
-});
+  const availablePieces = computed(() => {
+    if (!gameState.pendingFlip.value) return []
+    const requiredSide = gameState.pendingFlip.value.side
 
-// Initialize dialog position to center of screen
-onMounted(() => {
-  centerDialog();
-});
+    return Object.entries(gameState.unrevealedPieceCounts.value)
+      .map(([char, count]) => {
+        const name = gameState.getPieceNameFromChar(char)
+        return { name, char, count }
+      })
+      .filter(item => {
+        const pieceSide = item.name.startsWith('red') ? 'red' : 'black'
+        return pieceSide === requiredSide && (item.count as number) > 0
+      })
+  })
 
-// Center the dialog on screen
-function centerDialog() {
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-  const dialogWidth = 500; // max-width from v-dialog
-  const dialogHeight = 400; // estimated height
-  
-  dialogPosition.value = {
-    x: Math.max(0, (windowWidth - dialogWidth) / 2),
-    y: Math.max(0, (windowHeight - dialogHeight) / 2)
-  };
-}
+  // Initialize dialog position to center of screen
+  onMounted(() => {
+    centerDialog()
+  })
 
-// Start dragging when mouse down on title bar
-function startDrag(event: MouseEvent | TouchEvent) {
-  isDragging.value = true;
-  
-  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-  const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
-  
-  dragOffset.value = {
-    x: clientX - dialogPosition.value.x,
-    y: clientY - dialogPosition.value.y
-  };
-  
-  // Add event listeners for dragging
-  document.addEventListener('mousemove', handleDrag);
-  document.addEventListener('touchmove', handleDrag, { passive: false });
-  document.addEventListener('mouseup', stopDrag);
-  document.addEventListener('touchend', stopDrag);
-  
-  // Prevent default to avoid text selection
-  event.preventDefault();
-}
+  // Center the dialog on screen
+  function centerDialog() {
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+    const dialogWidth = 500 // max-width from v-dialog
+    const dialogHeight = 400 // estimated height
 
-// Handle dragging movement
-function handleDrag(event: MouseEvent | TouchEvent) {
-  if (!isDragging.value) return;
-  
-  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-  const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
-  
-  // Calculate new position
-  const newX = clientX - dragOffset.value.x;
-  const newY = clientY - dragOffset.value.y;
-  
-  // Allow dragging across the entire window without constraints
-  // Only prevent the dialog from being completely outside the viewport
-  const minX = -480; // Allow dialog to be almost completely outside left edge
-  const maxX = window.innerWidth - 20; // Allow dialog to be almost completely outside right edge
-  const minY = -380; // Allow dialog to be almost completely outside top edge
-  const maxY = window.innerHeight - 20; // Allow dialog to be almost completely outside bottom edge
-  
-  dialogPosition.value = {
-    x: Math.max(minX, Math.min(newX, maxX)),
-    y: Math.max(minY, Math.min(newY, maxY))
-  };
-  
-  // Prevent default for touch events
-  if ('touches' in event) {
-    event.preventDefault();
+    dialogPosition.value = {
+      x: Math.max(0, (windowWidth - dialogWidth) / 2),
+      y: Math.max(0, (windowHeight - dialogHeight) / 2),
+    }
   }
-}
 
-// Stop dragging
-function stopDrag() {
-  isDragging.value = false;
-  
-  // Remove event listeners
-  document.removeEventListener('mousemove', handleDrag);
-  document.removeEventListener('touchmove', handleDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.removeEventListener('touchend', stopDrag);
-}
+  // Start dragging when mouse down on title bar
+  function startDrag(event: MouseEvent | TouchEvent) {
+    isDragging.value = true
 
-// Clean up event listeners on component unmount
-onUnmounted(() => {
-  stopDrag();
-});
+    const clientX =
+      'touches' in event ? event.touches[0].clientX : event.clientX
+    const clientY =
+      'touches' in event ? event.touches[0].clientY : event.clientY
 
-// Handle overlay click to prevent dialog closing when clicking outside
-function handleOverlayClick(event: Event) {
-  // Only close if clicking directly on the overlay, not on the dialog
-  if (event.target === event.currentTarget) {
-    cancelFlip();
+    dragOffset.value = {
+      x: clientX - dialogPosition.value.x,
+      y: clientY - dialogPosition.value.y,
+    }
+
+    // Add event listeners for dragging
+    document.addEventListener('mousemove', handleDrag)
+    document.addEventListener('touchmove', handleDrag, { passive: false })
+    document.addEventListener('mouseup', stopDrag)
+    document.addEventListener('touchend', stopDrag)
+
+    // Prevent default to avoid text selection
+    event.preventDefault()
   }
-}
 
-function selectPiece(pieceName: string) {
-  if (gameState.pendingFlip.value) {
-    gameState.pendingFlip.value.callback(pieceName);
+  // Handle dragging movement
+  function handleDrag(event: MouseEvent | TouchEvent) {
+    if (!isDragging.value) return
+
+    const clientX =
+      'touches' in event ? event.touches[0].clientX : event.clientX
+    const clientY =
+      'touches' in event ? event.touches[0].clientY : event.clientY
+
+    // Calculate new position
+    const newX = clientX - dragOffset.value.x
+    const newY = clientY - dragOffset.value.y
+
+    // Allow dragging across the entire window without constraints
+    // Only prevent the dialog from being completely outside the viewport
+    const minX = -480 // Allow dialog to be almost completely outside left edge
+    const maxX = window.innerWidth - 20 // Allow dialog to be almost completely outside right edge
+    const minY = -380 // Allow dialog to be almost completely outside top edge
+    const maxY = window.innerHeight - 20 // Allow dialog to be almost completely outside bottom edge
+
+    dialogPosition.value = {
+      x: Math.max(minX, Math.min(newX, maxX)),
+      y: Math.max(minY, Math.min(newY, maxY)),
+    }
+
+    // Prevent default for touch events
+    if ('touches' in event) {
+      event.preventDefault()
+    }
   }
-}
 
-function cancelFlip() {
-if (gameState.pendingFlip.value) {
-  // When the dialog is closed directly, flip a piece randomly based on probability
-  const requiredSide = gameState.pendingFlip.value.side;
-  const pool = Object.entries(gameState.unrevealedPieceCounts.value)
-    .filter(([, count]) => (count as number) > 0)
-    .flatMap(([char, count]) => {
-      const name = gameState.getPieceNameFromChar(char);
-      return name.startsWith(requiredSide) ? Array(count as number).fill(name) : [];
-    });
+  // Stop dragging
+  function stopDrag() {
+    isDragging.value = false
 
-  if (pool.length > 0) {
-    // Randomly select a piece
-    const randomIndex = Math.floor(Math.random() * pool.length);
-    const chosenName = pool[randomIndex];
-    gameState.pendingFlip.value.callback(chosenName);
-  } else {
-    // If no pieces are available, just cancel
-    gameState.pendingFlip.value = null;
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleDrag)
+    document.removeEventListener('touchmove', handleDrag)
+    document.removeEventListener('mouseup', stopDrag)
+    document.removeEventListener('touchend', stopDrag)
   }
-}
-}
 
-function getPieceImageUrl(pieceName: string): string {
-  const imageName = pieceName || 'dark_piece';
-  return new URL(`../assets/${imageName}.svg`, import.meta.url).href;
-};
+  // Clean up event listeners on component unmount
+  onUnmounted(() => {
+    stopDrag()
+  })
+
+  // Handle overlay click to prevent dialog closing when clicking outside
+  function handleOverlayClick(event: Event) {
+    // Only close if clicking directly on the overlay, not on the dialog
+    if (event.target === event.currentTarget) {
+      cancelFlip()
+    }
+  }
+
+  function selectPiece(pieceName: string) {
+    if (gameState.pendingFlip.value) {
+      gameState.pendingFlip.value.callback(pieceName)
+    }
+  }
+
+  function cancelFlip() {
+    if (gameState.pendingFlip.value) {
+      // When the dialog is closed directly, flip a piece randomly based on probability
+      const requiredSide = gameState.pendingFlip.value.side
+      const pool = Object.entries(gameState.unrevealedPieceCounts.value)
+        .filter(([, count]) => (count as number) > 0)
+        .flatMap(([char, count]) => {
+          const name = gameState.getPieceNameFromChar(char)
+          return name.startsWith(requiredSide)
+            ? Array(count as number).fill(name)
+            : []
+        })
+
+      if (pool.length > 0) {
+        // Randomly select a piece
+        const randomIndex = Math.floor(Math.random() * pool.length)
+        const chosenName = pool[randomIndex]
+        gameState.pendingFlip.value.callback(chosenName)
+      } else {
+        // If no pieces are available, just cancel
+        gameState.pendingFlip.value = null
+      }
+    }
+  }
+
+  function getPieceImageUrl(pieceName: string): string {
+    const imageName = pieceName || 'dark_piece'
+    return new URL(`../assets/${imageName}.svg`, import.meta.url).href
+  }
 </script>
 
 <style scoped>
-/* Custom dialog overlay */
-.custom-dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  /* Custom dialog overlay */
+  .custom-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-/* Custom draggable dialog */
-.custom-draggable-dialog {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
-  width: 100%;
-  user-select: none;
-  overflow: hidden;
-}
+  /* Custom draggable dialog */
+  .custom-draggable-dialog {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 100%;
+    user-select: none;
+    overflow: hidden;
+  }
 
-/* Dialog title bar */
-.dialog-title-bar {
-  cursor: move;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 16px 20px;
-  font-size: 18px;
-  font-weight: 500;
-}
+  /* Dialog title bar */
+  .dialog-title-bar {
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 500;
+  }
 
-.drag-handle {
-  font-size: 16px;
-  color: #666;
-  cursor: move;
-  user-select: none;
-}
+  .drag-handle {
+    font-size: 16px;
+    color: #666;
+    cursor: move;
+    user-select: none;
+  }
 
-/* Dialog content */
-.dialog-content {
-  padding: 20px;
-}
+  /* Dialog content */
+  .dialog-content {
+    padding: 20px;
+  }
 
-/* Pieces grid */
-.pieces-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 10px;
-  margin-bottom: 20px;
-}
+  /* Pieces grid */
+  .pieces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
 
-.piece-item {
-  text-align: center;
-}
+  .piece-item {
+    text-align: center;
+  }
 
-.piece-option {
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-  border: 1px solid transparent;
-}
+  .piece-option {
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+  }
 
-.piece-option:hover {
-  background-color: #f0f0f0;
-  border-color: #ddd;
-}
+  .piece-option:hover {
+    background-color: #f0f0f0;
+    border-color: #ddd;
+  }
 
-.piece-image {
-  width: 40px;
-  height: 40px;
-  display: block;
-  margin: 0 auto 5px;
-}
+  .piece-image {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 0 auto 5px;
+  }
 
-/* Error message */
-.error-message {
-  text-align: center;
-  color: #d32f2f;
-  padding: 10px;
-}
+  /* Error message */
+  .error-message {
+    text-align: center;
+    color: #d32f2f;
+    padding: 10px;
+  }
 
-/* Dialog actions */
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px 20px;
-  border-top: 1px solid #e0e0e0;
-  background-color: #fafafa;
-}
+  /* Dialog actions */
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #fafafa;
+  }
 
-.spacer {
-  flex: 1;
-}
+  .spacer {
+    flex: 1;
+  }
 
-.cancel-btn {
-  background: none;
-  border: none;
-  color: #1976d2;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
+  .cancel-btn {
+    background: none;
+    border: none;
+    color: #1976d2;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
 
-.cancel-btn:hover {
-  background-color: rgba(25, 118, 210, 0.1);
-}
+  .cancel-btn:hover {
+    background-color: rgba(25, 118, 210, 0.1);
+  }
 </style>

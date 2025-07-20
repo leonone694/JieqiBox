@@ -2,8 +2,7 @@
 
 ![JieqiBox Logo](./wood_yellow_logo.png)
 
-[![madewithlove](https://img.shields.io/badge/made_with-%E2%9D%A4-red?style=for-the-badge&labelColor=orange
-)](https://github.com/Velithia/JieqiBox/)
+[![madewithlove](https://img.shields.io/badge/made_with-%E2%9D%A4-red?style=for-the-badge&labelColor=orange)](https://github.com/Velithia/JieqiBox/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Join the Discord](https://img.shields.io/discord/1391287860249759827?style=for-the-badge&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/d8HxM5Erad)
 
@@ -12,40 +11,40 @@ Built with Tauri and Vue 3, it aims to be a lightweight yet capable companion fo
 
 You can compile a supporting engine from the official Pikafish repository at <https://github.com/official-pikafish/Pikafish/tree/jieqi> or <https://github.com/official-pikafish/Pikafish/tree/jieqi_old>.
 
-| Windows | Android |
-|---------|---------|
+| Windows                                          | Android                                                  |
+| ------------------------------------------------ | -------------------------------------------------------- |
 | ![JieqiBox Windows Screenshot](./screenshot.png) | ![JieqiBox Android Screenshot](./android_screenshot.png) |
 
 ---
 
 ## Features
 
-* Interactive board with full rule enforcement  
-* Real-time engine analysis (Pikafish UCI protocol)  
-* Import / export positions in FEN (compatible with Pikafish)  
-* Visual board editor and complete move history  
-* Clean, responsive interface (Vuetify 3)  
-* Built-in localisation (简体中文, 繁體中文, English, Tiếng Việt, 日本語)
+- Interactive board with full rule enforcement
+- Real-time engine analysis (Pikafish UCI protocol)
+- Import / export positions in FEN (compatible with Pikafish)
+- Visual board editor and complete move history
+- Clean, responsive interface (Vuetify 3)
+- Built-in localisation (简体中文, 繁體中文, English, Tiếng Việt, 日本語)
 
 ---
 
 ## Technology
 
-| Layer      | Tools & Libraries                         |
-|------------|-------------------------------------------|
-| Core       | [Tauri](https://tauri.app/) (Rust)        |
-| Front end  | [Vue 3](https://vuejs.org/) + TypeScript  |
-| UI         | [Vuetify 3](https://vuetifyjs.com/)       |
-| Build      | [Vite](https://vitejs.dev/)               |
-| Styling    | [SCSS](https://sass-lang.com/)            |
-| i18n       | [Vue I18n](https://vue-i18n.intlify.dev/) |
+| Layer     | Tools & Libraries                         |
+| --------- | ----------------------------------------- |
+| Core      | [Tauri](https://tauri.app/) (Rust)        |
+| Front end | [Vue 3](https://vuejs.org/) + TypeScript  |
+| UI        | [Vuetify 3](https://vuetifyjs.com/)       |
+| Build     | [Vite](https://vitejs.dev/)               |
+| Styling   | [SCSS](https://sass-lang.com/)            |
+| i18n      | [Vue I18n](https://vue-i18n.intlify.dev/) |
 
 ---
 
 ## Quick Install
 
-1. Visit the [releases page](https://github.com/Velithia/JieqiBox/releases).  
-2. Download the package for your system (`.msi`, `.dmg`, `.AppImage`, ...).  
+1. Visit the [releases page](https://github.com/Velithia/JieqiBox/releases).
+2. Download the package for your system (`.msi`, `.dmg`, `.AppImage`, ...).
 3. Run the installer and start playing.
 
 ---
@@ -54,8 +53,8 @@ You can compile a supporting engine from the official Pikafish repository at <ht
 
 ### Prerequisites
 
-* Node.js and npm (or Yarn)  
-* Rust toolchain (see Tauri’s official [setup guide](https://tauri.app/v1/guides/getting-started/prerequisites/))
+- Node.js and npm (or Yarn)
+- Rust toolchain (see Tauri’s official [setup guide](https://tauri.app/v1/guides/getting-started/prerequisites/))
 
 ### Steps
 
@@ -68,7 +67,7 @@ npm install        # or: yarn install
 
 # start in development mode with hot reload
 npm run tauri dev
-````
+```
 
 ### Production Build
 

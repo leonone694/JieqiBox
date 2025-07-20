@@ -9,18 +9,22 @@ import ja from './locales/ja'
 const getDefaultLocale = () => {
   // Get saved language setting from localStorage
   const savedLocale = localStorage.getItem('locale')
-  if (savedLocale && ['zh_cn', 'zh_tw', 'en', 'vi', 'ja'].includes(savedLocale)) {
+  if (
+    savedLocale &&
+    ['zh_cn', 'zh_tw', 'en', 'vi', 'ja'].includes(savedLocale)
+  ) {
     return savedLocale
   }
-  
+
   // Detect browser language
   const browserLang = navigator.language.toLowerCase()
   if (browserLang.startsWith('zh-cn')) return 'zh_cn'
-  if (browserLang.startsWith('zh-tw') || browserLang.startsWith('zh-hk')) return 'zh_tw'
+  if (browserLang.startsWith('zh-tw') || browserLang.startsWith('zh-hk'))
+    return 'zh_tw'
   if (browserLang.startsWith('vi')) return 'vi'
   if (browserLang.startsWith('ja')) return 'ja'
   if (browserLang.startsWith('en')) return 'en'
-  
+
   // Default to Simplified Chinese
   return 'zh_cn'
 }
@@ -34,8 +38,8 @@ const i18n = createI18n({
     zh_tw,
     en,
     vi,
-    ja
-  }
+    ja,
+  },
 })
 
-export default i18n 
+export default i18n

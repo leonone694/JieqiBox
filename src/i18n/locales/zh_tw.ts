@@ -31,7 +31,7 @@ export default {
     gameTitle: '揭棋對局',
     interfaceSettings: '介面設定',
     variation: '變招',
-    noMoreVariations: '已無更多可變的走法'
+    noMoreVariations: '已無更多可變的走法',
   },
 
   // UCI選項對話框
@@ -46,8 +46,9 @@ export default {
     execute: '執行',
     resetToDefaults: '恢復預設',
     clearSettings: '清除設定',
-    confirmClearSettings: '確定要清除當前引擎的所有UCI選項配置嗎？此操作不可恢復。',
-    settingsCleared: '已清除UCI選項配置'
+    confirmClearSettings:
+      '確定要清除當前引擎的所有UCI選項配置嗎？此操作不可恢復。',
+    settingsCleared: '已清除UCI選項配置',
   },
 
   // 時間對話框
@@ -66,8 +67,8 @@ export default {
       movetime: '按步時分析',
       maxThinkTime: '按最大思考時間分析',
       depth: '按層數分析',
-      nodes: '按節點數分析'
-    }
+      nodes: '按節點數分析',
+    },
   },
 
   // 局面編輯對話框
@@ -83,7 +84,7 @@ export default {
     piece: '棋子',
     validationStatus: {
       normal: '正常',
-      error: '錯誤: 暗子數量不匹配'
+      error: '錯誤: 暗子數量不匹配',
     },
     cancel: '取消',
     applyChanges: '套用變更',
@@ -104,8 +105,8 @@ export default {
       black_pawn: '黑卒',
       unknown: '暗子',
       red_unknown: '紅暗子',
-      black_unknown: '黑暗子'
-    }
+      black_unknown: '黑暗子',
+    },
   },
 
   // FEN輸入對話框
@@ -113,7 +114,7 @@ export default {
     title: '輸入FEN字串',
     placeholder: '請輸入FEN字串...',
     confirm: '確認',
-    cancel: '取消'
+    cancel: '取消',
   },
 
   // 翻子提示對話框
@@ -121,27 +122,28 @@ export default {
     title: '翻子提示',
     message: '請選擇要翻開的棋子',
     confirm: '確認',
-    cancel: '取消'
+    cancel: '取消',
   },
 
   // 關於對話框
   about: {
     title: '關於JieqiBox',
     version: '版本',
-    description: '一個現代化的揭棋分析和對弈桌面應用程式，基於 Tauri 和 Vue 3 建構。',
+    description:
+      '一個現代化的揭棋分析和對弈桌面應用程式，基於 Tauri 和 Vue 3 建構。',
     features: '功能特性',
     featuresList: [
       '揭棋對局支援',
       'UCI引擎分析',
       '棋譜儲存和載入',
       '局面編輯',
-      'FEN字串支援'
+      'FEN字串支援',
     ],
     author: '作者',
     license: '授權條款',
     github: 'GitHub',
     downloadLatest: '下載最新版本',
-    viewLicense: '查看授權條款詳情'
+    viewLicense: '查看授權條款詳情',
   },
 
   // 分析側邊欄
@@ -181,7 +183,7 @@ export default {
     engineLog: '引擎日誌',
     about: '關於',
     flipBoard: '翻轉棋盤',
-    flipBoardBack: '恢復方向'
+    flipBoardBack: '恢復方向',
   },
 
   // 錯誤訊息
@@ -191,7 +193,7 @@ export default {
     engineNotLoaded: '引擎未載入，無法傳送命令',
     engineSendUnavailable: '引擎send方法不可用',
     darkPiecesMismatch: '錯誤: {darkCount}暗子 > {poolCount}池',
-    pieceCountExceeded: '錯誤: {pieceName} 總數超限!'
+    pieceCountExceeded: '錯誤: {pieceName} 總數超限!',
   },
 
   // 棋盤底部
@@ -209,7 +211,7 @@ export default {
     opening: '開局',
     noData: '暫無分析數據',
     newGame: '新對局',
-    copied: '✓ 已複製'
+    copied: '✓ 已複製',
   },
 
   // 語言選擇
@@ -219,7 +221,7 @@ export default {
     zh_tw: '繁體中文',
     en: 'English',
     vi: 'Tiếng Việt',
-    ja: '日本語'
+    ja: '日本語',
   },
 
   // 介面設定
@@ -228,7 +230,7 @@ export default {
     showCoordinates: '顯示座標',
     parseUciInfo: '解析UCI資訊',
     showAnimations: '開啟走子動畫',
-    showPositionChart: '顯示局勢圖'
+    showPositionChart: '顯示局勢圖',
   },
 
   // UCI訊息
@@ -247,14 +249,15 @@ export default {
     checkmate: '絕殺！無著可走',
     bestMove: '最佳著法: {move}',
     noMoves: '無著可走',
-    engineReady: '引擎已就緒'
+    engineReady: '引擎已就緒',
   },
 
   // 遊戲操作確認
   gameConfirm: {
     clearHistoryTitle: '清空後續棋譜',
-    clearHistoryMessage: '您正在歷史局面中走子，這將清空後續的所有棋譜記錄。確定要繼續嗎？',
+    clearHistoryMessage:
+      '您正在歷史局面中走子，這將清空後續的所有棋譜記錄。確定要繼續嗎？',
     confirm: '確定',
-    cancel: '取消'
-  }
-} 
+    cancel: '取消',
+  },
+}

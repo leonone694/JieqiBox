@@ -28,53 +28,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, watch, computed } from 'vue';
+  import { ref, inject, watch, computed } from 'vue'
 
-// Define props and emits
-interface Props {
-  modelValue: boolean;
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: boolean): void;
-  (e: 'confirm', fen: string): void;
-}
-
-const props = defineProps<Props>();
-const emit = defineEmits<Emits>();
-
-// Inject properties and methods from the main game state composable.
-const {
-  generateFen,
-}: any = inject('game-state');
-
-const fenInput = ref('');
-
-// Computed property for v-model binding
-const dialogVisible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-});
-
-// Watch for the dialog's visibility state changes.
-watch(dialogVisible, (newValue) => {
-  // When the dialog becomes visible, populate the textarea with the current game's FEN string.
-  if (newValue) {
-    fenInput.value = generateFen();
+  // Define props and emits
+  interface Props {
+    modelValue: boolean
   }
-});
 
-// Function to close the dialog
-function closeDialog() {
-  // Close the dialog directly without processing FEN
-  dialogVisible.value = false;
-}
+  interface Emits {
+    (e: 'update:modelValue', value: boolean): void
+    (e: 'confirm', fen: string): void
+  }
 
-// Function to confirm FEN input
-function confirm() {
-  // Emit confirm event with FEN string
-  emit('confirm', fenInput.value);
-  // Close the dialog
-  dialogVisible.value = false;
-}
+  const props = defineProps<Props>()
+  const emit = defineEmits<Emits>()
+
+  // Inject properties and methods from the main game state composable.
+  const { generateFen }: any = inject('game-state')
+
+  const fenInput = ref('')
+
+  // Computed property for v-model binding
+  const dialogVisible = computed({
+    get: () => props.modelValue,
+    set: value => emit('update:modelValue', value),
+  })
+
+  // Watch for the dialog's visibility state changes.
+  watch(dialogVisible, newValue => {
+    // When the dialog becomes visible, populate the textarea with the current game's FEN string.
+    if (newValue) {
+      fenInput.value = generateFen()
+    }
+  })
+
+  // Function to close the dialog
+  function closeDialog() {
+    // Close the dialog directly without processing FEN
+    dialogVisible.value = false
+  }
+
+  // Function to confirm FEN input
+  function confirm() {
+    // Emit confirm event with FEN string
+    emit('confirm', fenInput.value)
+    // Close the dialog
+    dialogVisible.value = false
+  }
 </script>
