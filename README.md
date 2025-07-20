@@ -14,6 +14,12 @@ You can compile a supporting engine from the official Pikafish repository at <ht
 | Windows                                          | Android                                                  |
 | ------------------------------------------------ | -------------------------------------------------------- |
 | ![JieqiBox Windows Screenshot](./screenshot.png) | ![JieqiBox Android Screenshot](./android_screenshot.png) |
+---
+
+## Anime mascot (Reva)
+Meet Reva-chan, the official mascot for JieqiBox~ We hope she makes your journey with Jieqi more fun.
+
+![Reva's artwork](./reva.png)
 
 ---
 
