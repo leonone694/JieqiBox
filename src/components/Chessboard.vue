@@ -27,7 +27,7 @@
           :style="
             rcStyle(
               displayRow(lastMovePositions.from.row),
-              lastMovePositions.from.col
+              displayCol(lastMovePositions.from.col)
             )
           "
         ></div>
@@ -36,7 +36,7 @@
           :style="
             rcStyle(
               displayRow(lastMovePositions.to.row),
-              lastMovePositions.to.col
+              displayCol(lastMovePositions.to.col)
             )
           "
         ></div>
@@ -162,7 +162,10 @@
     GY = 100 - PAD_Y,
     OX = PAD_X / 2,
     OY = PAD_Y / 2
-  const files = 'abcdefghi'.split('')
+  const files = computed(() => {
+    const baseFiles = 'abcdefghi'.split('')
+    return gs.isBoardFlipped.value ? baseFiles.slice().reverse() : baseFiles
+  })
 
   const ranks = computed(() => {
     const baseRanks = Array.from({ length: 10 }, (_, i) => 9 - i)
@@ -256,11 +259,13 @@
     }
   }
 
+  // Calculate rank label position (ranks array already handles flip state)
   const rankLabelStyle = (index: number) => {
     const { y } = percentFromRC(index, 0)
     return { top: `${y}%`, transform: 'translateY(-50%)' }
   }
 
+  // Calculate file label position (files array already handles flip state)
   const fileLabelStyle = (index: number) => {
     const { x } = percentFromRC(0, index)
     return { left: `${x}%`, transform: 'translateX(-50%)' }
@@ -319,7 +324,7 @@
   }
   const arrs = ref<Arrow[]>([])
   const uciToRC = (uci: string) => ({
-    col: files.indexOf(uci[0]),
+    col: files.value.indexOf(uci[0]),
     row: 9 - +uci[1],
   })
 
@@ -338,23 +343,27 @@
     const toCol = file2col(uci[2])
     const toRow = rank2row(uci[3])
 
-    let displayFromRow, displayToRow
+    let displayFromRow, displayToRow, displayFromCol, displayToCol
 
     if (!gs.isBoardFlipped.value) {
       // Normal state: no coordinate conversion needed
       displayFromRow = fromRow
       displayToRow = toRow
+      displayFromCol = fromCol
+      displayToCol = toCol
     } else {
-      // Flipped state: coordinate conversion needed
+      // Flipped state: coordinate conversion needed - both vertically and horizontally
       displayFromRow = 9 - fromRow
       displayToRow = 9 - toRow
+      displayFromCol = 8 - fromCol // Horizontal mirror flip
+      displayToCol = 8 - toCol // Horizontal mirror flip
     }
 
     // Convert back to UCI format
     const displayFromRank = row2rank(displayFromRow)
     const displayToRank = row2rank(displayToRow)
-    const displayFromFile = col2file(fromCol)
-    const displayToFile = col2file(toCol)
+    const displayFromFile = col2file(displayFromCol)
+    const displayToFile = col2file(displayToCol)
 
     return `${displayFromFile}${displayFromRank}${displayToFile}${displayToRank}`
   }
@@ -440,6 +449,9 @@
 
   // Helper to convert stored row to display row based on flip state
   const displayRow = (r: number) => (gs.isBoardFlipped.value ? 9 - r : r)
+
+  // Helper to convert stored column to display column based on flip state
+  const displayCol = (c: number) => (gs.isBoardFlipped.value ? 8 - c : c)
 </script>
 
 <style scoped lang="scss">

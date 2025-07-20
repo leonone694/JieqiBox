@@ -1069,9 +1069,10 @@ export function useChessGame() {
     // Generate UCI coordinates; if the board is flipped, coordinates need to be converted
     const toUci = (r: number, c: number) => {
       if (isBoardFlipped.value) {
-        // After flipping, coordinates need to be converted
+        // After flipping, coordinates need to be converted - both vertically and horizontally
         const flippedRow = 9 - r
-        return `${String.fromCharCode(97 + c)}${9 - flippedRow}`
+        const flippedCol = 8 - c // Horizontal mirror flip
+        return `${String.fromCharCode(97 + flippedCol)}${9 - flippedRow}`
       } else {
         return `${String.fromCharCode(97 + c)}${9 - r}`
       }
@@ -1097,8 +1098,8 @@ export function useChessGame() {
       to: { row: targetRow, col: targetCol },
     }
     const historyMove = {
-      from: { row: convertRowForHistory(originalRow), col: originalCol },
-      to: { row: convertRowForHistory(targetRow), col: targetCol },
+      from: convertPositionForHistory(originalRow, originalCol),
+      to: convertPositionForHistory(targetRow, targetCol),
     }
 
     if (targetPiece) {
@@ -1156,11 +1157,11 @@ export function useChessGame() {
         const displayHighlightMove = {
           from: {
             row: isBoardFlipped.value ? 9 - originalRow : originalRow,
-            col: originalCol,
+            col: isBoardFlipped.value ? 8 - originalCol : originalCol, // Horizontal mirror flip
           },
           to: {
             row: isBoardFlipped.value ? 9 - targetRow : targetRow,
-            col: targetCol,
+            col: isBoardFlipped.value ? 8 - targetCol : targetCol, // Horizontal mirror flip
           },
         }
         lastMovePositions.value = displayHighlightMove
@@ -1250,15 +1251,17 @@ export function useChessGame() {
     const toCol = file2col(uci[2])
     const toRow = rank2row(uci[3])
 
-    // Flip the coordinates
+    // Flip the coordinates - both vertically and horizontally
     const flippedFromRow = 9 - fromRow
     const flippedToRow = 9 - toRow
+    const flippedFromCol = 8 - fromCol // Horizontal mirror flip
+    const flippedToCol = 8 - toCol // Horizontal mirror flip
 
     // Convert back to UCI format
     const flippedFromRank = row2rank(flippedFromRow)
     const flippedToRank = row2rank(flippedToRow)
-    const flippedFromFile = col2file(fromCol)
-    const flippedToFile = col2file(toCol)
+    const flippedFromFile = col2file(flippedFromCol)
+    const flippedToFile = col2file(flippedToCol)
 
     return `${flippedFromFile}${flippedFromRank}${flippedToFile}${flippedToRank}`
   }
@@ -1669,10 +1672,11 @@ export function useChessGame() {
   const toggleBoardFlip = () => {
     isBoardFlipped.value = !isBoardFlipped.value
 
-    // Flip the positions of all pieces
+    // Flip the positions of all pieces - both vertically and horizontally
     pieces.value = pieces.value.map(piece => ({
       ...piece,
-      row: 9 - piece.row,
+      row: 9 - piece.row, // Vertical flip (up-down)
+      col: 8 - piece.col, // Horizontal mirror flip (left-right)
     }))
     // Reset zIndex for all pieces when flipping the board
     pieces.value.forEach(p => (p.zIndex = undefined))
@@ -1742,9 +1746,10 @@ export function useChessGame() {
     // Generate UCI coordinates; if the board is flipped, coordinates need to be converted
     const toUci = (r: number, c: number) => {
       if (isBoardFlipped.value) {
-        // After flipping, coordinates need to be converted
+        // After flipping, coordinates need to be converted - both vertically and horizontally
         const flippedRow = 9 - r
-        return `${String.fromCharCode(97 + c)}${9 - flippedRow}`
+        const flippedCol = 8 - c // Horizontal mirror flip
+        return `${String.fromCharCode(97 + flippedCol)}${9 - flippedRow}`
       } else {
         return `${String.fromCharCode(97 + c)}${9 - r}`
       }
@@ -1761,9 +1766,19 @@ export function useChessGame() {
     return legalMoves
   }
 
-  // Add a helper function to convert row for history
-  function convertRowForHistory(row: number): number {
-    return isBoardFlipped.value ? 9 - row : row
+  // Add a helper function to convert position for history - both row and column
+  function convertPositionForHistory(
+    row: number,
+    col: number
+  ): { row: number; col: number } {
+    if (isBoardFlipped.value) {
+      return {
+        row: 9 - row, // Vertical flip
+        col: 8 - col, // Horizontal mirror flip
+      }
+    } else {
+      return { row, col }
+    }
   }
 
   // Update comment for a specific move

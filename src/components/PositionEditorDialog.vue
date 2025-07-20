@@ -341,12 +341,14 @@
     )
   }
 
-  // Flip the board vertically (visual flip, also affects main interface display)
+  // Flip the board both vertically and horizontally (visual flip, also affects main interface display)
   const flipBoard = () => {
     editingPieces.value = editingPieces.value.map(piece => ({
       ...piece,
-      row: 9 - piece.row,
-      initialRow: 9 - piece.initialRow,
+      row: 9 - piece.row, // Vertical flip (up-down)
+      col: 8 - piece.col, // Horizontal mirror flip (left-right)
+      initialRow: 9 - piece.initialRow, // Vertical flip for initial position
+      initialCol: 8 - piece.initialCol, // Horizontal mirror flip for initial position
     }))
 
     // Use the game state's flip function
