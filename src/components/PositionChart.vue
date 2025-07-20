@@ -500,7 +500,7 @@ onUnmounted(() => {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 250px; // Increased height for better visibility
+  height: 200px; // Increased height for better visibility
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
@@ -603,7 +603,7 @@ onUnmounted(() => {
   }
   
   .chart-container {
-    height: 200px; // Adjusted height for mobile
+    height: 180px; // Adjusted height for mobile
   }
   
   .chart-controls {

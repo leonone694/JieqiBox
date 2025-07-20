@@ -11,7 +11,7 @@ use std::process::Command;
 use encoding_rs::GBK;
 use std::path::Path;
 use std::fs;
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "android"))]
 use std::os::unix::fs::PermissionsExt;
 
 // -------------------------------------------------------------
