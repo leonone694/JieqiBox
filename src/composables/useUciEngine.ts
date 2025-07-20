@@ -42,6 +42,8 @@ export function useUciEngine(generateFen: () => string) {
   const uciOptionsText = ref(''); // cache UCI options raw text
   const currentEnginePath = ref(''); // current engine path
   const currentSearchMoves = ref<string[]>([]); // Current searchmoves restriction for variation analysis
+  const analysisStartTime = ref<number | null>(null); // Track when analysis started
+  const lastAnalysisTime = ref<number>(0); // Store the last analysis time
 
   // Android-specific state
   const isAndroidPlatform = ref(isAndroid());
@@ -159,7 +161,11 @@ export function useUciEngine(generateFen: () => string) {
 
         // If we reach here, it's a legitimate bestmove from a completed analysis.
         isThinking.value = false;
-        console.log(`[DEBUG] BESTMOVE_PROCESSED: '${mv}'.`);
+        // Save the analysis time before resetting
+        const analysisTime = analysisStartTime.value ? Date.now() - analysisStartTime.value : 0;
+        lastAnalysisTime.value = analysisTime; // Store the analysis time
+        console.log(`[DEBUG] BESTMOVE_PROCESSED: '${mv}'. Analysis stopped. Analysis time: ${analysisTime}ms`);
+        analysisStartTime.value = null; // Reset analysis start time
         
         // Check if it's a checkmate situation (none) - use trim() to remove possible spaces
         const trimmedMv = mv.trim();
@@ -316,6 +322,8 @@ export function useUciEngine(generateFen: () => string) {
     isThinking.value = true;
     isStopping.value = false; // Reset stopping flag on new analysis
     playOnStop.value = false; // Reset play-on-stop flag
+    analysisStartTime.value = Date.now(); // Record analysis start time
+    console.log('[DEBUG] START_ANALYSIS: Started analysis at:', analysisStartTime.value);
 
     // Reset throttling state for new analysis
     resetThrottling();
@@ -445,6 +453,6 @@ export function useUciEngine(generateFen: () => string) {
   return { 
     engineOutput, isEngineLoaded, isEngineLoading, bestMove, analysis, isThinking, pvMoves, multiPvMoves,
     loadEngine, startAnalysis, stopAnalysis, uciOptionsText, send, currentEnginePath, applySavedSettings,
-    currentSearchMoves, clearSearchMoves, bundleIdentifier
+    currentSearchMoves, clearSearchMoves, bundleIdentifier, analysisStartTime, lastAnalysisTime
   };
 }

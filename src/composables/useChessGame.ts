@@ -19,6 +19,8 @@ export type HistoryEntry = {
   fen: string;
   comment?: string; // User comment for this move
   lastMove?: { from: { row: number; col: number }; to: { row: number; col: number } }; // record the start and end positions of the last move
+  engineScore?: number; // Engine analysis score for this move (only recorded if engine was thinking)
+  engineTime?: number; // Engine analysis time in milliseconds for this move (only recorded if engine was thinking)
 };
 
 // Custom game notation format interface
@@ -285,9 +287,89 @@ export function useChessGame() {
     }
 
     const fen = generateFen();
-    newHistory.push({ type, data, fen, lastMove });
+    
+    // Get engine analysis data if engine was thinking before this move
+    let engineScore: number | undefined;
+    let engineTime: number | undefined;
+    
+    if (type === 'move') {
+      // Check if engine was thinking before this move
+      // We need to get engine state from the global state
+      const engineState = (window as any).__ENGINE_STATE__;
+      console.log('[DEBUG] RECORD_AND_FINALIZE: Engine state check:', {
+        hasEngineState: !!engineState,
+        isThinking: engineState?.isThinking?.value,
+        analysisText: engineState?.analysis?.value,
+        analysisStartTime: engineState?.analysisStartTime?.value
+      });
+      
+      // Check if this is an AI move (we can detect this by checking if the move was triggered by bestMove)
+      const isAiMove = (window as any).__LAST_AI_MOVE__ === data;
+      console.log('[DEBUG] RECORD_AND_FINALIZE: Is AI move:', isAiMove);
+      
+      if (engineState && (engineState.isThinking?.value || isAiMove)) {
+        console.log('[DEBUG] RECORD_AND_FINALIZE: Engine was thinking or this is an AI move, extracting data...');
+        
+        // Extract score from current analysis
+        const analysisText = engineState.analysis?.value || '';
+        console.log('[DEBUG] RECORD_AND_FINALIZE: Analysis text:', analysisText);
+        
+        // Try to extract score from the last valid engine output line that contains score
+        const engineOutput = engineState.engineOutput?.value || [];
+        let lastValidScoreLine = '';
+        for (let i = engineOutput.length - 1; i >= 0; i--) {
+          const line = engineOutput[i];
+          if (line.kind === 'recv' && line.text.includes('score') && !line.text.includes('lowerbound') && !line.text.includes('upperbound')) {
+            lastValidScoreLine = line.text;
+            break;
+          }
+        }
+        
+        console.log('[DEBUG] RECORD_AND_FINALIZE: Last valid score line:', lastValidScoreLine);
+        
+        const scoreMatch = lastValidScoreLine.match(/score\s+(cp|mate)\s+(-?\d+)/);
+        if (scoreMatch) {
+          const scoreType = scoreMatch[1];
+          const scoreValue = parseInt(scoreMatch[2]);
+          // Convert to centipawns (cp) or mate score
+          engineScore = scoreType === 'mate' ? (scoreValue > 0 ? 10000 : -10000) : scoreValue;
+          console.log('[DEBUG] RECORD_AND_FINALIZE: Extracted score:', { scoreType, scoreValue, engineScore });
+        } else {
+          console.log('[DEBUG] RECORD_AND_FINALIZE: No valid score match found in engine output');
+        }
+        
+        // Get analysis time from lastAnalysisTime if available, otherwise calculate from current time
+        if (engineState.lastAnalysisTime?.value) {
+          engineTime = engineState.lastAnalysisTime.value;
+          console.log('[DEBUG] RECORD_AND_FINALIZE: Using stored analysis time:', engineTime);
+        } else if (engineState.analysisStartTime?.value) {
+          engineTime = Date.now() - engineState.analysisStartTime.value;
+          console.log('[DEBUG] RECORD_AND_FINALIZE: Calculated time from current analysis:', engineTime);
+        } else {
+          engineTime = 0;
+          console.log('[DEBUG] RECORD_AND_FINALIZE: No analysis time available');
+        }
+      } else {
+        console.log('[DEBUG] RECORD_AND_FINALIZE: Engine is not thinking and not an AI move, skipping engine data');
+      }
+    }
+    
+    console.log('[DEBUG] RECORD_AND_FINALIZE: Final engine data:', { engineScore, engineTime });
+    
+    const newEntry = { type, data, fen, lastMove, engineScore, engineTime };
+    console.log('[DEBUG] RECORD_AND_FINALIZE: New history entry:', newEntry);
+    
+    newHistory.push(newEntry);
     history.value = newHistory;
     currentMoveIndex.value = history.value.length;
+    
+    console.log('[DEBUG] RECORD_AND_FINALIZE: Updated history length:', history.value.length);
+    
+    // Clear the AI move flag after recording
+    if ((window as any).__LAST_AI_MOVE__ === data) {
+      console.log('[DEBUG] RECORD_AND_FINALIZE: Clearing AI move flag for move:', data);
+      (window as any).__LAST_AI_MOVE__ = null;
+    }
     
     if (type === 'move') {
       // Enable animation when making moves
@@ -374,6 +456,7 @@ export function useChessGame() {
     pendingFlip.value = null;
     console.log(`[DEBUG] completeFlipAfterMove: 'pendingFlip' cleared. Finalizing move.`);
     // In free mode, lastMovePositions has already been set in movePiece, here we only need to record history
+    console.log(`[DEBUG] completeFlipAfterMove: About to call recordAndFinalize with move: ${uciMove}`);
     recordAndFinalize('move', uciMove, lastMove);
   };
   
@@ -853,6 +936,7 @@ export function useChessGame() {
       console.log(`[DEBUG] movePiece: Regular move detected. Finalizing.`);
       // Set highlight
       lastMovePositions.value = highlightMove;
+      console.log(`[DEBUG] movePiece: About to call recordAndFinalize with move: ${uciMove}`);
       recordAndFinalize('move', uciMove, historyMove);
     }
   };

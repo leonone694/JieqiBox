@@ -96,6 +96,14 @@
           <template v-if="entry.type === 'move'">
             <span class="move-number">{{ getMoveNumber(idx) }}</span>
             <span class="move-uci">{{ entry.data }}</span>
+            <div v-if="entry.engineScore !== undefined || entry.engineTime !== undefined" class="engine-analysis">
+              <span v-if="entry.engineScore !== undefined" class="engine-score" :class="getScoreClass(entry.engineScore)">
+                {{ formatScore(entry.engineScore) }}
+              </span>
+              <span v-if="entry.engineTime !== undefined" class="engine-time">
+                {{ formatTime(entry.engineTime) }}
+              </span>
+            </div>
           </template>
           <template v-else-if="entry.type === 'adjust'">
             <span class="move-adjust">{{ $t('analysis.adjustment') }}: {{ entry.data }}</span>
@@ -496,6 +504,7 @@ function checkAndTriggerAi() {
   if (should) {
     // AI auto-play mode uses limited analysis settings (time, depth, nodes)
     isManualAnalysis.value = false; // Mark as AI auto-play analysis
+    console.log('[DEBUG] CHECK_AND_TRIGGER_AI: Starting AI analysis with settings:', analysisSettings.value);
     startAnalysis(analysisSettings.value, engineMovesSinceLastReveal.value, baseFenForEngine.value, currentSearchMoves.value);
   }
 }
@@ -667,6 +676,9 @@ onMounted(() => {
   loadAnalysisSettings();
   watchStorageChanges();
   
+  // Debug: Check history entries on mount
+  debugHistoryEntries();
+  
   // Listen for force stop AI event. This is used to stop analysis in various scenarios.
   const handleForceStopAi = (event: CustomEvent) => {
     console.log(`[DEBUG] HANDLE_FORCE_STOP_AI: Caught event. Reason: ${event.detail?.reason}`);
@@ -739,6 +751,11 @@ watch(
   { immediate: true },
 );
 
+// Debug: Watch engine thinking state
+watch(isThinking, (thinking) => {
+  console.log('[DEBUG] ENGINE_THINKING_STATE: Changed to:', thinking);
+});
+
 // This watcher ensures that if a manual move is made while in "manual analysis" mode,
 // a new analysis is automatically started for the resulting position.
 watch(currentMoveIndex, () => {
@@ -755,6 +772,8 @@ watch(bestMove, (move) => {
   // The isThinking check was removed because the new isStopping flag in useUciEngine handles stale bestmove commands more reliably.
   if (isEngineLoaded.value && isCurrentAiTurnNow()) {
     console.log(`[DEBUG] BESTMOVE_WATCHER: Condition met. Playing move.`);
+    // Set the AI move flag before playing the move
+    (window as any).__LAST_AI_MOVE__ = move;
     setTimeout(() => {
       const ok = playMoveFromUci(move);
       bestMove.value = '';
@@ -783,8 +802,10 @@ watch(
       if (moveListElement.value) {
         moveListElement.value.scrollTop = moveListElement.value.scrollHeight;
       }
-
     });
+    
+    // Debug: Check history entries when history changes
+    debugHistoryEntries();
   },
   { deep: true },
 );
@@ -933,6 +954,40 @@ const parsedAnalysisLines = computed(() => {
     return line; // Non-info lines are returned as is
   });
 });
+
+// Helper functions for engine analysis display
+function getScoreClass(score: number): string {
+  if (score >= 10000) return 'score-mate-positive';
+  if (score <= -10000) return 'score-mate-negative';
+  if (score > 50) return 'score-positive';
+  if (score < -50) return 'score-negative';
+  return 'score-neutral';
+}
+
+function formatScore(score: number): string {
+  if (score >= 10000) return 'M+';
+  if (score <= -10000) return 'M-';
+  return score.toString(); // Display centipawns directly
+}
+
+function formatTime(timeMs: number): string {
+  if (timeMs < 1000) return `${timeMs}ms`;
+  return `${(timeMs / 1000).toFixed(1)}s`;
+}
+
+// Debug function to check history entries
+function debugHistoryEntries() {
+  console.log('[DEBUG] HISTORY_ENTRIES: Current history:', history.value);
+  history.value.forEach((entry: any, idx: number) => {
+    if (entry.type === 'move') {
+      console.log(`[DEBUG] HISTORY_ENTRY_${idx}:`, {
+        data: entry.data,
+        engineScore: entry.engineScore,
+        engineTime: entry.engineTime
+      });
+    }
+  });
+}
 </script>
 
 <style lang="scss">
@@ -1060,6 +1115,27 @@ const parsedAnalysisLines = computed(() => {
 }
 .move-uci {
   flex: 1;
+}
+
+.engine-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+.engine-score {
+  font-weight: bold;
+  padding: 1px 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.engine-time {
+  color: #666;
+  font-size: 10px;
+  white-space: nowrap;
 }
 .move-adjust {
   color: #888;

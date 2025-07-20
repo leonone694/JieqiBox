@@ -51,6 +51,9 @@ provide('engine-state', engine);
 
 // Provide the FEN input dialog state from game state
 provide('fen-input-dialog-visible', game.isFenInputDialogVisible);
+
+// Set global engine state for useChessGame to access
+(window as any).__ENGINE_STATE__ = engine;
 </script>
 
 <template>
