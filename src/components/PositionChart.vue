@@ -45,636 +45,495 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-  import { useI18n } from 'vue-i18n'
-  import type { HistoryEntry } from '@/composables/useChessGame'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { HistoryEntry } from '@/composables/useChessGame'
 
-  const { t } = useI18n()
+const { t } = useI18n()
 
-  // Props
-  interface Props {
-    history: HistoryEntry[]
-    currentMoveIndex: number
-  }
+/* ---------- Component Props ---------- */
+interface Props {
+  history: HistoryEntry[]
+  currentMoveIndex: number
+}
+const props = defineProps<Props>()
 
-  const props = defineProps<Props>()
+/* ---------- Canvas-related Refs ---------- */
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+const chartContainer = ref<HTMLElement | null>(null)
+const chartContext = ref<CanvasRenderingContext2D | null>(null)
 
-  // Chart state
-  const chartCanvas = ref<HTMLCanvasElement | null>(null)
-  const chartContainer = ref<HTMLElement | null>(null)
-  const chartContext = ref<CanvasRenderingContext2D | null>(null)
+/* ---------- Display State ---------- */
+const showMoveLabels = ref(true)
+const tooltipVisible = ref(false)
+const tooltipStyle = ref({ left: '0px', top: '0px' })
+const tooltipData = ref({
+  move: '',
+  score: '',
+  scoreClass: '',
+  time: '',
+})
 
-  // Chart settings
-  const showMoveLabels = ref(true)
-  const tooltipVisible = ref(false)
-  const tooltipStyle = ref({ left: '0px', top: '0px' })
-  const tooltipData = ref({
-    move: '',
-    score: '',
-    scoreClass: '',
-    time: '',
+/* ---------- Dimensions ---------- */
+const chartWidth = ref(0)
+const chartHeight = ref(0)
+const padding = { top: 20, right: 20, bottom: 40, left: 60 }
+
+/* ---------- Parameter: asinh Scaling Factor ---------- */
+const scaleFactor = 100                                         // <- Key parameter
+const transform = (s: number) => Math.asinh(s / scaleFactor)     // Original -> Compressed
+const inverseTransform = (v: number) => Math.sinh(v) * scaleFactor // Compressed -> Original
+
+/* ---------- Data Preprocessing ---------- */
+const chartData = computed(() => {
+  const data: Array<{
+    moveIndex: number
+    moveNumber: number
+    moveText: string
+    score: number | null
+    time: number | null
+    isRedMove: boolean
+  }> = []
+
+  // Initial position
+  data.push({
+    moveIndex: 0,
+    moveNumber: 0,
+    moveText: t('positionChart.opening'),
+    score: null,
+    time: null,
+    isRedMove: false,
   })
 
-  // Chart dimensions
-  const chartWidth = ref(0)
-  const chartHeight = ref(0)
-  const padding = { top: 20, right: 20, bottom: 40, left: 60 }
+  // Moves
+  let moveCount = 0
+  props.history.forEach((entry, index) => {
+    if (entry.type === 'move') {
+      moveCount++
+      const moveNumber = Math.floor((moveCount - 1) / 2) + 1
+      const isRedMove = (moveCount - 1) % 2 === 0
+      const moveText = `${moveNumber}${isRedMove ? '.' : '...'} ${entry.data}`
 
-  // Data processing
-  const chartData = computed(() => {
-    const data: Array<{
-      moveIndex: number
-      moveNumber: number
-      moveText: string
-      score: number | null
-      time: number | null
-      isRedMove: boolean
-    }> = []
-
-    // Add initial position (opening)
-    data.push({
-      moveIndex: 0,
-      moveNumber: 0,
-      moveText: t('positionChart.opening'),
-      score: null,
-      time: null,
-      isRedMove: false,
-    })
-
-    // Process move history
-    let moveCount = 0
-    props.history.forEach((entry, index) => {
-      if (entry.type === 'move') {
-        moveCount++
-        const moveNumber = Math.floor((moveCount - 1) / 2) + 1
-        const isRedMove = (moveCount - 1) % 2 === 0
-        const moveText = `${moveNumber}${isRedMove ? '.' : '...'} ${entry.data}`
-
-        // Convert score to red perspective (black moves have inverted scores)
-        let convertedScore = entry.engineScore
-        if (
-          convertedScore !== null &&
-          convertedScore !== undefined &&
-          !isRedMove
-        ) {
-          convertedScore = -convertedScore // Invert score for black moves
-        }
-
-        data.push({
-          moveIndex: index + 1,
-          moveNumber,
-          moveText,
-          score:
-            convertedScore !== null && convertedScore !== undefined
-              ? convertedScore
-              : null,
-          time: entry.engineTime || null,
-          isRedMove,
-        })
+      // Convert engine score to Red's perspective
+      let converted = entry.engineScore
+      if (converted !== null && converted !== undefined && !isRedMove) {
+        converted = -converted
       }
-    })
 
-    return data
+      data.push({
+        moveIndex: index + 1,
+        moveNumber,
+        moveText,
+        score: converted ?? null,
+        time: entry.engineTime ?? null,
+        isRedMove,
+      })
+    }
   })
+  return data
+})
 
-  // Move labels for overlay
-  const moveLabels = computed(() => {
-    if (!showMoveLabels.value || !chartData.value.length) return []
+/* ---------- Move Labels ---------- */
+const moveLabels = computed(() => {
+  if (!showMoveLabels.value || !chartData.value.length) return []
 
-    const labels: Array<{
-      text: string
-      style: { left: string; top: string }
-      isCurrentMove: boolean
-    }> = []
+  const labels: Array<{
+    text: string
+    style: { left: string; top: string }
+    isCurrentMove: boolean
+  }> = []
 
-    const dataPoints = chartData.value
-    const xStep =
-      (chartWidth.value - padding.left - padding.right) /
-      Math.max(1, dataPoints.length - 1)
+  const points = chartData.value
+  const xStep =
+    (chartWidth.value - padding.left - padding.right) /
+    Math.max(1, points.length - 1)
 
-    dataPoints.forEach((point, index) => {
-      if (point.score !== null && point.score !== undefined) {
-        const x = padding.left + index * xStep
-        const y = padding.top + 10 // Position labels at top
-
-        labels.push({
-          text: point.moveText,
-          style: {
-            left: `${x}px`,
-            top: `${y}px`,
-          },
-          isCurrentMove: point.moveIndex === props.currentMoveIndex,
-        })
-      }
-    })
-
-    return labels
+  points.forEach((p, i) => {
+    if (p.score !== null && p.score !== undefined) {
+      const x = padding.left + i * xStep
+      labels.push({
+        text: p.moveText,
+        style: { left: `${x}px`, top: `${padding.top + 10}px` },
+        isCurrentMove: p.moveIndex === props.currentMoveIndex,
+      })
+    }
   })
+  return labels
+})
 
-  // Chart drawing
-  const drawChart = () => {
-    if (!chartCanvas.value || !chartContext.value) return
+/* ---------- Main Drawing Function ---------- */
+const drawChart = () => {
+  if (!chartCanvas.value || !chartContext.value) return
+  const ctx = chartContext.value
+  ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height)
 
-    const ctx = chartContext.value
-    const canvas = chartCanvas.value
+  const points = chartData.value
+  if (points.length < 2) return
 
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    const dataPoints = chartData.value
-    if (dataPoints.length < 2) return
-
-    // Calculate chart area
-    const chartArea = {
-      x: padding.left,
-      y: padding.top,
-      width: chartWidth.value - padding.left - padding.right,
-      height: chartHeight.value - padding.top - padding.bottom,
-    }
-
-    // Find score range
-    const scores = dataPoints
-      .map(p => p.score)
-      .filter(s => s !== null) as number[]
-    if (scores.length === 0) {
-      // Draw empty chart message
-      ctx.fillStyle = '#999'
-      ctx.font = '14px Arial'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(
-        t('positionChart.noData') || 'No analysis data available',
-        chartArea.x + chartArea.width / 2,
-        chartArea.y + chartArea.height / 2
-      )
-      return
-    }
-
-    const minScore = Math.min(...scores)
-    const maxScore = Math.max(...scores)
-    const scoreRange = maxScore - minScore
-
-    // Add padding to score range
-    const scorePadding = Math.max(100, scoreRange * 0.1)
-    const displayMinScore = minScore - scorePadding
-    const displayMaxScore = maxScore + scorePadding
-    const displayScoreRange = displayMaxScore - displayMinScore
-
-    // Draw grid lines
-    drawGrid(ctx, chartArea)
-
-    // Draw score axis
-    drawScoreAxis(ctx, chartArea, displayMinScore, displayMaxScore)
-
-    // Draw move axis
-    drawMoveAxis(ctx, chartArea, dataPoints)
-
-    // Draw score line
-    drawScoreLine(
-      ctx,
-      chartArea,
-      dataPoints,
-      displayMinScore,
-      displayScoreRange
-    )
-
-    // Draw data points
-    drawDataPoints(
-      ctx,
-      chartArea,
-      dataPoints,
-      displayMinScore,
-      displayScoreRange
-    )
+  const area = {
+    x: padding.left,
+    y: padding.top,
+    width: chartWidth.value - padding.left - padding.right,
+    height: chartHeight.value - padding.top - padding.bottom,
   }
 
-  // Draw grid lines
-  const drawGrid = (ctx: CanvasRenderingContext2D, chartArea: any) => {
-    ctx.strokeStyle = '#e0e0e0'
-    ctx.lineWidth = 1
-
-    // Horizontal grid lines
-    const gridLines = 5
-    for (let i = 0; i <= gridLines; i++) {
-      const y = chartArea.y + (i / gridLines) * chartArea.height
-      ctx.beginPath()
-      ctx.moveTo(chartArea.x, y)
-      ctx.lineTo(chartArea.x + chartArea.width, y)
-      ctx.stroke()
-    }
-
-    // Vertical grid lines
-    const dataPoints = chartData.value
-    const xStep = chartArea.width / Math.max(1, dataPoints.length - 1)
-    for (let i = 0; i < dataPoints.length; i++) {
-      const x = chartArea.x + i * xStep
-      ctx.beginPath()
-      ctx.moveTo(x, chartArea.y)
-      ctx.lineTo(x, chartArea.y + chartArea.height)
-      ctx.stroke()
-    }
-  }
-
-  // Draw score axis
-  const drawScoreAxis = (
-    ctx: CanvasRenderingContext2D,
-    chartArea: any,
-    minScore: number,
-    maxScore: number
-  ) => {
-    ctx.fillStyle = '#666'
-    ctx.font = '12px Arial'
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
-
-    const gridLines = 5
-    for (let i = 0; i <= gridLines; i++) {
-      const score = minScore + (i / gridLines) * (maxScore - minScore)
-      const y =
-        chartArea.y +
-        chartArea.height -
-        ((score - minScore) / (maxScore - minScore)) * chartArea.height
-
-      // Draw score label
-      ctx.fillText(formatScore(score), chartArea.x - 10, y)
-    }
-  }
-
-  // Draw move axis
-  const drawMoveAxis = (
-    ctx: CanvasRenderingContext2D,
-    chartArea: any,
-    dataPoints: any[]
-  ) => {
-    ctx.fillStyle = '#666'
-    ctx.font = '10px Arial'
+  /* ------- Calculate range after asinh transform ------- */
+  const scores = points.map(p => p.score).filter(s => s !== null) as number[]
+  if (!scores.length) {
+    ctx.fillStyle = '#999'
+    ctx.font = '14px Arial'
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-
-    const xStep = chartArea.width / Math.max(1, dataPoints.length - 1)
-    for (let i = 0; i < dataPoints.length; i++) {
-      const x = chartArea.x + i * xStep
-      const y = chartArea.y + chartArea.height + 5
-
-      // Show move number for moves with scores
-      if (dataPoints[i].score !== null && dataPoints[i].score !== undefined) {
-        ctx.fillText(dataPoints[i].moveNumber.toString(), x, y)
-      }
-    }
+    ctx.textBaseline = 'middle'
+    ctx.fillText(
+      t('positionChart.noData') || 'No analysis data available',
+      area.x + area.width / 2,
+      area.y + area.height / 2
+    )
+    return
   }
 
-  // Draw score line
-  const drawScoreLine = (
-    ctx: CanvasRenderingContext2D,
-    chartArea: any,
-    dataPoints: any[],
-    minScore: number,
-    scoreRange: number
-  ) => {
-    ctx.strokeStyle = '#1976d2'
-    ctx.lineWidth = 2
+  const transScores = scores.map(transform)
+  const minT = Math.min(...transScores)
+  const maxT = Math.max(...transScores)
+  const pad = Math.max(0.5, (maxT - minT) * 0.1)
+  const displayMinT = minT - pad
+  const displayMaxT = maxT + pad
+  const rangeT = displayMaxT - displayMinT
+
+  /* ------- Draw grid / axes / line / points ------- */
+  drawGrid(ctx, area)
+  drawScoreAxis(ctx, area, displayMinT, displayMaxT)
+  drawMoveAxis(ctx, area, points)
+  drawScoreLine(ctx, area, points, displayMinT, rangeT)
+  drawDataPoints(ctx, area, points, displayMinT, rangeT)
+}
+
+/* ---------- Grid ---------- */
+const drawGrid = (
+  ctx: CanvasRenderingContext2D,
+  area: { x: number; y: number; width: number; height: number }
+) => {
+  ctx.strokeStyle = '#e0e0e0'
+  ctx.lineWidth = 1
+
+  const rows = 5
+  for (let i = 0; i <= rows; i++) {
+    const y = area.y + (i / rows) * area.height
     ctx.beginPath()
-
-    const xStep = chartArea.width / Math.max(1, dataPoints.length - 1)
-    let firstPoint = true
-
-    dataPoints.forEach((point, index) => {
-      if (point.score !== null && point.score !== undefined) {
-        const x = chartArea.x + index * xStep
-        const y =
-          chartArea.y +
-          chartArea.height -
-          ((point.score - minScore) / scoreRange) * chartArea.height
-
-        if (firstPoint) {
-          ctx.moveTo(x, y)
-          firstPoint = false
-        } else {
-          ctx.lineTo(x, y)
-        }
-      }
-    })
-
+    ctx.moveTo(area.x, y)
+    ctx.lineTo(area.x + area.width, y)
     ctx.stroke()
   }
 
-  // Draw data points
-  const drawDataPoints = (
-    ctx: CanvasRenderingContext2D,
-    chartArea: any,
-    dataPoints: any[],
-    minScore: number,
-    scoreRange: number
-  ) => {
-    const xStep = chartArea.width / Math.max(1, dataPoints.length - 1)
+  const cols = chartData.value.length
+  const xStep = area.width / Math.max(1, cols - 1)
+  for (let i = 0; i < cols; i++) {
+    const x = area.x + i * xStep
+    ctx.beginPath()
+    ctx.moveTo(x, area.y)
+    ctx.lineTo(x, area.y + area.height)
+    ctx.stroke()
+  }
+}
 
-    dataPoints.forEach((point, index) => {
-      if (point.score !== null && point.score !== undefined) {
-        const x = chartArea.x + index * xStep
-        const y =
-          chartArea.y +
-          chartArea.height -
-          ((point.score - minScore) / scoreRange) * chartArea.height
+/* ---------- Score Axis (asinh) ---------- */
+const drawScoreAxis = (
+  ctx: CanvasRenderingContext2D,
+  area: any,
+  minT: number,
+  maxT: number
+) => {
+  ctx.fillStyle = '#666'
+  ctx.font = '12px Arial'
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
 
-        // Determine point color based on score
-        let color = '#666'
-        if (point.score > 100)
-          color = '#c62828' // Red advantage
-        else if (point.score < -100)
-          color = '#2e7d32' // Black advantage
-        else if (point.score > 50)
-          color = '#ef5350' // Slight red advantage
-        else if (point.score < -50) color = '#66bb6a' // Slight black advantage
+  const rows = 5
+  for (let i = 0; i <= rows; i++) {
+    const tVal = minT + (i / rows) * (maxT - minT)
+    const y =
+      area.y + area.height - ((tVal - minT) / (maxT - minT)) * area.height
+    const dispScore = inverseTransform(tVal)
+    ctx.fillText(formatScore(dispScore), area.x - 10, y)
+  }
+}
 
-        // Draw point
-        ctx.fillStyle = color
+/* ---------- Move Axis ---------- */
+const drawMoveAxis = (
+  ctx: CanvasRenderingContext2D,
+  area: any,
+  points: any[]
+) => {
+  ctx.fillStyle = '#666'
+  ctx.font = '10px Arial'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+
+  const xStep = area.width / Math.max(1, points.length - 1)
+  points.forEach((p, i) => {
+    if (p.score !== null && p.score !== undefined) {
+      const x = area.x + i * xStep
+      ctx.fillText(p.moveNumber.toString(), x, area.y + area.height + 5)
+    }
+  })
+}
+
+/* ---------- Score Line ---------- */
+const drawScoreLine = (
+  ctx: CanvasRenderingContext2D,
+  area: any,
+  points: any[],
+  minT: number,
+  rangeT: number
+) => {
+  ctx.strokeStyle = '#1976d2'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+
+  const xStep = area.width / Math.max(1, points.length - 1)
+  let first = true
+
+  points.forEach((p, i) => {
+    if (p.score !== null && p.score !== undefined) {
+      const x = area.x + i * xStep
+      const t = transform(p.score)
+      const y = area.y + area.height - ((t - minT) / rangeT) * area.height
+      first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      first = false
+    }
+  })
+  ctx.stroke()
+}
+
+/* ---------- Data Points ---------- */
+const drawDataPoints = (
+  ctx: CanvasRenderingContext2D,
+  area: any,
+  points: any[],
+  minT: number,
+  rangeT: number
+) => {
+  const xStep = area.width / Math.max(1, points.length - 1)
+
+  points.forEach((p, i) => {
+    if (p.score !== null && p.score !== undefined) {
+      const x = area.x + i * xStep
+      const t = transform(p.score)
+      const y = area.y + area.height - ((t - minT) / rangeT) * area.height
+
+      /* Color logic is still based on the original score */
+      let color = '#666'
+      if (p.score > 100) color = '#c62828'
+      else if (p.score < -100) color = '#2e7d32'
+      else if (p.score > 50) color = '#ef5350'
+      else if (p.score < -50) color = '#66bb6a'
+
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, 2 * Math.PI)
+      ctx.fill()
+
+      if (p.moveIndex === props.currentMoveIndex) {
+        ctx.strokeStyle = '#ff9800'
+        ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.arc(x, y, 4, 0, 2 * Math.PI)
-        ctx.fill()
-
-        // Highlight current move
-        if (point.moveIndex === props.currentMoveIndex) {
-          ctx.strokeStyle = '#ff9800'
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.arc(x, y, 6, 0, 2 * Math.PI)
-          ctx.stroke()
-        }
+        ctx.arc(x, y, 6, 0, 2 * Math.PI)
+        ctx.stroke()
       }
-    })
+    }
+  })
+}
+
+/* ---------- Utility Functions ---------- */
+const formatScore = (s: number) => {
+  if (s >= 10000) return 'M+'
+  if (s <= -10000) return 'M-'
+  return Math.round(s).toString()
+}
+
+const getScoreClass = (s: number): string => {
+  if (s > 100) return 'score-positive'
+  if (s < -100) return 'score-negative'
+  if (s > 50) return 'score-slight-positive'
+  if (s < -50) return 'score-slight-negative'
+  return 'score-neutral'
+}
+const formatTime = (ms: number) => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`)
+
+/* ---------- Tooltip ---------- */
+const handleMouseMove = (e: MouseEvent) => {
+  if (!chartCanvas.value || !chartContainer.value) {
+    tooltipVisible.value = false
+    return
   }
 
-  // Format score for display
-  const formatScore = (score: number): string => {
-    if (score >= 10000) return 'M+'
-    if (score <= -10000) return 'M-'
-    return Math.round(score).toString()
+  // Use event.offsetX to get mouse coordinates relative to the canvas, this method is more stable and less affected by scaling
+  const x = e.offsetX
+
+  const points = chartData.value
+  if (points.length < 2) {
+    tooltipVisible.value = false
+    return
   }
 
-  // Handle mouse events for tooltip
-  const handleMouseMove = (event: MouseEvent) => {
-    if (!chartCanvas.value || !chartContainer.value) return
+  // Use the canvas's width attribute, which is the actual width of its drawing surface
+  const plotAreaWidth = chartCanvas.value.width - padding.left - padding.right
 
-    const rect = chartCanvas.value.getBoundingClientRect()
-    const x = event.clientX - rect.left
+  if (plotAreaWidth <= 0) {
+    tooltipVisible.value = false
+    return
+  }
 
-    const dataPoints = chartData.value
-    const xStep =
-      (chartWidth.value - padding.left - padding.right) /
-      Math.max(1, dataPoints.length - 1)
+  const xStep = plotAreaWidth / (points.length - 1)
 
-    // Find closest data point
-    let closestPoint: any = null
-    let minDistance = Infinity
+  const closestIndex = Math.round((x - padding.left) / xStep)
+  const clampedIndex = Math.max(0, Math.min(points.length - 1, closestIndex))
 
-    dataPoints.forEach((point, index) => {
-      if (point.score !== null && point.score !== undefined) {
-        const pointX = padding.left + index * xStep
-        const distance = Math.abs(x - pointX)
+  const closestPoint = points[clampedIndex]
 
-        if (distance < minDistance && distance < 20) {
-          minDistance = distance
-          closestPoint = { ...point, index }
-        }
-      }
-    })
+  if (closestPoint && closestPoint.score !== null) {
+    const pointX = padding.left + clampedIndex * xStep
+    const distance = Math.abs(x - pointX)
 
-    if (closestPoint) {
+    if (distance < xStep / 2) {
       tooltipVisible.value = true
       tooltipData.value = {
         move: closestPoint.moveText,
-        score: formatScore(closestPoint.score),
-        scoreClass: getScoreClass(closestPoint.score),
+        score: formatScore(closestPoint.score!),
+        scoreClass: getScoreClass(closestPoint.score!),
         time: closestPoint.time ? formatTime(closestPoint.time) : '',
       }
 
-      tooltipStyle.value = {
-        left: `${event.clientX + 10}px`,
-        top: `${event.clientY - 10}px`,
-      }
+      // Use a combination of offsetLeft and offsetX/Y for precise positioning
+      const left = chartCanvas.value.offsetLeft + e.offsetX + 15
+      const top = chartCanvas.value.offsetTop + e.offsetY + 15
+      tooltipStyle.value = { left: `${left}px`, top: `${top}px` }
     } else {
       tooltipVisible.value = false
     }
-  }
-
-  const handleMouseLeave = () => {
+  } else {
     tooltipVisible.value = false
   }
+}
+const handleMouseLeave = () => (tooltipVisible.value = false)
 
-  // Get score class for styling
-  const getScoreClass = (score: number): string => {
-    if (score > 100) return 'score-positive'
-    if (score < -100) return 'score-negative'
-    if (score > 50) return 'score-slight-positive'
-    if (score < -50) return 'score-slight-negative'
-    return 'score-neutral'
+/* ---------- Resize Listener ---------- */
+const handleResize = () => {
+  if (!chartCanvas.value || !chartContainer.value) return
+  const ctn = chartContainer.value
+  chartWidth.value = ctn.clientWidth
+  chartHeight.value = ctn.clientHeight
+  chartCanvas.value.width = chartWidth.value
+  chartCanvas.value.height = chartHeight.value
+  chartCanvas.value.style.width = `${chartWidth.value}px`
+  chartCanvas.value.style.height = `${chartHeight.value}px`
+  nextTick(drawChart)
+}
+
+/* ---------- Watchers for Data / Controls ---------- */
+watch([() => props.history, () => props.currentMoveIndex], () => nextTick(drawChart), { deep: true })
+watch([showMoveLabels], () => nextTick(drawChart))
+
+/* ---------- Lifecycle Hooks ---------- */
+onMounted(() => {
+  if (chartCanvas.value) {
+    chartContext.value = chartCanvas.value.getContext('2d')
+    chartCanvas.value.addEventListener('mousemove', handleMouseMove)
+    chartCanvas.value.addEventListener('mouseleave', handleMouseLeave)
+    handleResize()
+    window.addEventListener('resize', handleResize)
   }
-
-  // Format time for display
-  const formatTime = (timeMs: number): string => {
-    if (timeMs < 1000) return `${timeMs}ms`
-    return `${(timeMs / 1000).toFixed(1)}s`
-  }
-
-  // Resize handler
-  const handleResize = () => {
-    if (!chartCanvas.value || !chartContainer.value) return
-
-    const container = chartContainer.value
-    chartWidth.value = container.clientWidth
-    chartHeight.value = container.clientHeight
-
-    const canvas = chartCanvas.value
-    canvas.width = chartWidth.value
-    canvas.height = chartHeight.value
-
-    // Set canvas display size
-    canvas.style.width = `${chartWidth.value}px`
-    canvas.style.height = `${chartHeight.value}px`
-
-    // Redraw chart
-    nextTick(() => {
-      drawChart()
-    })
-  }
-
-  // Watch for data changes
-  watch(
-    [() => props.history, () => props.currentMoveIndex],
-    () => {
-      nextTick(() => {
-        drawChart()
-      })
-    },
-    { deep: true }
-  )
-
-  // Watch for control changes
-  watch([showMoveLabels], () => {
-    nextTick(() => {
-      drawChart()
-    })
-  })
-
-  // Lifecycle
-  onMounted(() => {
-    if (chartCanvas.value) {
-      chartContext.value = chartCanvas.value.getContext('2d')
-
-      // Add event listeners
-      chartCanvas.value.addEventListener('mousemove', handleMouseMove)
-      chartCanvas.value.addEventListener('mouseleave', handleMouseLeave)
-
-      // Initial resize
-      handleResize()
-
-      // Add resize listener
-      window.addEventListener('resize', handleResize)
-    }
-  })
-
-  onUnmounted(() => {
-    if (chartCanvas.value) {
-      chartCanvas.value.removeEventListener('mousemove', handleMouseMove)
-      chartCanvas.value.removeEventListener('mouseleave', handleMouseLeave)
-    }
-    window.removeEventListener('resize', handleResize)
-  })
+})
+onUnmounted(() => {
+  chartCanvas.value?.removeEventListener('mousemove', handleMouseMove)
+  chartCanvas.value?.removeEventListener('mouseleave', handleMouseLeave)
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <style lang="scss" scoped>
-  .position-chart {
-    background: #fff;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    box-sizing: border-box;
+.position-chart {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+}
+.chart-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.move-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.move-label {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #666;
+  border: 1px solid #ddd;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  &.current-move {
+    background: #ff9800;
+    color: #fff;
+    border-color: #f57c00;
   }
-
-  .chart-title {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    color: #333;
-    font-weight: 600;
+}
+.score-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  white-space: nowrap;
+  .tooltip-move { font-weight: bold; margin-bottom: 4px; }
+  .tooltip-score {
+    font-weight: bold; margin-bottom: 2px;
+    &.score-positive { color: #ef5350; }
+    &.score-negative { color: #66bb6a; }
+    &.score-slight-positive { color: #ffcdd2; }
+    &.score-slight-negative { color: #c8e6c9; }
+    &.score-neutral { color: #fff; }
   }
-
-  .chart-container {
-    position: relative;
-    width: 100%;
-    height: 200px; // Increased height for better visibility
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .chart-canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  .move-labels {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-  }
-
-  .move-label {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    color: #666;
-    border: 1px solid #ddd;
-    transform: translateX(-50%);
-    white-space: nowrap;
-
-    &.current-move {
-      background: #ff9800;
-      color: white;
-      border-color: #f57c00;
-    }
-  }
-
-  .score-tooltip {
-    position: fixed;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    pointer-events: none;
-    z-index: 1000;
-    white-space: nowrap;
-
-    .tooltip-move {
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-
-    .tooltip-score {
-      font-weight: bold;
-      margin-bottom: 2px;
-
-      &.score-positive {
-        color: #ef5350;
-      }
-
-      &.score-negative {
-        color: #66bb6a;
-      }
-
-      &.score-slight-positive {
-        color: #ffcdd2;
-      }
-
-      &.score-slight-negative {
-        color: #c8e6c9;
-      }
-
-      &.score-neutral {
-        color: #fff;
-      }
-    }
-
-    .tooltip-time {
-      color: #ccc;
-      font-size: 10px;
-    }
-  }
-
-  .chart-controls {
-    margin-top: 12px;
-    display: flex;
-    gap: 16px;
-
-    .v-switch {
-      margin: 0;
-    }
-  }
-
-  // Mobile responsive adjustments
-  @media (max-width: 768px) {
-    .position-chart {
-      padding: 12px;
-    }
-
-    .chart-container {
-      height: 180px; // Adjusted height for mobile
-    }
-
-    .chart-controls {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .chart-title {
-      font-size: 14px;
-    }
-  }
+  .tooltip-time { color: #ccc; font-size: 10px; }
+}
+.chart-controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 16px;
+  .v-switch { margin: 0; }
+}
+@media (max-width: 768px) {
+  .position-chart { padding: 12px; }
+  .chart-container { height: 180px; }
+  .chart-controls { flex-direction: column; gap: 8px; }
+  .chart-title { font-size: 14px; }
+}
 </style>
