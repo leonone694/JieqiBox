@@ -211,7 +211,8 @@ export function useChessGame() {
     // If the board is flipped, need to remap positions to generate FEN that engine can understand
     pieces.value.forEach(p => {
       const actualRow = isBoardFlipped.value ? 9 - p.row : p.row
-      board[actualRow][p.col] = p
+      const actualCol = isBoardFlipped.value ? 8 - p.col : p.col
+      board[actualRow][actualCol] = p
     })
     const boardFen = board
       .map((row, rowIndex) => {
