@@ -1129,6 +1129,7 @@
     // Only process lines starting with 'info '
     if (!line.startsWith('info ')) return null
     const result: Record<string, any> = {}
+
     // Extract common fields using regex
     const regexps = [
       { key: 'depth', re: /depth (\d+)/ },
@@ -1140,11 +1141,9 @@
       { key: 'hashfull', re: /hashfull (\d+)/ },
       { key: 'tbhits', re: /tbhits (\d+)/ },
       { key: 'time', re: /time (\d+)/ },
-      {
-        key: 'pv',
-        re: /\spv\s(.+?)(?=\s+(?:depth|seldepth|multipv|score|nodes|nps|hashfull|tbhits|time|$))/,
-      },
     ]
+
+    // Process all fields except PV first
     for (const { key, re } of regexps) {
       const m = line.match(re)
       if (m) {
@@ -1156,6 +1155,14 @@
         }
       }
     }
+
+    // Extract PV (Principal Variation) - it should be the last field in the line
+    // Look for "pv" followed by space and capture everything until the end of line
+    const pvMatch = line.match(/\spv\s(.+)$/)
+    if (pvMatch) {
+      result['pv'] = pvMatch[1].trim()
+    }
+
     return result
   }
 
