@@ -254,6 +254,7 @@ export function useChessGame() {
     isAnimating.value = animate
     try {
       const parts = fen.split(' ')
+      // @ts-ignore
       let boardPart: string, hiddenPart: string, sidePart: string, halfmove: string, fullmove: string, _castling: string, _enpassant: string
       
       if (parts.length === 2) {
