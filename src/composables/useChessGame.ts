@@ -644,7 +644,7 @@ export function useChessGame() {
 
     // Check if this was an AI move before calling recordAndFinalize (which clears the flag)
     const isAiMove = (window as any).__LAST_AI_MOVE__ === uciMove
-    
+
     // In free mode, lastMovePositions has already been set in movePiece, here we only need to record history
     console.log(
       `[DEBUG] completeFlipAfterMove: About to call recordAndFinalize with move: ${uciMove}`

@@ -203,7 +203,15 @@
     history,
     currentMoveIndex,
   } = gs
-  const { bestMove, isThinking, multiPvMoves, isPondering, isInfinitePondering, ponderMove, ponderhit } = es
+  const {
+    bestMove,
+    isThinking,
+    multiPvMoves,
+    isPondering,
+    isInfinitePondering,
+    ponderMove,
+    ponderhit,
+  } = es
 
   // Inject isCurrentPositionInCheck
   const isCurrentPositionInCheck = gs.isCurrentPositionInCheck
@@ -374,7 +382,12 @@
 
   const updateArrow = () => {
     // 1. If engine is pondering (but not infinite pondering) and not ponderhit, display expected move arrow
-    if (isPondering.value && !isInfinitePondering.value && !ponderhit.value && ponderMove.value) {
+    if (
+      isPondering.value &&
+      !isInfinitePondering.value &&
+      !ponderhit.value &&
+      ponderMove.value
+    ) {
       const mv = ponderMove.value
       if (mv && mv.length >= 4) {
         const actualMv = convertUciForArrow(mv)
@@ -386,9 +399,12 @@
         return
       }
     }
-    
+
     // 2. If engine is thinking or infinite pondering, display arrows for all available PVs
-    if ((isThinking.value || (isPondering.value && isInfinitePondering.value)) && multiPvMoves.value.length) {
+    if (
+      (isThinking.value || (isPondering.value && isInfinitePondering.value)) &&
+      multiPvMoves.value.length
+    ) {
       const arrows: Arrow[] = []
       multiPvMoves.value.forEach((moves: string[], idx: number) => {
         if (!moves || !moves.length) return
@@ -405,7 +421,7 @@
       arrs.value = arrows
       return
     }
-    
+
     // 3. If not thinking and not pondering, show best move if available
     if (!isThinking.value && !isPondering.value && bestMove.value) {
       const mv = bestMove.value

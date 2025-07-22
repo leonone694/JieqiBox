@@ -215,7 +215,7 @@
         // Check if this was an AI move before clearing pendingFlip
         const isAiMove = (window as any).__LAST_AI_MOVE__ === uciMove
         gameState.pendingFlip.value = null
-        
+
         // If this was an AI move, ponder should be started now that the flip dialog is closed
         if (isAiMove) {
           console.log(

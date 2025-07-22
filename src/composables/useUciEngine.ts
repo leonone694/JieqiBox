@@ -195,7 +195,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
           )
           isPondering.value = false
           isInfinitePondering.value = false // Reset infinite pondering flag
-          
+
           // Check if we should play the best move after ponder stop
           if (playOnStop.value) {
             console.log(
@@ -203,7 +203,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
             )
             bestMove.value = mv // This will trigger the watcher in AnalysisSidebar
             playOnStop.value = false // Reset for next time
-            
+
             // After a successful ponder stop with move play, trigger engine ready event
             nextTick(() => {
               window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'))
@@ -214,7 +214,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
             )
             bestMove.value = '' // Ensure bestMove is cleared
           }
-          
+
           ponderhit.value = false
           return
         }
@@ -548,12 +548,19 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
   /* ---------- Ponder Functions ---------- */
   // Start pondering on the expected opponent move
-  const startPonder = (fen: string, moves: string[], expectedMove: string, settings: any = {}) => {
+  const startPonder = (
+    fen: string,
+    moves: string[],
+    expectedMove: string,
+    settings: any = {}
+  ) => {
     isInfinitePondering.value = false // Reset infinite pondering flag when starting ponder
     if (!isEngineLoaded.value || isPondering.value) return
 
     const moveToPonder = expectedMove || ponderMove.value
-    console.log(`[DEBUG] START_PONDER: expectedMove='${expectedMove}', ponderMove.value='${ponderMove.value}', moveToPonder='${moveToPonder}'`)
+    console.log(
+      `[DEBUG] START_PONDER: expectedMove='${expectedMove}', ponderMove.value='${ponderMove.value}', moveToPonder='${moveToPonder}'`
+    )
 
     if (!isDarkPieceMove(moveToPonder) && moveToPonder) {
       console.log(
@@ -576,7 +583,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
         analysisMode: 'movetime',
       }
       const finalSettings = { ...defaultSettings, ...settings }
-      
+
       let goCommand = 'go ponder'
       switch (finalSettings.analysisMode) {
         case 'depth':
@@ -611,9 +618,13 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       send(pos)
       // Output the reason why we are using infinite ponder
       if (isDarkPieceMove(expectedMove)) {
-        console.log(`[DEBUG] START_PONDER: Using infinite ponder because the move is a dark piece move: ${expectedMove}`)
+        console.log(
+          `[DEBUG] START_PONDER: Using infinite ponder because the move is a dark piece move: ${expectedMove}`
+        )
       } else {
-        console.log(`[DEBUG] START_PONDER: Using infinite ponder because the move is not a dark piece move: ${expectedMove}`)
+        console.log(
+          `[DEBUG] START_PONDER: Using infinite ponder because the move is not a dark piece move: ${expectedMove}`
+        )
       }
       send('go infinite')
     }
@@ -623,10 +634,12 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   const handlePonderHit = () => {
     if (!isPondering.value) return
 
-    console.log(`[DEBUG] PONDER_HIT: Confirming ponder hit, switching to thinking state.`)
+    console.log(
+      `[DEBUG] PONDER_HIT: Confirming ponder hit, switching to thinking state.`
+    )
     ponderhit.value = true
     isInfinitePondering.value = false // Reset infinite pondering flag when ponder hit occurs
-    
+
     // After ponderhit, the engine transitions from "pondering" to "thinking"
     isPondering.value = false
     isThinking.value = true
@@ -643,13 +656,17 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
     const { playBestMoveOnStop = false } = options
 
-    console.log(`[DEBUG] STOP_PONDER: Stopping ponder, playBestMoveOnStop=${playBestMoveOnStop}`)
+    console.log(
+      `[DEBUG] STOP_PONDER: Stopping ponder, playBestMoveOnStop=${playBestMoveOnStop}`
+    )
     isPondering.value = false
     isInfinitePondering.value = false // Reset infinite pondering flag
-    
+
     // Handle ponderhit scenario differently
     if (ponderhit.value && playBestMoveOnStop) {
-      console.log(`[DEBUG] STOP_PONDER: Ponder hit scenario with playBestMoveOnStop=true`)
+      console.log(
+        `[DEBUG] STOP_PONDER: Ponder hit scenario with playBestMoveOnStop=true`
+      )
       // In ponder hit scenario, we want to play the best move when it arrives
       // Don't ignore the next bestmove, and don't clear bestMove
       ignoreNextBestMove.value = false

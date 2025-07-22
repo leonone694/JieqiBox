@@ -52,7 +52,9 @@
         size="small"
       >
         {{
-          isThinking || isPondering ? $t('analysis.thinking') : $t('analysis.startAnalysis')
+          isThinking || isPondering
+            ? $t('analysis.thinking')
+            : $t('analysis.startAnalysis')
         }}
       </v-btn>
       <v-btn
