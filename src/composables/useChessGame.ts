@@ -254,15 +254,24 @@ export function useChessGame() {
     isAnimating.value = animate
     try {
       const parts = fen.split(' ')
-      const [
-        boardPart,
-        hiddenPart,
-        sidePart,
-        _castling,
-        _enpassant,
-        halfmove,
-        fullmove,
-      ] = parts
+      let boardPart: string, hiddenPart: string, sidePart: string, halfmove: string, fullmove: string, _castling: string, _enpassant: string
+      
+      if (parts.length === 2) {
+        [boardPart, sidePart] = parts
+        hiddenPart = '-'
+        halfmove = '0'
+        fullmove = '1'
+      } else {
+        [
+          boardPart,
+          hiddenPart,
+          sidePart,
+          _castling, //(ignored)
+          _enpassant, //(ignored)
+          halfmove,
+          fullmove,
+        ] = parts
+      }
       sideToMove.value = sidePart === 'w' ? 'red' : 'black'
       halfmoveClock.value = halfmove ? parseInt(halfmove, 10) : 0
       fullmoveNumber.value = fullmove ? parseInt(fullmove, 10) : 1
