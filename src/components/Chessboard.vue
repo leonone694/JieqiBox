@@ -335,49 +335,33 @@
     pv: number
   }
   const arrs = ref<Arrow[]>([])
-  const uciToRC = (uci: string) => ({
-    col: files.value.indexOf(uci[0]),
-    row: 9 - +uci[1],
-  })
 
-  // Convert UCI coordinates
-  const convertUciForArrow = (uci: string): string => {
-    if (uci.length < 4) return uci
-    // Utility functions
-    const file2col = (c: string) => c.charCodeAt(0) - 'a'.charCodeAt(0)
-    const rank2row = (d: string) => 9 - parseInt(d, 10)
-    const row2rank = (r: number) => 9 - r
-    const col2file = (c: number) => String.fromCharCode(97 + c)
+  // Convert UCI coordinates to display coordinates for arrow positioning
+  // This function converts UCI coordinates to row/col coordinates that match the display
+  const uciToDisplayRC = (uci: string) => {
+    if (uci.length < 4)
+      return { from: { row: 0, col: 0 }, to: { row: 0, col: 0 } }
 
-    // Parse standard FEN format coordinates
-    const fromCol = file2col(uci[0])
-    const fromRow = rank2row(uci[1])
-    const toCol = file2col(uci[2])
-    const toRow = rank2row(uci[3])
+    // Parse UCI coordinates
+    const fromCol = uci.charCodeAt(0) - 'a'.charCodeAt(0)
+    const fromRow = 9 - +uci[1]
+    const toCol = uci.charCodeAt(2) - 'a'.charCodeAt(0)
+    const toRow = 9 - +uci[3]
 
-    let displayFromRow, displayToRow, displayFromCol, displayToCol
-
+    // Apply display transformation based on board flip state
     if (!gs.isBoardFlipped.value) {
       // Normal state: no coordinate conversion needed
-      displayFromRow = fromRow
-      displayToRow = toRow
-      displayFromCol = fromCol
-      displayToCol = toCol
+      return {
+        from: { row: fromRow, col: fromCol },
+        to: { row: toRow, col: toCol },
+      }
     } else {
-      // Flipped state: coordinate conversion needed - both vertically and horizontally
-      displayFromRow = 9 - fromRow
-      displayToRow = 9 - toRow
-      displayFromCol = 8 - fromCol // Horizontal mirror flip
-      displayToCol = 8 - toCol // Horizontal mirror flip
+      // Flipped state: apply both vertical and horizontal mirror transformations
+      return {
+        from: { row: 9 - fromRow, col: 8 - fromCol },
+        to: { row: 9 - toRow, col: 8 - toCol },
+      }
     }
-
-    // Convert back to UCI format
-    const displayFromRank = row2rank(displayFromRow)
-    const displayToRank = row2rank(displayToRow)
-    const displayFromFile = col2file(displayFromCol)
-    const displayToFile = col2file(displayToCol)
-
-    return `${displayFromFile}${displayFromRank}${displayToFile}${displayToRank}`
   }
 
   const updateArrow = () => {
@@ -390,11 +374,9 @@
     ) {
       const mv = ponderMove.value
       if (mv && mv.length >= 4) {
-        const actualMv = convertUciForArrow(mv)
-        const { row: fr, col: fc } = uciToRC(actualMv.slice(0, 2))
-        const { row: tr, col: tc } = uciToRC(actualMv.slice(2, 4))
-        const f = percentToSvgCoords(fr, fc),
-          t = percentToSvgCoords(tr, tc)
+        const coords = uciToDisplayRC(mv)
+        const f = percentToSvgCoords(coords.from.row, coords.from.col),
+          t = percentToSvgCoords(coords.to.row, coords.to.col)
         arrs.value = [{ x1: f.x, y1: f.y, x2: t.x, y2: t.y, pv: 1 }]
         return
       }
@@ -410,11 +392,9 @@
         if (!moves || !moves.length) return
         const mv = moves[0]
         if (mv && mv.length >= 4) {
-          const actualMv = convertUciForArrow(mv)
-          const { row: fr, col: fc } = uciToRC(actualMv.slice(0, 2))
-          const { row: tr, col: tc } = uciToRC(actualMv.slice(2, 4))
-          const f = percentToSvgCoords(fr, fc),
-            t = percentToSvgCoords(tr, tc)
+          const coords = uciToDisplayRC(mv)
+          const f = percentToSvgCoords(coords.from.row, coords.from.col),
+            t = percentToSvgCoords(coords.to.row, coords.to.col)
           arrows.push({ x1: f.x, y1: f.y, x2: t.x, y2: t.y, pv: idx + 1 })
         }
       })
@@ -426,11 +406,9 @@
     if (!isThinking.value && !isPondering.value && bestMove.value) {
       const mv = bestMove.value
       if (mv.length >= 4) {
-        const actualMv = convertUciForArrow(mv)
-        const { row: fr, col: fc } = uciToRC(actualMv.slice(0, 2))
-        const { row: tr, col: tc } = uciToRC(actualMv.slice(2, 4))
-        const f = percentToSvgCoords(fr, fc),
-          t = percentToSvgCoords(tr, tc)
+        const coords = uciToDisplayRC(mv)
+        const f = percentToSvgCoords(coords.from.row, coords.from.col),
+          t = percentToSvgCoords(coords.to.row, coords.to.col)
         arrs.value = [{ x1: f.x, y1: f.y, x2: t.x, y2: t.y, pv: 1 }]
         return
       }
