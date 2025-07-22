@@ -233,7 +233,7 @@ export default {
     showCoordinates: '行と列の番号を表示',
     parseUciInfo: 'UCI情報を解析',
     showAnimations: '駒の動きのアニメーションを有効にする',
-    showPositionChart: '局面図を表示',
+    showPositionChart: '形勢グラフを表示',
   },
 
   // UCIメッセージ
