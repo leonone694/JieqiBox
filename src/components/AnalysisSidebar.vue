@@ -66,15 +66,6 @@
       >
         {{ $t('analysis.stopAnalysis') }}
       </v-btn>
-      <v-btn
-        @click="playBestMove"
-        :disabled="!bestMove"
-        color="secondary"
-        class="grouped-btn"
-        size="small"
-      >
-        {{ $t('analysis.playBestMove') }}
-      </v-btn>
     </div>
 
     <!-- Undo move and flip board button group -->
@@ -693,10 +684,6 @@
         currentSearchMoves.value
       )
     }
-  }
-  function playBestMove() {
-    if (!bestMove.value) return
-    playMoveFromUci(bestMove.value)
   }
   function handleMoveClick(moveIndex: number) {
     replayToMove(moveIndex)
