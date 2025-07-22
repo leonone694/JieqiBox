@@ -84,14 +84,14 @@
       </v-btn>
     </div>
 
-    <!-- AI auto-play settings -->
+    <!-- AI auto-play settings - Disabled when engine is not loaded or during manual analysis -->
     <div class="autoplay-settings">
       <v-btn
         @click="toggleRedAi"
         :color="isRedAi ? 'error' : 'primary'"
         class="half-btn"
         size="small"
-        :disabled="isManualAnalysis"
+        :disabled="isManualAnalysis || !isEngineLoaded"
       >
         {{ isRedAi ? $t('analysis.redAiOn') : $t('analysis.redAiOff') }}
       </v-btn>
@@ -100,7 +100,7 @@
         :color="isBlackAi ? 'error' : 'primary'"
         class="half-btn"
         size="small"
-        :disabled="isManualAnalysis"
+        :disabled="isManualAnalysis || !isEngineLoaded"
       >
         {{ isBlackAi ? $t('analysis.blackAiOn') : $t('analysis.blackAiOff') }}
       </v-btn>
