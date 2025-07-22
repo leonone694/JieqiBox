@@ -27,7 +27,7 @@ const isAndroid = () => {
 
 // function dbg(tag: string, ...m: any[]) { // console.log('[UCI]', tag, ...m) }
 
-export function useUciEngine(generateFen: () => string) {
+export function useUciEngine(generateFen: () => string, gameState: any) {
   const { t } = useI18n()
   const engineOutput = ref<EngineLine[]>([])
   const isEngineLoaded = ref(false)
@@ -48,6 +48,13 @@ export function useUciEngine(generateFen: () => string) {
   const analysisStartTime = ref<number | null>(null) // Track when analysis started
   const lastAnalysisTime = ref<number>(0) // Store the last analysis time
 
+  // Ponder-related state
+  const isPondering = ref(false) // Whether engine is currently pondering
+  const isInfinitePondering = ref(false) // Whether engine is currently pondering with infinite search
+  const ponderMove = ref('') // The move engine is pondering on
+  const ponderhit = ref(false) // Whether the pondered move was actually played
+  const ignoreNextBestMove = ref(false) // Skip first bestmove after ponder stop
+
   // Android-specific state
   const isAndroidPlatform = ref(isAndroid())
   const androidEnginePath = ref('')
@@ -61,6 +68,23 @@ export function useUciEngine(generateFen: () => string) {
   const MATE_OUTPUT_THROTTLE_DELAY = 300 // Slower processing for mate situations
 
   let unlisten: (() => void) | null = null
+
+  /* ---------- Helper Functions ---------- */
+  // Check if a move involves a dark piece (for JieQi special logic)
+  const isDarkPieceMove = (uciMove: string): boolean => {
+    // For JieQi, we need to check if the source square contains a dark piece
+    // Dark pieces are those that are not yet revealed (isKnown = false)
+    const fromCol = uciMove.charCodeAt(0) - 'a'.charCodeAt(0)
+    const fromRow = 9 - parseInt(uciMove[1], 10)
+
+    // Find the piece at the source position
+    const piece = gameState.pieces.value.find(
+      (p: any) => p.row === fromRow && p.col === fromCol
+    )
+
+    // If piece exists and is not known (dark piece), return true
+    return piece && !piece.isKnown
+  }
 
   /* ---------- Output Throttling Functions ---------- */
   // Check if current analysis contains mate score
@@ -130,17 +154,68 @@ export function useUciEngine(generateFen: () => string) {
       }
 
       if (ln.startsWith('bestmove')) {
-        const mv = ln.split(' ')[1] ?? ''
-        console.log(
-          `[DEBUG] BESTMOVE_RECEIVED: '${mv}'. isThinking=${isThinking.value}, isStopping=${isStopping.value}.`
-        )
-
-        // If we are not in a thinking state, this is a stray bestmove from a previous,
-        // already-terminated process. It must be ignored.
-        if (!isThinking.value) {
+        // If we have flagged to ignore this bestmove (e.g., after stopping ponder), just skip once
+        if (ignoreNextBestMove.value) {
           console.log(
-            `[DEBUG] BESTMOVE_IGNORED: Stray move received while not in a 'thinking' state.`
+            '[DEBUG] IGNORE_BESTMOVE: Skipping bestmove after ponder stop:',
+            ln
           )
+          ignoreNextBestMove.value = false
+          return
+        }
+        const parts = ln.split(' ')
+        const mv = parts[1] ?? ''
+        // Check if engine provided a ponder move
+        let ponderMoveFromEngine = ''
+        const ponderIndex = parts.indexOf('ponder')
+        if (ponderIndex !== -1 && ponderIndex + 1 < parts.length) {
+          ponderMoveFromEngine = parts[ponderIndex + 1]
+        }
+
+        console.log(
+          `[DEBUG] BESTMOVE_RECEIVED: '${mv}' ponder='${ponderMoveFromEngine}'. isThinking=${isThinking.value}, isStopping=${isStopping.value}.`
+        )
+        if (ponderMoveFromEngine) {
+          ponderMove.value = ponderMoveFromEngine
+        }
+
+        // If we are not in a thinking state and not pondering, this is a stray bestmove from a previous,
+        // already-terminated process. It must be ignored.
+        if (!isThinking.value && !isPondering.value) {
+          console.log(
+            `[DEBUG] BESTMOVE_IGNORED: Stray move received while not in a 'thinking' or 'pondering' state.`
+          )
+          return
+        }
+
+        // If we're pondering and receive a bestmove, this means the ponder was stopped
+        if (isPondering.value) {
+          console.log(
+            `[DEBUG] PONDER_STOPPED: Received bestmove while pondering, ponder session ended`
+          )
+          isPondering.value = false
+          isInfinitePondering.value = false // Reset infinite pondering flag
+          
+          // Check if we should play the best move after ponder stop
+          if (playOnStop.value) {
+            console.log(
+              `[DEBUG] PONDER_STOPPED: Playing best move after ponder stop: '${mv}'`
+            )
+            bestMove.value = mv // This will trigger the watcher in AnalysisSidebar
+            playOnStop.value = false // Reset for next time
+            
+            // After a successful ponder stop with move play, trigger engine ready event
+            nextTick(() => {
+              window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'))
+            })
+          } else {
+            console.log(
+              `[DEBUG] PONDER_STOPPED: Not playing best move after ponder stop`
+            )
+            bestMove.value = '' // Ensure bestMove is cleared
+          }
+          
+          ponderhit.value = false
           return
         }
 
@@ -200,8 +275,17 @@ export function useUciEngine(generateFen: () => string) {
 
         bestMove.value = mv // Set bestMove
 
+        // Store ponder move if provided by engine
+        if (ponderMoveFromEngine) {
+          ponderMove.value = ponderMoveFromEngine
+          console.log(`[DEBUG] PONDER_MOVE_SET: '${ponderMoveFromEngine}'`)
+        } else {
+          ponderMove.value = ''
+        }
+
         pvMoves.value = []
         multiPvMoves.value = []
+        isInfinitePondering.value = false // Reset infinite pondering flag when analysis completes
       }
       if (ln === 'uciok') send('isready')
       if (ln === 'readyok') analysis.value = t('uci.engineReady')
@@ -359,6 +443,7 @@ export function useUciEngine(generateFen: () => string) {
     isThinking.value = true
     isStopping.value = false // Reset stopping flag on new analysis
     playOnStop.value = false // Reset play-on-stop flag
+    isInfinitePondering.value = false // Reset infinite pondering flag on new analysis
     analysisStartTime.value = Date.now() // Record analysis start time
     console.log(
       '[DEBUG] START_ANALYSIS: Started analysis at:',
@@ -447,6 +532,7 @@ export function useUciEngine(generateFen: () => string) {
     )
     isStopping.value = true // Set flag to indicate we are waiting for a stop confirmation
     playOnStop.value = options.playBestMoveOnStop // Set flag for how to handle the resulting bestmove
+    isInfinitePondering.value = false // Reset infinite pondering flag when stopping analysis
 
     // Reset throttling state when stopping analysis
     resetThrottling()
@@ -458,6 +544,145 @@ export function useUciEngine(generateFen: () => string) {
   const clearSearchMoves = () => {
     currentSearchMoves.value = []
     console.log(`[DEBUG] CLEAR_SEARCH_MOVES: Cleared searchmoves restrictions`)
+  }
+
+  /* ---------- Ponder Functions ---------- */
+  // Start pondering on the expected opponent move
+  const startPonder = (fen: string, moves: string[], expectedMove: string, settings: any = {}) => {
+    isInfinitePondering.value = false // Reset infinite pondering flag when starting ponder
+    if (!isEngineLoaded.value || isPondering.value) return
+
+    const moveToPonder = expectedMove || ponderMove.value
+    console.log(`[DEBUG] START_PONDER: expectedMove='${expectedMove}', ponderMove.value='${ponderMove.value}', moveToPonder='${moveToPonder}'`)
+
+    if (!isDarkPieceMove(moveToPonder) && moveToPonder) {
+      console.log(
+        `[DEBUG] START_PONDER: Starting ponder on move '${expectedMove}' with moves [${moves.join(' ')}]`
+      )
+      isPondering.value = true
+      ponderhit.value = false
+
+      // Set position with all moves including the expected ponder move
+      const allMoves = [...moves, expectedMove]
+      const pos = `position fen ${fen}${allMoves.length ? ' moves ' + allMoves.join(' ') : ''}`
+      send(pos)
+
+      // Start pondering with analysis settings (time, depth, nodes limits)
+      const defaultSettings = {
+        movetime: 1000,
+        maxThinkTime: 5000,
+        maxDepth: 20,
+        maxNodes: 1000000,
+        analysisMode: 'movetime',
+      }
+      const finalSettings = { ...defaultSettings, ...settings }
+      
+      let goCommand = 'go ponder'
+      switch (finalSettings.analysisMode) {
+        case 'depth':
+          goCommand = `go ponder depth ${finalSettings.maxDepth}`
+          break
+        case 'nodes':
+          goCommand = `go ponder nodes ${finalSettings.maxNodes}`
+          break
+        case 'maxThinkTime':
+          if (finalSettings.maxThinkTime > 0) {
+            goCommand = `go ponder wtime ${finalSettings.maxThinkTime} btime ${finalSettings.maxThinkTime} movestogo 1`
+          } else {
+            goCommand = `go ponder infinite`
+          }
+          break
+        case 'movetime':
+        default:
+          if (finalSettings.movetime > 0) {
+            goCommand = `go ponder movetime ${finalSettings.movetime}`
+          } else {
+            goCommand = `go ponder infinite`
+          }
+          break
+      }
+      console.log(`[DEBUG] START_PONDER: Go command: ${goCommand}`)
+      send(goCommand)
+    } else {
+      // If the move is a dark piece move, we need to start pondering with infinite search
+      isInfinitePondering.value = true
+      isPondering.value = true
+      const pos = `position fen ${fen}${moves.length ? ' moves ' + moves.join(' ') : ''}`
+      send(pos)
+      // Output the reason why we are using infinite ponder
+      if (isDarkPieceMove(expectedMove)) {
+        console.log(`[DEBUG] START_PONDER: Using infinite ponder because the move is a dark piece move: ${expectedMove}`)
+      } else {
+        console.log(`[DEBUG] START_PONDER: Using infinite ponder because the move is not a dark piece move: ${expectedMove}`)
+      }
+      send('go infinite')
+    }
+  }
+
+  // Handle ponder hit - the expected move was actually played
+  const handlePonderHit = () => {
+    if (!isPondering.value) return
+
+    console.log(`[DEBUG] PONDER_HIT: Confirming ponder hit, switching to thinking state.`)
+    ponderhit.value = true
+    isInfinitePondering.value = false // Reset infinite pondering flag when ponder hit occurs
+    
+    // After ponderhit, the engine transitions from "pondering" to "thinking"
+    isPondering.value = false
+    isThinking.value = true
+
+    // Also record the time when ponder hit happened, as this is when the "real" search begins.
+    analysisStartTime.value = Date.now()
+
+    send('ponderhit')
+  }
+
+  // Stop pondering - the opponent played a different move
+  const stopPonder = (options: { playBestMoveOnStop?: boolean } = {}) => {
+    if (!isPondering.value) return
+
+    const { playBestMoveOnStop = false } = options
+
+    console.log(`[DEBUG] STOP_PONDER: Stopping ponder, playBestMoveOnStop=${playBestMoveOnStop}`)
+    isPondering.value = false
+    isInfinitePondering.value = false // Reset infinite pondering flag
+    
+    // Handle ponderhit scenario differently
+    if (ponderhit.value && playBestMoveOnStop) {
+      console.log(`[DEBUG] STOP_PONDER: Ponder hit scenario with playBestMoveOnStop=true`)
+      // In ponder hit scenario, we want to play the best move when it arrives
+      // Don't ignore the next bestmove, and don't clear bestMove
+      ignoreNextBestMove.value = false
+      // Set flag similar to stopAnalysis to play move when bestmove arrives
+      playOnStop.value = true
+    } else {
+      // Regular ponder stop - ignore the bestmove response
+      ignoreNextBestMove.value = true
+      // Clear any pending best move to avoid accidental auto-play after ponder stop
+      bestMove.value = ''
+      playOnStop.value = false
+    }
+
+    ponderhit.value = false
+    ponderMove.value = ''
+
+    send('stop')
+  }
+
+  // Check if a move matches the current ponder move (for JieQi special logic)
+  const isPonderMoveMatch = (actualMove: string): boolean => {
+    if (!ponderMove.value) return false
+
+    // For JieQi: if the move involves a dark piece, it's always a ponder miss
+    // Dark pieces are indicated by lowercase letters in the piece names
+    // We need to check if the source position contains a dark piece
+    console.log(
+      `[DEBUG] PONDER_MATCH_CHECK: Comparing actual='${actualMove}' with ponder='${ponderMove.value}'`
+    )
+
+    // Simple string comparison for now
+    // In JieQi, we'll need additional logic to detect dark piece moves
+    return actualMove === ponderMove.value
   }
 
   /* ---------- Apply Saved Settings ---------- */
@@ -523,5 +748,16 @@ export function useUciEngine(generateFen: () => string) {
     bundleIdentifier,
     analysisStartTime,
     lastAnalysisTime,
+    // Ponder exports
+    isPondering,
+    isInfinitePondering,
+    ponderMove,
+    ponderhit,
+    startPonder,
+    handlePonderHit,
+    stopPonder,
+    isPonderMoveMatch,
+    // Helper functions
+    isDarkPieceMove,
   }
 }

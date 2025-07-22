@@ -185,6 +185,7 @@ export default {
     about: 'About',
     flipBoard: 'Flip Board',
     flipBoardBack: 'Restore Orientation',
+    ponderMode: 'Ponder Mode',
   },
 
   // Error messages

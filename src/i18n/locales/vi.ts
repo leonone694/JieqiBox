@@ -185,6 +185,7 @@ export default {
     about: 'Về',
     flipBoard: 'Lật bàn cờ',
     flipBoardBack: 'Khôi phục hướng',
+    ponderMode: 'Chế độ suy nghĩ nền',
   },
 
   // Thông báo lỗi

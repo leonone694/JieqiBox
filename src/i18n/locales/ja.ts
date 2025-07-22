@@ -185,6 +185,7 @@ export default {
     about: 'について',
     flipBoard: '盤を反転',
     flipBoardBack: '向きを復元',
+    ponderMode: 'ポンダーモード',
   },
 
   // エラーメッセージ

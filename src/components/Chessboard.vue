@@ -183,6 +183,10 @@
     isThinking: any
     multiPvMoves: any
     stopAnalysis: any
+    isPondering: any
+    isInfinitePondering: any
+    ponderMove: any
+    ponderhit: any
   }
 
   const {
@@ -199,7 +203,7 @@
     history,
     currentMoveIndex,
   } = gs
-  const { bestMove, isThinking, multiPvMoves } = es
+  const { bestMove, isThinking, multiPvMoves, isPondering, isInfinitePondering, ponderMove, ponderhit } = es
 
   // Inject isCurrentPositionInCheck
   const isCurrentPositionInCheck = gs.isCurrentPositionInCheck
@@ -369,8 +373,22 @@
   }
 
   const updateArrow = () => {
-    // 1. If engine is thinking, display arrows for all available PVs
-    if (isThinking.value && multiPvMoves.value.length) {
+    // 1. If engine is pondering (but not infinite pondering) and not ponderhit, display expected move arrow
+    if (isPondering.value && !isInfinitePondering.value && !ponderhit.value && ponderMove.value) {
+      const mv = ponderMove.value
+      if (mv && mv.length >= 4) {
+        const actualMv = convertUciForArrow(mv)
+        const { row: fr, col: fc } = uciToRC(actualMv.slice(0, 2))
+        const { row: tr, col: tc } = uciToRC(actualMv.slice(2, 4))
+        const f = percentToSvgCoords(fr, fc),
+          t = percentToSvgCoords(tr, tc)
+        arrs.value = [{ x1: f.x, y1: f.y, x2: t.x, y2: t.y, pv: 1 }]
+        return
+      }
+    }
+    
+    // 2. If engine is thinking or infinite pondering, display arrows for all available PVs
+    if ((isThinking.value || (isPondering.value && isInfinitePondering.value)) && multiPvMoves.value.length) {
       const arrows: Arrow[] = []
       multiPvMoves.value.forEach((moves: string[], idx: number) => {
         if (!moves || !moves.length) return
@@ -387,8 +405,9 @@
       arrs.value = arrows
       return
     }
-    // 2. If not thinking, show best move if available
-    if (!isThinking.value && bestMove.value) {
+    
+    // 3. If not thinking and not pondering, show best move if available
+    if (!isThinking.value && !isPondering.value && bestMove.value) {
       const mv = bestMove.value
       if (mv.length >= 4) {
         const actualMv = convertUciForArrow(mv)
@@ -405,8 +424,13 @@
   }
   // Use watchEffect to react to changes inside multiPvMoves deep
   watchEffect(() => {
-    // dependencies: isThinking.value, bestMove.value, multiPvMoves.value, multiPvMoves.value.length
+    // dependencies: isThinking.value, isPondering.value, isInfinitePondering.value, ponderMove.value, ponderhit.value, bestMove.value, multiPvMoves.value, multiPvMoves.value.length
     // Also incorporate pvMoves for fallback
+    void isThinking.value // track isThinking
+    void isPondering.value // track isPondering
+    void isInfinitePondering.value // track isInfinitePondering
+    void ponderMove.value // track ponderMove
+    void ponderhit.value // track ponderhit
     void multiPvMoves.value.map((m: string[]) => m.join(',')) // track nested arrays
     updateArrow()
   })

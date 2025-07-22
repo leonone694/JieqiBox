@@ -254,21 +254,23 @@ export function useChessGame() {
     isAnimating.value = animate
     try {
       const parts = fen.split(' ')
-      // @ts-ignore
-      let boardPart: string, hiddenPart: string, sidePart: string, halfmove: string, fullmove: string, _castling: string, _enpassant: string
-      
+      let boardPart: string,
+        hiddenPart: string,
+        sidePart: string,
+        halfmove: string,
+        fullmove: string
       if (parts.length === 2) {
-        [boardPart, sidePart] = parts
+        ;[boardPart, sidePart] = parts
         hiddenPart = '-'
         halfmove = '0'
         fullmove = '1'
       } else {
-        [
+        ;[
           boardPart,
           hiddenPart,
-          sidePart,
-          _castling, //(ignored)
-          _enpassant, //(ignored)
+          sidePart, // castling and en passant are ignored
+          ,
+          ,
           halfmove,
           fullmove,
         ] = parts
@@ -415,7 +417,10 @@ export function useChessGame() {
 
       if (
         engineState &&
-        (engineState.isThinking?.value || isAiMove || isManualAnalysis.value)
+        (engineState.isThinking?.value ||
+          isAiMove ||
+          isManualAnalysis.value ||
+          engineState.isPondering?.value)
       ) {
         console.log(
           '[DEBUG] RECORD_AND_FINALIZE: Engine was thinking or this is an AI move, extracting data...'
@@ -512,12 +517,25 @@ export function useChessGame() {
     )
 
     // Clear the AI move flag after recording
-    if ((window as any).__LAST_AI_MOVE__ === data) {
+    const isAiMove = (window as any).__LAST_AI_MOVE__ === data
+    if (isAiMove) {
       console.log(
         '[DEBUG] RECORD_AND_FINALIZE: Clearing AI move flag for move:',
         data
       )
       ;(window as any).__LAST_AI_MOVE__ = null
+    }
+
+    // Handle ponder logic for manual moves (human moves)
+    if (type === 'move' && !isAiMove) {
+      const ponderState = (window as any).__PONDER_STATE__
+      if (ponderState && ponderState.handlePonderAfterMove) {
+        console.log(
+          '[DEBUG] RECORD_AND_FINALIZE: Handling ponder for human move:',
+          data
+        )
+        ponderState.handlePonderAfterMove(data, false)
+      }
     }
 
     if (type === 'move') {

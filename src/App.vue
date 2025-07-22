@@ -46,8 +46,8 @@
 
   const game = useChessGame()
 
-  // Pass generateFen to ensure engine receives correct FEN format
-  const engine = useUciEngine(game.generateFen)
+  // Pass generateFen and gameState to ensure engine receives correct FEN format and can access game state
+  const engine = useUciEngine(game.generateFen, game)
 
   // Get interface settings
   const { showPositionChart } = useInterfaceSettings()

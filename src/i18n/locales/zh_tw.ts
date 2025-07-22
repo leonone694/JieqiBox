@@ -184,6 +184,7 @@ export default {
     about: '關於',
     flipBoard: '翻轉棋盤',
     flipBoardBack: '恢復方向',
+    ponderMode: '後台思考',
   },
 
   // 錯誤訊息

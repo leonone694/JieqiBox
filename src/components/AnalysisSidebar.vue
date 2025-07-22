@@ -46,18 +46,18 @@
     <div class="button-group">
       <v-btn
         @click="manualStartAnalysis"
-        :disabled="!isEngineLoaded || isThinking"
+        :disabled="!isEngineLoaded || isThinking || isPondering"
         color="primary"
         class="grouped-btn"
         size="small"
       >
         {{
-          isThinking ? $t('analysis.thinking') : $t('analysis.startAnalysis')
+          isThinking || isPondering ? $t('analysis.thinking') : $t('analysis.startAnalysis')
         }}
       </v-btn>
       <v-btn
         @click="handleStopAnalysis"
-        :disabled="!isEngineLoaded || !isThinking"
+        :disabled="!isEngineLoaded || (!isThinking && !isPondering)"
         color="warning"
         class="grouped-btn"
         size="small"
@@ -128,6 +128,14 @@
       color="indigo"
       true-value="free"
       false-value="random"
+      hide-details
+      class="custom-switch"
+    />
+
+    <v-switch
+      v-model="enablePonder"
+      :label="$t('analysis.ponderMode')"
+      color="purple"
       hide-details
       class="custom-switch"
     />
@@ -400,6 +408,16 @@
     currentEnginePath,
     send,
     applySavedSettings,
+    // Ponder related states
+    isPondering,
+    isInfinitePondering,
+    ponderMove,
+    ponderhit,
+    handlePonderHit,
+    stopPonder,
+    isPonderMoveMatch,
+    // Helper functions
+    isDarkPieceMove,
   } = engineState
 
   /* ---------- Auto Play ---------- */
@@ -407,8 +425,27 @@
   const isBlackAi = ref(false)
   const isManualAnalysis = ref(false) // Track if current analysis is manual or AI auto-play
 
+  /* ---------- Ponder Settings ---------- */
+  const enablePonder = ref(false) // Enable/disable ponder mode
+
+  // Computed property: ponder is only available when exactly one AI is enabled
+  const isPonderAvailable = computed(() => {
+    return (
+      isEngineLoaded.value &&
+      ((isRedAi.value && !isBlackAi.value) ||
+        (!isRedAi.value && isBlackAi.value))
+    )
+  })
+
   // Expose isManualAnalysis to global state for useChessGame access
   ;(window as any).__MANUAL_ANALYSIS__ = isManualAnalysis
+
+  // Expose ponder state to global state for useChessGame access
+  ;(window as any).__PONDER_STATE__ = {
+    enablePonder,
+    isPonderAvailable,
+    handlePonderAfterMove,
+  }
   const moveListElement = ref<HTMLElement | null>(null)
   const engineLogElement = ref<HTMLElement | null>(null)
   const aboutDialogRef = ref<InstanceType<typeof AboutDialog> | null>(null)
@@ -669,6 +706,14 @@
     isBlackAi.value = false
     isManualAnalysis.value = true // Mark as manual analysis
 
+    // Stop any ongoing ponder when starting manual analysis
+    if (isPondering.value) {
+      console.log(
+        '[DEBUG] MANUAL_START_ANALYSIS: Stopping ponder before manual analysis'
+      )
+      stopPonder({ playBestMoveOnStop: false })
+    }
+
     console.log('[DEBUG] MANUAL_START_ANALYSIS: Triggered.')
 
     const infiniteAnalysisSettings = {
@@ -688,6 +733,25 @@
 
   // Handle stop analysis and reset manual analysis state
   function handleStopAnalysis() {
+    // If pondering is active, check if it's a ponder hit scenario
+    if (isPondering.value) {
+      // If ponderhit is true, stop ponder with playBestMoveOnStop = true
+      // This allows the engine to finish its current thinking and play the best move
+      if (ponderhit.value) {
+        console.log(
+          '[DEBUG] HANDLE_STOP_ANALYSIS: Ponder hit detected. Stopping ponder with playBestMoveOnStop = true.'
+        )
+        stopPonder({ playBestMoveOnStop: true })
+      } else {
+        // Regular ponder stop - just stop without playing best move
+        console.log(
+          '[DEBUG] HANDLE_STOP_ANALYSIS: Ponder mode detected. Stopping ponder.'
+        )
+        stopPonder({ playBestMoveOnStop: false })
+      }
+      return
+    }
+
     // If we are in auto-analysis mode, the stop button should act as a "Move Now" command.
     if (isRedAi.value || isBlackAi.value) {
       console.log(
@@ -860,6 +924,13 @@
       isRedAi.value = false
       isBlackAi.value = false
       isManualAnalysis.value = false
+
+      // Stop any ongoing ponder
+      if (isPondering.value) {
+        console.log('[DEBUG] FORCE_STOP_AI: Stopping ponder')
+        stopPonder({ playBestMoveOnStop: false })
+      }
+
       if (engineState.bestMove) {
         engineState.bestMove.value = ''
       }
@@ -962,6 +1033,9 @@
             currentSearchMoves.value
           )
         } else {
+          // Handle ponder logic after AI move
+          handlePonderAfterMove(move, true)
+
           nextTick(() => {
             checkAndTriggerAi()
           })
@@ -996,6 +1070,20 @@
     },
     { deep: true }
   )
+
+  // Watch ponder availability and stop ponder if not available
+  watch(isPonderAvailable, available => {
+    if (!available) {
+      console.log(
+        '[DEBUG] PONDER_WATCH: Stopping ponder due to availability change'
+      )
+
+      // Stop any ongoing ponder
+      if (isPondering.value) {
+        stopPonder({ playBestMoveOnStop: false })
+      }
+    }
+  })
 
   // Clean up the storage watcher when the component is unmounted
   // onUnmounted(() => {
@@ -1177,6 +1265,64 @@
         })
       }
     })
+  }
+
+  /* ---------- Ponder Helper Functions ---------- */
+
+  // Handle ponder logic after a move is played
+  function handlePonderAfterMove(uciMove: string, isAiMove: boolean) {
+    if (isInfinitePondering.value) {
+      stopPonder({ playBestMoveOnStop: false })
+      return
+    }
+    if (!enablePonder.value || !isPonderAvailable.value) return
+    if (isAiMove) {
+      // AI just moved, start pondering immediately
+      if (isEngineLoaded.value) {
+        setTimeout(() => {
+          console.log(
+            `[DEBUG] PONDER: Starting ponder after AI move '${uciMove}'`
+          )
+          startPonderAfterAiMove()
+        }, 100) // Small delay to ensure move is fully processed
+      }
+    } else {
+      // Human just moved, check if it matches ponder expectation
+      if (isPondering.value) {
+        // For JieQi: if the move involves a dark piece, it's always a ponder miss
+        if (isDarkPieceMove(uciMove)) {
+          console.log(
+            `[DEBUG] PONDER_MISS: Dark piece move detected, stopping ponder`
+          )
+          stopPonder({ playBestMoveOnStop: false })
+        } else if (isPonderMoveMatch(uciMove)) {
+          console.log(
+            `[DEBUG] PONDER_HIT: Move '${uciMove}' matches expected ponder move`
+          )
+          handlePonderHit()
+        } else {
+          console.log(
+            `[DEBUG] PONDER_MISS: Move '${uciMove}' does not match expected ponder move '${ponderMove.value}'`
+          )
+          stopPonder({ playBestMoveOnStop: false })
+        }
+      }
+    }
+  }
+
+  // Start pondering after AI move.
+  function startPonderAfterAiMove() {
+    if (!isEngineLoaded.value || isPondering.value) return
+    // Only start ponder if ponder is enabled and available
+    if (!enablePonder.value || !isPonderAvailable.value) return
+
+    // Use the generic startPonder function from the engine composable with analysis settings.
+    engineState.startPonder(
+      baseFenForEngine.value,
+      engineMovesSinceLastReveal.value,
+      ponderMove.value,
+      analysisSettings.value
+    )
   }
 </script>
 
