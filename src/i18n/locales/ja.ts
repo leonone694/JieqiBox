@@ -30,7 +30,7 @@ export default {
     openNotation: '棋譜を開く',
     interfaceSettings: 'インターフェース設定',
     gameTitle: '揭棋ゲーム',
-    variation: '変化手順',
+    variation: '現在の手を禁止',
     noMoreVariations: 'これ以上の変化はありません',
   },
 
@@ -208,7 +208,7 @@ export default {
   },
 
   // 形勢グラフ
-  positionChart: {
+  evaluationChart: {
     title: '形勢グラフ',
     showMoveLabels: '手のラベルを表示',
     opening: '開始局面',

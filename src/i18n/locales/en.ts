@@ -30,7 +30,7 @@ export default {
     openNotation: 'Open Notation',
     gameTitle: 'Jieqi Game',
     interfaceSettings: 'Interface Settings',
-    variation: 'Variation',
+    variation: 'Forbid Current Move',
     noMoreVariations: 'No more variations available',
   },
 
@@ -206,9 +206,9 @@ export default {
     copied: '✓ Copied',
   },
 
-  // Position chart
-  positionChart: {
-    title: 'Position Chart',
+  // Evaluation Chart
+  evaluationChart: {
+    title: 'Evaluation Chart',
     showMoveLabels: 'Show Move Labels',
     opening: 'Opening',
     noData: 'No analysis data available',
@@ -232,7 +232,7 @@ export default {
     showCoordinates: 'Show rank and file numbers',
     parseUciInfo: 'Parse UCI Info',
     showAnimations: 'Enable move animations',
-    showPositionChart: 'Show position chart',
+    showPositionChart: 'Show evaluation chart',
   },
 
   // UCI messages

@@ -138,7 +138,7 @@
     </div>
 
     <!-- Position Chart -->
-    <PositionChart
+    <EvaluationChart
       v-if="showPositionChart"
       :history="history"
       :current-move-index="currentMoveIndex"
@@ -151,7 +151,7 @@
   import type { Piece } from '@/composables/useChessGame'
   import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
   import ClearHistoryConfirmDialog from './ClearHistoryConfirmDialog.vue'
-  import PositionChart from './PositionChart.vue'
+  import EvaluationChart from './EvaluationChart.vue'
 
   /* ===== Layout ===== */
   const PAD_X = 11,

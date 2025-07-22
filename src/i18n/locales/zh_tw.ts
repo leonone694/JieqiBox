@@ -30,7 +30,7 @@ export default {
     openNotation: '開啟棋譜',
     gameTitle: '揭棋對局',
     interfaceSettings: '介面設定',
-    variation: '變招',
+    variation: '禁止當前著法',
     noMoreVariations: '已無更多可變的走法',
   },
 
@@ -206,7 +206,7 @@ export default {
   },
 
   // 局勢圖
-  positionChart: {
+  evaluationChart: {
     title: '局勢圖',
     showMoveLabels: '顯示著法標籤',
     opening: '開局',

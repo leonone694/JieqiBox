@@ -30,7 +30,7 @@ export default {
     openNotation: 'Mở biên bản',
     gameTitle: 'Ván Cờ úp',
     interfaceSettings: 'Cài đặt giao diện',
-    variation: 'Biến thể',
+    variation: 'Cấm nước đi hiện tại',
     noMoreVariations: 'Không còn biến thể nào khả dụng',
   },
 
@@ -207,8 +207,8 @@ export default {
   },
 
   // Biểu đồ vị trí
-  positionChart: {
-    title: 'Biểu đồ vị trí',
+  evaluationChart: {
+    title: 'Biểu đồ cục diện',
     showMoveLabels: 'Hiển thị nhãn nước đi',
     opening: 'Khai cuộc',
     noData: 'Không có dữ liệu phân tích',

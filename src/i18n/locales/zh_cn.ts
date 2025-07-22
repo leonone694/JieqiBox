@@ -30,7 +30,7 @@ export default {
     openNotation: '打开棋谱',
     interfaceSettings: '界面设置',
     gameTitle: '揭棋对局',
-    variation: '变招',
+    variation: '禁止当前着法',
     noMoreVariations: '已无更多可变的走法',
   },
 
@@ -206,7 +206,7 @@ export default {
   },
 
   // 局势图
-  positionChart: {
+  evaluationChart: {
     title: '局势图',
     showMoveLabels: '显示着法标签',
     opening: '开局',

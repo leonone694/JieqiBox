@@ -1,6 +1,6 @@
 <template>
-  <div class="position-chart">
-    <h3 class="chart-title">{{ $t('positionChart.title') }}</h3>
+  <div class="evaluation-chart">
+    <h3 class="chart-title">{{ $t('evaluationChart.title') }}</h3>
 
     <!-- Chart container -->
     <div class="chart-container" ref="chartContainer">
@@ -35,7 +35,7 @@
     <div class="chart-controls">
       <v-switch
         v-model="showMoveLabels"
-        :label="$t('positionChart.showMoveLabels')"
+        :label="$t('evaluationChart.showMoveLabels')"
         color="primary"
         hide-details
         density="compact"
@@ -99,7 +99,7 @@
     data.push({
       moveIndex: 0,
       moveNumber: 0,
-      moveText: t('positionChart.opening'),
+      moveText: t('evaluationChart.opening'),
       score: null,
       time: null,
       isRedMove: false,
@@ -185,7 +185,7 @@
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(
-        t('positionChart.noData') || 'No analysis data available',
+        t('evaluationChart.noData') || 'No analysis data available',
         area.x + area.width / 2,
         area.y + area.height / 2
       )
@@ -457,7 +457,7 @@
 </script>
 
 <style lang="scss" scoped>
-  .position-chart {
+  .evaluation-chart {
     background: #fff;
     border-radius: 8px;
     padding: 16px;
@@ -555,7 +555,7 @@
     }
   }
   @media (max-width: 768px) {
-    .position-chart {
+    .evaluation-chart {
       padding: 12px;
     }
     .chart-container {
