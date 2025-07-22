@@ -641,11 +641,29 @@ export function useChessGame() {
     console.log(
       `[DEBUG] completeFlipAfterMove: 'pendingFlip' cleared. Finalizing move.`
     )
+
+    // Check if this was an AI move before calling recordAndFinalize (which clears the flag)
+    const isAiMove = (window as any).__LAST_AI_MOVE__ === uciMove
+    
     // In free mode, lastMovePositions has already been set in movePiece, here we only need to record history
     console.log(
       `[DEBUG] completeFlipAfterMove: About to call recordAndFinalize with move: ${uciMove}`
     )
     recordAndFinalize('move', uciMove, lastMove)
+
+    // If this was an AI move, start ponder now that the flip dialog is closed
+    if (isAiMove) {
+      console.log(
+        `[DEBUG] completeFlipAfterMove: AI move completed after flip dialog. Checking if ponder should start.`
+      )
+      const ponderState = (window as any).__PONDER_STATE__
+      if (ponderState && ponderState.handlePonderAfterMove) {
+        console.log(
+          `[DEBUG] completeFlipAfterMove: Triggering ponder for AI move: ${uciMove}`
+        )
+        ponderState.handlePonderAfterMove(uciMove, true)
+      }
+    }
   }
 
   /**

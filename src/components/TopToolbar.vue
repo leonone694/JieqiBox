@@ -54,7 +54,7 @@
         color="primary"
         variant="text"
         @click="showUciOptionsDialog = true"
-        :disabled="isAnalyzing"
+        :disabled="isAnalyzing || engineState.isPondering?.value"
         :title="$t('toolbar.uciSettings')"
       />
       <v-btn
@@ -153,7 +153,7 @@
   // Variation analysis state
   const excludedMoves = ref<string[]>([])
 
-  // Check if engine is currently analyzing
+  // Check if engine is currently analyzing (including pondering)
   const isAnalyzing = computed(() => engineState.isThinking?.value)
 
   // Computed property to determine if variation button should be enabled

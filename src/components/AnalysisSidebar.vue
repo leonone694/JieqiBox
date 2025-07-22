@@ -1277,6 +1277,14 @@
     }
     if (!enablePonder.value || !isPonderAvailable.value) return
     if (isAiMove) {
+      // AI just moved, check if there's a pending flip dialog
+      if (pendingFlip.value) {
+        console.log(
+          `[DEBUG] PONDER: AI move '${uciMove}' detected, but FlipPromptDialog is open. Deferring ponder until dialog closes.`
+        )
+        // Don't start ponder yet - it will be triggered when the flip dialog closes
+        return
+      }
       // AI just moved, start pondering immediately
       if (isEngineLoaded.value) {
         setTimeout(() => {

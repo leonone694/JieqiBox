@@ -211,7 +211,24 @@
         gameState.pendingFlip.value.callback(chosenName)
       } else {
         // If no pieces are available, just cancel
+        const uciMove = gameState.pendingFlip.value.uciMove
+        // Check if this was an AI move before clearing pendingFlip
+        const isAiMove = (window as any).__LAST_AI_MOVE__ === uciMove
         gameState.pendingFlip.value = null
+        
+        // If this was an AI move, ponder should be started now that the flip dialog is closed
+        if (isAiMove) {
+          console.log(
+            `[DEBUG] cancelFlip: AI move completed after flip dialog cancellation. Checking if ponder should start.`
+          )
+          const ponderState = (window as any).__PONDER_STATE__
+          if (ponderState && ponderState.handlePonderAfterMove) {
+            console.log(
+              `[DEBUG] cancelFlip: Triggering ponder for AI move: ${uciMove}`
+            )
+            ponderState.handlePonderAfterMove(uciMove, true)
+          }
+        }
       }
     }
   }
