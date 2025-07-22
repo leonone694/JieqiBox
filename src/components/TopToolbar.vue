@@ -4,7 +4,7 @@
       <v-btn
         icon="mdi-chess-king"
         size="small"
-        color="primary"
+        color="teal"
         variant="text"
         @click="setupNewGame"
         :title="$t('toolbar.newGame')"
@@ -12,7 +12,7 @@
       <v-btn
         icon="mdi-content-copy"
         size="small"
-        color="primary"
+        color="deep-orange"
         variant="text"
         @click="copyFenToClipboard"
         :title="$t('toolbar.copyFen')"
@@ -20,7 +20,7 @@
       <v-btn
         icon="mdi-text-box"
         size="small"
-        color="primary"
+        color="cyan"
         variant="text"
         @click="inputFenString"
         :title="$t('toolbar.inputFen')"
@@ -28,7 +28,7 @@
       <v-btn
         icon="mdi-pencil-box"
         size="small"
-        color="primary"
+        color="amber"
         variant="text"
         @click="showPositionEditor = true"
         :title="$t('toolbar.editPosition')"
@@ -36,7 +36,7 @@
       <v-btn
         icon="mdi-view-dashboard-outline"
         size="small"
-        color="primary"
+        color="lime"
         variant="text"
         @click="showInterfaceSettingsDialog = true"
         :title="$t('toolbar.interfaceSettings')"
@@ -51,7 +51,7 @@
       <v-btn
         icon="mdi-cog"
         size="small"
-        color="primary"
+        color="purple"
         variant="text"
         @click="showUciOptionsDialog = true"
         :disabled="isAnalyzing || engineState.isPondering?.value"
@@ -60,7 +60,7 @@
       <v-btn
         icon="mdi-timer"
         size="small"
-        color="primary"
+        color="indigo"
         variant="text"
         @click="showTimeDialog = true"
         :title="$t('toolbar.analysisParams')"
@@ -68,7 +68,7 @@
       <v-btn
         icon="mdi-chart-line-variant"
         size="small"
-        color="secondary"
+        color="deep-purple"
         variant="text"
         @click="handleVariation"
         :disabled="!isVariationAvailable"
@@ -86,7 +86,7 @@
       <v-btn
         icon="mdi-folder-open"
         size="small"
-        color="primary"
+        color="blue-grey"
         variant="text"
         @click="handleOpenNotation"
         :loading="isOpening"

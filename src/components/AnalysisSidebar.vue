@@ -4,7 +4,7 @@
     <div v-if="isAndroidPlatform" class="button-group">
       <v-btn
         @click="loadEngine"
-        :color="isEngineLoaded ? 'success' : 'primary'"
+        :color="isEngineLoaded ? 'success' : 'teal'"
         class="grouped-btn"
         size="small"
       >
@@ -16,7 +16,7 @@
       </v-btn>
       <v-btn
         @click="loadEngineWithSaf"
-        :color="isEngineLoaded ? 'success' : 'secondary'"
+        :color="isEngineLoaded ? 'success' : 'deep-orange'"
         class="grouped-btn"
         size="small"
         :disabled="isEngineLoading"
@@ -33,7 +33,7 @@
     <v-btn
       v-if="!isAndroidPlatform"
       @click="loadEngine"
-      :color="isEngineLoaded ? 'success' : 'primary'"
+      :color="isEngineLoaded ? 'success' : 'teal'"
       class="full-btn"
       size="small"
     >
@@ -47,7 +47,7 @@
       <v-btn
         @click="handleAnalysisButtonClick"
         :disabled="!isEngineLoaded"
-        :color="isThinking || isPondering ? 'warning' : 'primary'"
+        :color="isThinking || isPondering ? 'warning' : 'deep-purple'"
         class="grouped-btn"
         size="small"
       >
@@ -72,7 +72,7 @@
       </v-btn>
       <v-btn
         @click="toggleBoardFlip"
-        color="primary"
+        color="cyan"
         class="grouped-btn"
         size="small"
       >
@@ -88,7 +88,7 @@
     <div class="autoplay-settings">
       <v-btn
         @click="toggleRedAi"
-        :color="isRedAi ? 'error' : 'primary'"
+        :color="isRedAi ? 'error' : 'red-darken-1'"
         class="half-btn"
         size="small"
         :disabled="isManualAnalysis || !isEngineLoaded"
@@ -97,7 +97,7 @@
       </v-btn>
       <v-btn
         @click="toggleBlackAi"
-        :color="isBlackAi ? 'error' : 'primary'"
+        :color="isBlackAi ? 'error' : 'blue-grey-darken-1'"
         class="half-btn"
         size="small"
         :disabled="isManualAnalysis || !isEngineLoaded"
@@ -109,7 +109,7 @@
     <v-switch
       v-model="flipMode"
       :label="$t('analysis.freeFlipMode')"
-      color="indigo"
+      color="amber"
       true-value="free"
       false-value="random"
       hide-details
@@ -119,7 +119,7 @@
     <v-switch
       v-model="enablePonder"
       :label="$t('analysis.ponderMode')"
-      color="purple"
+      color="lime"
       hide-details
       class="custom-switch"
     />
