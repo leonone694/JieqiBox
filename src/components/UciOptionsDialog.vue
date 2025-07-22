@@ -247,6 +247,7 @@
   const isLoading = ref(false)
   const uciOptions = ref<UciOption[]>([])
   const isWaitingForOptions = ref(false)
+  const originalOptions = ref<Record<string, string | number | boolean>>({})
 
   // Detect if the device is mobile
   const isMobile = computed(() => {
@@ -396,17 +397,10 @@
   }
 
   // Function to update an option's value
-  const updateOption = async (
-    name: string,
-    value: string | number | boolean
-  ) => {
+  const updateOption = (name: string, value: string | number | boolean) => {
     const option = uciOptions.value.find(opt => opt.name === name)
     if (option) {
       option.currentValue = value
-      // Immediately send the set command to the engine
-      sendOptionToEngine(name, value)
-      // Save to config file
-      await saveOptionsToStorage()
     }
   }
 
@@ -450,11 +444,32 @@
       const options = parseUciOptions(uciOptionsText.value)
       uciOptions.value = options
       loadSavedOptions()
+
+      // Store original values after loading
+      originalOptions.value = {}
+      uciOptions.value.forEach(option => {
+        if (option.type !== 'button') {
+          originalOptions.value[option.name] = option.currentValue
+        }
+      })
     }, 100)
   }
 
   // Function to close the dialog
-  const closeDialog = () => {
+  const closeDialog = async () => {
+    // Identify modified options and send `setoption` command
+    for (const option of uciOptions.value) {
+      if (
+        option.type !== 'button' &&
+        originalOptions.value[option.name] !== option.currentValue
+      ) {
+        sendOptionToEngine(option.name, option.currentValue)
+      }
+    }
+
+    // Save all current option values to config
+    await saveOptionsToStorage()
+
     isVisible.value = false
   }
 
