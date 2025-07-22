@@ -1330,13 +1330,13 @@
     width: 320px;
     height: 90vh;
     padding: 12px;
-    background-color: #f4f6f8;
     display: flex;
     flex-direction: column;
     gap: 8px;
     box-sizing: border-box;
-    border-left: 1px solid #ddd;
+    border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     overflow-y: auto;
+    background-color: rgb(var(--v-theme-surface));
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {
@@ -1345,7 +1345,7 @@
       height: auto;
       max-height: 60vh;
       border-left: none;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
       margin-top: 20px;
       padding: 10px;
       gap: 6px;
@@ -1386,27 +1386,25 @@
   }
   .section {
     padding-top: 6px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   }
   .section h3,
   .section-title {
     margin: 0 0 6px;
     padding-bottom: 3px;
     font-size: 0.9rem;
-    color: #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .analysis-output,
   .move-list {
-    background-color: #fff;
     padding: 10px;
     border-radius: 5px;
     height: 150px;
     overflow-y: auto;
     font-family: 'Courier New', Courier, monospace;
-    border: 1px solid #eee;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     font-size: 13px;
 
     // Mobile responsive adjustments
@@ -1427,7 +1425,7 @@
   }
 
   .score-neutral {
-    color: #666;
+    color: rgb(var(--v-theme-on-surface));
   }
 
   .score-mate-positive {
@@ -1458,17 +1456,16 @@
     border-radius: 3px;
   }
   .move-item:hover {
-    background-color: #e8f4fd;
+    background-color: rgba(var(--v-theme-primary), 0.1);
   }
   .move-item.current-move {
-    background-color: #bbdefb;
+    background-color: rgba(var(--v-theme-primary), 0.2);
     font-weight: bold;
   }
   .move-number {
     font-weight: bold;
     width: 40px;
     text-align: right;
-    color: #666;
     white-space: nowrap;
   }
   .move-uci {
@@ -1491,12 +1488,10 @@
   }
 
   .engine-time {
-    color: #666;
     font-size: 10px;
     white-space: nowrap;
   }
   .move-adjust {
-    color: #888;
     font-style: italic;
     font-size: 12px;
     width: 100%;
@@ -1528,10 +1523,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
     padding: 1px 4px;
     border-radius: 4px;
-    border: 1px solid #eee;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   }
   .pool-piece-img {
     width: 20px;
@@ -1558,11 +1552,11 @@
   }
 
   .notation-info {
-    background: #f5f5f5;
+    background-color: rgb(var(--v-theme-surface));
     border-radius: 4px;
     padding: 8px 12px;
     font-size: 12px;
-    color: #666;
+    color: rgb(var(--v-theme-on-surface));
 
     p {
       margin: 4px 0;
@@ -1621,17 +1615,16 @@
   .about-section {
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   }
 
   /* ---------- Comment Styles ---------- */
   .comments-list {
-    background-color: #fff;
     padding: 10px;
     border-radius: 5px;
     height: 200px;
     overflow-y: auto;
-    border: 1px solid #eee;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     font-size: 13px;
 
     // Mobile responsive adjustments
@@ -1645,13 +1638,13 @@
     margin-bottom: 8px;
     padding: 8px;
     border-radius: 4px;
-    border: 1px solid #e0e0e0;
-    background-color: #fafafa;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    background-color: rgba(var(--v-theme-surface), 0.8);
   }
 
   .comment-item.current-comment {
-    background-color: #e3f2fd;
-    border-color: #2196f3;
+    background-color: rgba(var(--v-theme-primary), 0.1);
+    border-color: rgb(var(--v-theme-primary));
   }
 
   .comment-header {
@@ -1663,12 +1656,10 @@
 
   .comment-number {
     font-weight: bold;
-    color: #666;
     font-size: 12px;
   }
 
   .comment-text {
-    color: #333;
     font-size: 13px;
     line-height: 1.4;
     word-wrap: break-word;

@@ -32,6 +32,8 @@ export default {
     gameTitle: '揭棋对局',
     variation: '禁止当前着法',
     noMoreVariations: '已无更多可变的走法',
+    darkMode: '暗黑模式',
+    lightMode: '亮色模式',
   },
 
   // UCI选项对话框
@@ -231,6 +233,7 @@ export default {
     parseUciInfo: '解析UCI信息',
     showAnimations: '开启走子动画',
     showPositionChart: '显示局势图',
+    darkMode: '暗黑模式',
   },
 
   // UCI消息

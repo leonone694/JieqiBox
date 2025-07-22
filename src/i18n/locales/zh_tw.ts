@@ -32,6 +32,8 @@ export default {
     interfaceSettings: '介面設定',
     variation: '禁止當前著法',
     noMoreVariations: '已無更多可變的走法',
+    darkMode: '暗黑模式',
+    lightMode: '亮色模式',
   },
 
   // UCI選項對話框
@@ -231,6 +233,7 @@ export default {
     parseUciInfo: '解析UCI資訊',
     showAnimations: '開啟走子動畫',
     showPositionChart: '顯示局勢圖',
+    darkMode: '暗黑模式',
   },
 
   // UCI訊息

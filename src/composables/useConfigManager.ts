@@ -8,6 +8,7 @@ interface ConfigData {
     parseUciInfo: boolean
     showAnimations: boolean
     showPositionChart: boolean
+    darkMode: boolean
   }
   analysisSettings: {
     movetime: number
@@ -27,6 +28,7 @@ const defaultConfig: ConfigData = {
     parseUciInfo: true,
     showAnimations: true,
     showPositionChart: false,
+    darkMode: false,
   },
   analysisSettings: {
     movetime: 1000,

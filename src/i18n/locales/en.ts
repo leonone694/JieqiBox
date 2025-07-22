@@ -32,6 +32,8 @@ export default {
     interfaceSettings: 'Interface Settings',
     variation: 'Forbid Current Move',
     noMoreVariations: 'No more variations available',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
   },
 
   // UCI options dialog
@@ -232,6 +234,7 @@ export default {
     parseUciInfo: 'Parse UCI Info',
     showAnimations: 'Enable move animations',
     showPositionChart: 'Show evaluation chart',
+    darkMode: 'Dark Mode',
   },
 
   // UCI messages

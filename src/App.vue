@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { provide, computed, watch, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { useTheme } from 'vuetify'
   import TopToolbar from './components/TopToolbar.vue'
   import Chessboard from './components/Chessboard.vue'
   import AnalysisSidebar from './components/AnalysisSidebar.vue'
@@ -13,6 +14,19 @@
 
   const { locale } = useI18n()
   const configManager = useConfigManager()
+  const theme = useTheme()
+
+  // Get interface settings including dark mode
+  const { showPositionChart, darkMode } = useInterfaceSettings()
+
+  // Watch for dark mode changes and update theme
+  watch(
+    darkMode,
+    newDarkMode => {
+      theme.global.name.value = newDarkMode ? 'dark' : 'light'
+    },
+    { immediate: true }
+  )
 
   // Set HTML lang attribute based on current language
   const htmlLang = computed(() => {
@@ -48,9 +62,6 @@
 
   // Pass generateFen and gameState to ensure engine receives correct FEN format and can access game state
   const engine = useUciEngine(game.generateFen, game)
-
-  // Get interface settings
-  const { showPositionChart } = useInterfaceSettings()
 
   // Provide global state
   provide('game-state', game)
@@ -98,7 +109,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: #e8eaf6;
+    background-color: rgb(var(--v-theme-background));
   }
 
   .main-layout {
@@ -111,6 +122,7 @@
     padding: 20px;
     gap: 20px;
     box-sizing: border-box;
+    background-color: rgb(var(--v-theme-background));
 
     // Mobile responsive layout - switch to vertical on narrow screens
     @media (max-width: 768px) {

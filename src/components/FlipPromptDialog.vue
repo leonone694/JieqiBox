@@ -256,7 +256,7 @@
 
   /* Custom draggable dialog */
   .custom-draggable-dialog {
-    background: white;
+    background-color: rgba(var(--v-theme-surface), 0.75);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     max-width: 500px;
@@ -271,8 +271,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: rgba(var(--v-theme-surface), 0.75);
+    border-bottom: 1px solid
+      rgba(var(--v-border-color), var(--v-border-opacity));
     padding: 16px 20px;
     font-size: 18px;
     font-weight: 500;
@@ -280,7 +281,7 @@
 
   .drag-handle {
     font-size: 16px;
-    color: #666;
+    color: rgb(var(--v-theme-on-surface));
     cursor: move;
     user-select: none;
   }
@@ -288,6 +289,7 @@
   /* Dialog content */
   .dialog-content {
     padding: 20px;
+    background-color: rgba(var(--v-theme-surface), 0.75);
   }
 
   /* Pieces grid */
@@ -308,11 +310,12 @@
     border-radius: 8px;
     transition: background-color 0.2s;
     border: 1px solid transparent;
+    background-color: rgba(var(--v-theme-surface), 0.75);
   }
 
   .piece-option:hover {
-    background-color: #f0f0f0;
-    border-color: #ddd;
+    background-color: rgba(var(--v-theme-primary), 0.1);
+    border-color: rgba(var(--v-border-color), var(--v-border-opacity));
   }
 
   .piece-image {
@@ -325,7 +328,7 @@
   /* Error message */
   .error-message {
     text-align: center;
-    color: #d32f2f;
+    color: rgb(var(--v-theme-error));
     padding: 10px;
   }
 
@@ -334,8 +337,8 @@
     display: flex;
     justify-content: flex-end;
     padding: 16px 20px;
-    border-top: 1px solid #e0e0e0;
-    background-color: #fafafa;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    background-color: rgba(var(--v-theme-surface), 0.75);
   }
 
   .spacer {
@@ -343,18 +346,17 @@
   }
 
   .cancel-btn {
-    background: none;
-    border: none;
-    color: #1976d2;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
+    background-color: rgba(var(--v-theme-surface), 0.75);
+    color: rgb(var(--v-theme-on-surface));
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     padding: 8px 16px;
     border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
     transition: background-color 0.2s;
   }
 
   .cancel-btn:hover {
-    background-color: rgba(25, 118, 210, 0.1);
+    background-color: rgba(var(--v-theme-primary), 0.1);
   }
 </style>

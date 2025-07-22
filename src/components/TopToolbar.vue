@@ -41,6 +41,15 @@
         @click="showInterfaceSettingsDialog = true"
         :title="$t('toolbar.interfaceSettings')"
       />
+      <!-- Dark mode toggle button -->
+      <v-btn
+        :icon="darkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+        size="small"
+        :color="darkMode ? 'orange' : 'blue-grey'"
+        variant="text"
+        @click="toggleDarkMode"
+        :title="darkMode ? $t('toolbar.lightMode') : $t('toolbar.darkMode')"
+      />
     </div>
 
     <div class="toolbar-center">
@@ -119,11 +128,15 @@
   import FenInputDialog from './FenInputDialog.vue'
   import LanguageSelector from './LanguageSelector.vue'
   import InterfaceSettingsDialog from './InterfaceSettingsDialog.vue'
+  import { useInterfaceSettings } from '../composables/useInterfaceSettings'
 
   const { t } = useI18n()
   const gameState: any = inject('game-state')
   const engineState: any = inject('engine-state')
   const isFenDialogVisible: any = inject('fen-input-dialog-visible')
+
+  // Get dark mode setting from interface settings
+  const { darkMode } = useInterfaceSettings()
 
   // Dialog states
   const showUciOptionsDialog = ref(false)
@@ -163,6 +176,11 @@
       engineState.pvMoves?.value?.length > 0 &&
       engineState.pvMoves.value[0]
   )
+
+  // Toggle dark mode function
+  const toggleDarkMode = () => {
+    darkMode.value = !darkMode.value
+  }
 
   // Handle variation button click
   const handleVariation = () => {
@@ -407,9 +425,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 16px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid
+      rgba(var(--v-border-color), var(--v-border-opacity));
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: rgb(var(--v-theme-surface));
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {
@@ -443,7 +462,6 @@
   .game-title {
     font-size: 18px;
     font-weight: 600;
-    color: #333;
 
     // Mobile responsive adjustments
     @media (max-width: 768px) {

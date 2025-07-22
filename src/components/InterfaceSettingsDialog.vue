@@ -23,6 +23,11 @@
           :label="$t('interfaceSettings.showPositionChart')"
           color="primary"
         ></v-switch>
+        <v-switch
+          v-model="darkMode"
+          :label="$t('interfaceSettings.darkMode')"
+          color="primary"
+        ></v-switch>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -40,8 +45,13 @@
   const isDialogVisible = defineModel<boolean>()
 
   // Get showCoordinates and parseUciInfo from shared state
-  const { showCoordinates, parseUciInfo, showAnimations, showPositionChart } =
-    useInterfaceSettings()
+  const {
+    showCoordinates,
+    parseUciInfo,
+    showAnimations,
+    showPositionChart,
+    darkMode,
+  } = useInterfaceSettings()
 
   const closeDialog = () => {
     isDialogVisible.value = false

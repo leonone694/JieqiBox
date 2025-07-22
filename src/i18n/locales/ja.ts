@@ -32,6 +32,8 @@ export default {
     gameTitle: '揭棋ゲーム',
     variation: '現在の手を禁止',
     noMoreVariations: 'これ以上の変化はありません',
+    darkMode: 'ダークモード',
+    lightMode: 'ライトモード',
   },
 
   // UCIオプションダイアログ
@@ -233,6 +235,7 @@ export default {
     parseUciInfo: 'UCI情報を解析',
     showAnimations: '駒の動きのアニメーションを有効にする',
     showPositionChart: '形勢グラフを表示',
+    darkMode: 'ダークモード',
   },
 
   // UCIメッセージ

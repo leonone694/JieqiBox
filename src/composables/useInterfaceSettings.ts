@@ -16,6 +16,7 @@ const getInitialSettings = () => {
       parseUciInfo: true,
       showAnimations: true,
       showPositionChart: false,
+      darkMode: false,
     }
   }
 
@@ -26,6 +27,7 @@ const getInitialSettings = () => {
       parseUciInfo: settings.parseUciInfo !== false, // Default to true
       showAnimations: settings.showAnimations !== false, // Default to true
       showPositionChart: !!settings.showPositionChart, // Default to false
+      darkMode: !!settings.darkMode, // Default to false
     }
   } catch (e) {
     console.error('Failed to get interface settings:', e)
@@ -35,6 +37,7 @@ const getInitialSettings = () => {
       parseUciInfo: true,
       showAnimations: true,
       showPositionChart: false,
+      darkMode: false,
     }
   }
 }
@@ -45,24 +48,27 @@ const {
   parseUciInfo: initialParseUciInfo,
   showAnimations: initialShowAnimations,
   showPositionChart: initialShowPositionChart,
+  darkMode: initialDarkMode,
 } = getInitialSettings()
 
 const showCoordinates = ref<boolean>(initialShowCoordinates)
 const parseUciInfo = ref<boolean>(initialParseUciInfo)
 const showAnimations = ref<boolean>(initialShowAnimations)
 const showPositionChart = ref<boolean>(initialShowPositionChart)
+const darkMode = ref<boolean>(initialDarkMode)
 
 // Flag to track if config is loaded
 const isConfigLoaded = ref(false)
 
 // Watch for changes and persist to config file
 watch(
-  [showCoordinates, parseUciInfo, showAnimations, showPositionChart],
+  [showCoordinates, parseUciInfo, showAnimations, showPositionChart, darkMode],
   async ([
     newShowCoordinates,
     newParseUciInfo,
     newShowAnimations,
     newShowPositionChart,
+    newDarkMode,
   ]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
@@ -72,6 +78,7 @@ watch(
       parseUciInfo: newParseUciInfo,
       showAnimations: newShowAnimations,
       showPositionChart: newShowPositionChart,
+      darkMode: newDarkMode,
     }
 
     try {
@@ -95,6 +102,7 @@ export function useInterfaceSettings() {
       parseUciInfo.value = settings.parseUciInfo !== false
       showAnimations.value = settings.showAnimations !== false
       showPositionChart.value = !!settings.showPositionChart
+      darkMode.value = !!settings.darkMode
 
       isConfigLoaded.value = true
     } catch (error) {
@@ -113,6 +121,7 @@ export function useInterfaceSettings() {
     parseUciInfo,
     showAnimations,
     showPositionChart,
+    darkMode,
     loadSettings,
   }
 }

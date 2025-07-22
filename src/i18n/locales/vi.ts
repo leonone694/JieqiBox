@@ -32,6 +32,8 @@ export default {
     interfaceSettings: 'Cài đặt giao diện',
     variation: 'Cấm nước đi hiện tại',
     noMoreVariations: 'Không còn biến thể nào khả dụng',
+    darkMode: 'Chế độ tối',
+    lightMode: 'Chế độ sáng',
   },
 
   // Hộp thoại tùy chọn UCI
@@ -231,6 +233,7 @@ export default {
     parseUciInfo: 'Phân tích thông tin UCI',
     showAnimations: 'Bật hoạt ảnh di chuyển quân cờ',
     showPositionChart: 'Hiển thị biểu đồ vị trí',
+    darkMode: 'Chế độ tối',
   },
 
   // Tin nhắn UCI

@@ -458,24 +458,23 @@
 
 <style lang="scss" scoped>
   .evaluation-chart {
-    background: #fff;
     border-radius: 8px;
     padding: 16px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     box-sizing: border-box;
+    background-color: rgb(var(--v-theme-surface));
   }
   .chart-title {
     margin: 0 0 16px 0;
     font-size: 16px;
-    color: #333;
     font-weight: 600;
   }
   .chart-container {
     position: relative;
     width: 100%;
     height: 200px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     overflow: hidden;
   }
@@ -494,12 +493,11 @@
   }
   .move-label {
     position: absolute;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(var(--v-theme-surface), 0.9);
     padding: 2px 6px;
     border-radius: 3px;
     font-size: 10px;
-    color: #666;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     transform: translateX(-50%);
     white-space: nowrap;
     &.current-move {
