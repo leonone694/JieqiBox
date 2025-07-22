@@ -163,7 +163,6 @@ export default {
     time: 'Time',
     pv: 'Principal Variation',
     engineLoaded: 'Engine Loaded',
-    thinking: 'Thinking...',
     playBestMove: 'Play Best Move',
     undoMove: 'Undo Move',
     redAiOn: 'Red AI (On)',

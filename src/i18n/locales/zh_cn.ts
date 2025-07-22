@@ -162,7 +162,6 @@ export default {
     time: '时间',
     pv: '主要变例',
     engineLoaded: '引擎已加载',
-    thinking: '思考中...',
     playBestMove: '走最佳着',
     undoMove: '悔棋',
     redAiOn: '红方电脑(开)',

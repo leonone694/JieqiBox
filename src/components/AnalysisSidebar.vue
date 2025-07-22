@@ -45,26 +45,17 @@
     <!-- Analysis control and execution button group -->
     <div class="button-group">
       <v-btn
-        @click="manualStartAnalysis"
-        :disabled="!isEngineLoaded || isThinking || isPondering"
-        color="primary"
+        @click="handleAnalysisButtonClick"
+        :disabled="!isEngineLoaded"
+        :color="isThinking || isPondering ? 'warning' : 'primary'"
         class="grouped-btn"
         size="small"
       >
         {{
           isThinking || isPondering
-            ? $t('analysis.thinking')
+            ? $t('analysis.stopAnalysis')
             : $t('analysis.startAnalysis')
         }}
-      </v-btn>
-      <v-btn
-        @click="handleStopAnalysis"
-        :disabled="!isEngineLoaded || (!isThinking && !isPondering)"
-        color="warning"
-        class="grouped-btn"
-        size="small"
-      >
-        {{ $t('analysis.stopAnalysis') }}
       </v-btn>
     </div>
 
@@ -87,8 +78,8 @@
       >
         {{
           isBoardFlipped
-            ? $t('analysis.flipBoardBack') || '恢复方向'
-            : $t('analysis.flipBoard') || '翻转棋盘'
+            ? $t('analysis.flipBoardBack')
+            : $t('analysis.flipBoard')
         }}
       </v-btn>
     </div>
@@ -688,6 +679,17 @@
   function handleMoveClick(moveIndex: number) {
     replayToMove(moveIndex)
   }
+  // Handle analysis button click - start analysis or stop analysis based on current state
+  function handleAnalysisButtonClick() {
+    if (isThinking.value || isPondering.value) {
+      // If engine is thinking or pondering, stop the analysis
+      handleStopAnalysis()
+    } else {
+      // If engine is not thinking, start manual analysis
+      manualStartAnalysis()
+    }
+  }
+
   function manualStartAnalysis() {
     // Manual analysis uses infinite thinking mode without time, depth, or node limits
     // Disable AI auto-play when manual analysis is active

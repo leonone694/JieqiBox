@@ -163,7 +163,6 @@ export default {
     time: '時間',
     pv: '主な変化',
     engineLoaded: 'エンジン読み込み済み',
-    thinking: '思考中...',
     playBestMove: '最善手を指す',
     undoMove: '一手戻す',
     redAiOn: '赤AI(オン)',

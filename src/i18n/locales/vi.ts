@@ -163,7 +163,6 @@ export default {
     time: 'Thời gian',
     pv: 'Biến chính',
     engineLoaded: 'Đã tải động cơ',
-    thinking: 'Đang suy nghĩ...',
     playBestMove: 'Đi nước tốt nhất',
     undoMove: 'Lùi một nước',
     redAiOn: 'AI Đỏ (Bật)',

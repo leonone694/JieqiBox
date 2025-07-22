@@ -162,7 +162,6 @@ export default {
     time: '時間',
     pv: '主要變例',
     engineLoaded: '引擎已載入',
-    thinking: '思考中...',
     playBestMove: '走最佳著',
     undoMove: '悔棋',
     redAiOn: '紅方電腦(開)',
