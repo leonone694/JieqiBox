@@ -1528,7 +1528,7 @@ export function useChessGame() {
         date: new Date().toISOString().split('T')[0],
         white: '红方',
         black: '黑方',
-        result: '*',
+        result: determineGameResult(), // Determine result based on current position
         initialFen: initialFen.value, // Use the actual initial FEN
         flipMode: flipMode.value,
         currentFen: generateFen(),
@@ -1895,6 +1895,25 @@ export function useChessGame() {
     return newCounts
   }
 
+  // Determine game result based on current position
+  const determineGameResult = (): string => {
+    // Get all legal moves for the current side to move
+    const legalMoves = getAllLegalMovesForCurrentPosition()
+    
+    // If no legal moves are available, the current side has lost
+    if (legalMoves.length === 0) {
+      // Determine which side has no legal moves and set the result accordingly
+      if (sideToMove.value === 'red') {
+        return '0-1' // Red has no legal moves, Black wins
+      } else {
+        return '1-0' // Black has no legal moves, Red wins
+      }
+    }
+    
+    // Game is still ongoing
+    return '*'
+  }
+
   return {
     pieces,
     selectedPieceId,
@@ -1942,5 +1961,6 @@ export function useChessGame() {
     undoLastMove,
     updateAllPieceZIndexes,
     updateMoveComment,
+    determineGameResult,
   }
 }
