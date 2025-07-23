@@ -9,7 +9,7 @@
         <span class="title-text">{{ $t('uciOptions.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog" class="close-btn">
-          <v-icon>mdi-close</v-icon>
+          <v-icon :color="isDark ? 'white' : 'black'">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
@@ -201,6 +201,7 @@
   import { ref, computed, onMounted, watch, inject } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { useConfigManager } from '../composables/useConfigManager'
+  import { useTheme } from 'vuetify'
 
   // UCI option interface definition
   interface UciOption {
@@ -239,6 +240,10 @@
     uciOptionsText,
     currentEnginePath,
   } = engineState
+
+  // Theme detection
+  const theme = useTheme()
+  const isDark = computed(() => theme.global.current.value.dark)
 
   // Configuration manager
   const configManager = useConfigManager()
@@ -598,7 +603,7 @@
     padding: 40px 20px;
 
     .loading-text {
-      color: rgb(var(--v-theme-on-surface-variant));
+      color: rgb(var(--v-theme-on-surface));
       font-size: 16px;
       text-align: center;
     }
@@ -610,13 +615,14 @@
     align-items: center;
     gap: 20px;
     padding: 40px 20px;
-    color: rgb(var(--v-theme-on-surface-variant));
+    color: rgb(var(--v-theme-on-surface));
 
     .empty-text {
       margin: 0;
       font-size: 16px;
       text-align: center;
       line-height: 1.5;
+      color: rgb(var(--v-theme-on-surface));
     }
 
     .action-btn {
@@ -641,6 +647,22 @@
       background: rgb(var(--v-theme-surface-variant));
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+  }
+
+  .v-theme--dark .option-item:hover {
+    background: rgb(30, 30, 30) !important;
+  }
+
+  .v-theme--light .option-item:hover {
+    background: rgb(245, 245, 245) !important;
+  }
+
+  .v-theme--dark .dialog-actions {
+    background: rgb(30, 30, 30) !important;
+  }
+
+  .v-theme--light .dialog-actions {
+    background: rgb(245, 245, 245) !important;
   }
 
   .option-row {
@@ -705,8 +727,7 @@
 
   .dialog-actions {
     padding: 16px 20px;
-    background: rgb(var(--v-theme-surface-variant));
-    border-top: 1px solid rgb(var(--v-border-color));
+    background: rgb(var(--v-theme-surface));
 
     .actions-container {
       display: flex;

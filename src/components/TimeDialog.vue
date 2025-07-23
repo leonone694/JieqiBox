@@ -5,7 +5,7 @@
         <span>{{ $t('timeDialog.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
-          <v-icon>mdi-close</v-icon>
+          <v-icon :color="isDark ? 'white' : 'black'">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
@@ -112,9 +112,14 @@
   import { ref, computed, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { useConfigManager } from '../composables/useConfigManager'
+  import { useTheme } from 'vuetify'
 
   const { t } = useI18n()
   const configManager = useConfigManager()
+
+  // Theme detection
+  const theme = useTheme()
+  const isDark = computed(() => theme.global.current.value.dark)
 
   // Analysis mode options
   const analysisModes = computed(() => [
@@ -298,12 +303,19 @@
 
   .dialog-actions {
     padding: 16px 24px;
-    background: rgb(var(--v-theme-surface-variant));
-    border-top: 1px solid rgb(var(--v-border-color));
+    background: rgb(var(--v-theme-surface));
 
     .v-btn {
       text-transform: none;
       font-weight: 500;
     }
+  }
+
+  .v-theme--dark .dialog-actions {
+    background: rgb(30, 30, 30) !important;
+  }
+
+  .v-theme--light .dialog-actions {
+    background: rgb(245, 245, 245) !important;
   }
 </style>
