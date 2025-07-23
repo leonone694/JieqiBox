@@ -106,23 +106,27 @@
       </v-btn>
     </div>
 
-    <v-switch
-      v-model="flipMode"
-      :label="$t('analysis.freeFlipMode')"
-      color="amber"
-      true-value="free"
-      false-value="random"
-      hide-details
-      class="custom-switch"
-    />
+    <div class="switch-row">
+      <v-switch
+        v-model="flipMode"
+        :label="$t('analysis.freeFlipMode')"
+        color="amber"
+        true-value="free"
+        false-value="random"
+        hide-details
+        class="compact-switch"
+        density="compact"
+      />
 
-    <v-switch
-      v-model="enablePonder"
-      :label="$t('analysis.ponderMode')"
-      color="lime"
-      hide-details
-      class="custom-switch"
-    />
+      <v-switch
+        v-model="enablePonder"
+        :label="$t('analysis.ponderMode')"
+        color="lime"
+        hide-details
+        class="compact-switch"
+        density="compact"
+      />
+    </div>
 
     <div class="section">
       <h3 class="section-title">
@@ -1544,6 +1548,22 @@
     width: 18px;
     text-align: center;
   }
+  .switch-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .compact-switch {
+    flex: 1;
+    margin-top: -6px;
+    margin-bottom: -4px;
+  }
+
+  .compact-switch .v-label {
+    font-size: 0.85rem !important;
+  }
+
   .custom-switch {
     margin-top: -6px;
     margin-bottom: -4px;
