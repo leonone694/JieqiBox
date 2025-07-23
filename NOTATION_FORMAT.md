@@ -39,8 +39,7 @@ The game notation file uses the JSON format with a `.json` file extension.
       "p": 4,
       "k": 0
     },
-    "totalMoves": 15,
-    "currentSide": "red"
+    "totalMoves": 15
   },
   "moves": [
     {
@@ -49,17 +48,7 @@ The game notation file uses the JSON format with a `.json` file extension.
       "comment": "Good opening move",
       "fen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
       "engineScore": 0.5,
-      "engineTime": 1250,
-      "lastMove": {
-        "from": {
-          "row": 2,
-          "col": 4
-        },
-        "to": {
-          "row": 3,
-          "col": 4
-        }
-      }
+      "engineTime": 1250
     }
   ],
   "currentMoveIndex": 15
@@ -82,7 +71,6 @@ The game notation file uses the JSON format with a `.json` file extension.
 - `currentFen`: FEN string for the current board state.
 - `unrevealedPieceCounts`: A dictionary of counts for each piece type in the unrevealed pool.
 - `totalMoves`: Total number of moves.
-- `currentSide`: The side to move (`"red"` or `"black"`).
 
 ### moves
 
@@ -94,9 +82,6 @@ Each move record contains:
 - `comment`: Optional user comment for this move (string). Comments can be edited by users.
 - `engineScore`: Engine analysis score for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
 - `engineTime`: Engine analysis time in milliseconds for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
-- `lastMove`: The start and end squares of the last move for highlighting purposes. Contains:
-  - `from`: Starting square with `row` and `col` coordinates (0-9 for rows, 0-8 for columns)
-  - `to`: Ending square with `row` and `col` coordinates (0-9 for rows, 0-8 for columns)
 
 ### currentMoveIndex
 
@@ -158,8 +143,7 @@ The format is `[PieceChar][Count]`, for example, `A2B2N2R2C2P5a2b2n2r2c2p5`.
       "p": 5,
       "k": 1
     },
-    "totalMoves": 0,
-    "currentSide": "red"
+    "totalMoves": 0
   },
   "moves": [],
   "currentMoveIndex": 0

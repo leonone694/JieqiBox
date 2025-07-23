@@ -23,10 +23,6 @@ export type HistoryEntry = {
   data: string
   fen: string
   comment?: string // User comment for this move
-  lastMove?: {
-    from: { row: number; col: number }
-    to: { row: number; col: number }
-  } // record the start and end positions of the last move
   engineScore?: number // Engine analysis score for this move (only recorded if engine was thinking)
   engineTime?: number // Engine analysis time in milliseconds for this move (only recorded if engine was thinking)
 }
@@ -46,7 +42,6 @@ export interface GameNotation {
     currentFen?: string
     unrevealedPieceCounts?: { [key: string]: number }
     totalMoves?: number
-    currentSide?: 'red' | 'black'
   }
   moves: HistoryEntry[]
   currentMoveIndex: number
@@ -373,14 +368,7 @@ export function useChessGame() {
     }
   }
 
-  const recordAndFinalize = (
-    type: 'move' | 'adjust',
-    data: string,
-    lastMove?: {
-      from: { row: number; col: number }
-      to: { row: number; col: number }
-    }
-  ) => {
+  const recordAndFinalize = (type: 'move' | 'adjust', data: string) => {
     // Record move history: slice to current index position, then add new move record
     const newHistory = history.value.slice(0, currentMoveIndex.value)
 
@@ -504,7 +492,7 @@ export function useChessGame() {
       engineTime,
     })
 
-    const newEntry = { type, data, fen, lastMove, engineScore, engineTime }
+    const newEntry = { type, data, fen, engineScore, engineTime }
     console.log('[DEBUG] RECORD_AND_FINALIZE: New history entry:', newEntry)
 
     newHistory.push(newEntry)
@@ -544,7 +532,8 @@ export function useChessGame() {
       // Record last move position for highlighting
       // In free mode, if it's a dark piece move, lastMovePositions has already been set in movePiece
       if (!(flipMode.value === 'free' && pendingFlip.value)) {
-        lastMovePositions.value = lastMove || null
+        const movePositions = calculateMovePositions(data)
+        lastMovePositions.value = movePositions
       }
     }
     selectedPieceId.value = null
@@ -597,11 +586,7 @@ export function useChessGame() {
   const completeFlipAfterMove = (
     piece: Piece,
     uciMove: string,
-    chosenPieceName: string,
-    lastMove?: {
-      from: { row: number; col: number }
-      to: { row: number; col: number }
-    }
+    chosenPieceName: string
   ) => {
     console.log(
       `[DEBUG] completeFlipAfterMove: Entered. User chose '${chosenPieceName}'.`
@@ -624,10 +609,11 @@ export function useChessGame() {
     updateAllPieceZIndexes()
 
     // If the revealed piece is a cannon and was revealed during capture, bring to top
-    if (chosenPieceName.includes('cannon') && lastMove) {
+    const movePositions = calculateMovePositions(uciMove)
+    if (chosenPieceName.includes('cannon') && movePositions) {
       // Check if it was a capture move (piece was captured at target position)
       const wasCapture =
-        piece.row === lastMove.to.row && piece.col === lastMove.to.col
+        piece.row === movePositions.to.row && piece.col === movePositions.to.col
 
       if (wasCapture) {
         // Set cannon's zIndex to highest
@@ -649,7 +635,7 @@ export function useChessGame() {
     console.log(
       `[DEBUG] completeFlipAfterMove: About to call recordAndFinalize with move: ${uciMove}`
     )
-    recordAndFinalize('move', uciMove, lastMove)
+    recordAndFinalize('move', uciMove)
 
     // If this was an AI move, start ponder now that the flip dialog is closed
     if (isAiMove) {
@@ -1141,10 +1127,6 @@ export function useChessGame() {
       from: { row: originalRow, col: originalCol },
       to: { row: targetRow, col: targetCol },
     }
-    const historyMove = {
-      from: convertPositionForHistory(originalRow, originalCol),
-      to: convertPositionForHistory(targetRow, targetCol),
-    }
 
     if (targetPiece) {
       // In free flip mode, capturing opponent's hidden piece should not affect their unrevealed pool
@@ -1215,7 +1197,7 @@ export function useChessGame() {
           uciMove: uciMove,
           side: pieceSide,
           callback: chosenName =>
-            completeFlipAfterMove(piece, uciMove, chosenName, historyMove),
+            completeFlipAfterMove(piece, uciMove, chosenName),
         }
       } else {
         const pool = Object.entries(unrevealedPieceCounts.value)
@@ -1233,7 +1215,7 @@ export function useChessGame() {
           return
         }
         const chosenName = shuffle(pool)[0]
-        completeFlipAfterMove(piece, uciMove, chosenName, historyMove)
+        completeFlipAfterMove(piece, uciMove, chosenName)
       }
     } else {
       console.log(`[DEBUG] movePiece: Regular move detected. Finalizing.`)
@@ -1242,7 +1224,7 @@ export function useChessGame() {
       console.log(
         `[DEBUG] movePiece: About to call recordAndFinalize with move: ${uciMove}`
       )
-      recordAndFinalize('move', uciMove, historyMove)
+      recordAndFinalize('move', uciMove)
     }
   }
 
@@ -1400,7 +1382,12 @@ export function useChessGame() {
     const targetFen = history.value[index - 1].fen
     loadFen(targetFen, false) // No animation during history navigation
     // Restore the highlight of the previous move
-    lastMovePositions.value = history.value[index - 1].lastMove || null
+    const lastEntry = history.value[index - 1]
+    if (lastEntry.type === 'move') {
+      lastMovePositions.value = calculateMovePositions(lastEntry.data)
+    } else {
+      lastMovePositions.value = null
+    }
 
     // Reset zIndex for all pieces during history replay
     pieces.value.forEach(p => (p.zIndex = undefined))
@@ -1550,7 +1537,6 @@ export function useChessGame() {
         currentFen: generateFen(),
         unrevealedPieceCounts: { ...unrevealedPieceCounts.value },
         totalMoves: history.value.length,
-        currentSide: sideToMove.value,
       },
       moves: [...history.value],
       currentMoveIndex: currentMoveIndex.value,
@@ -1818,18 +1804,24 @@ export function useChessGame() {
     return legalMoves
   }
 
-  // Add a helper function to convert position for history - both row and column
-  function convertPositionForHistory(
-    row: number,
-    col: number
-  ): { row: number; col: number } {
-    if (isBoardFlipped.value) {
-      return {
-        row: 9 - row, // Vertical flip
-        col: 8 - col, // Horizontal mirror flip
-      }
-    } else {
-      return { row, col }
+  // Calculate move positions from UCI move data
+  function calculateMovePositions(uciMove: string): {
+    from: { row: number; col: number }
+    to: { row: number; col: number }
+  } | null {
+    if (uciMove.length < 4) return null
+
+    const file2col = (c: string) => c.charCodeAt(0) - 'a'.charCodeAt(0)
+    const rank2row = (d: string) => 9 - parseInt(d, 10)
+
+    const fromCol = file2col(uciMove[0])
+    const fromRow = rank2row(uciMove[1])
+    const toCol = file2col(uciMove[2])
+    const toRow = rank2row(uciMove[3])
+
+    return {
+      from: { row: fromRow, col: fromCol },
+      to: { row: toRow, col: toCol },
     }
   }
 
@@ -1864,7 +1856,11 @@ export function useChessGame() {
       // Replay to the last remaining move
       const lastEntry = newHistory[newHistory.length - 1]
       loadFen(lastEntry.fen, false)
-      lastMovePositions.value = lastEntry.lastMove || null
+      if (lastEntry.type === 'move') {
+        lastMovePositions.value = calculateMovePositions(lastEntry.data)
+      } else {
+        lastMovePositions.value = null
+      }
     }
 
     // Reset zIndex for all pieces
