@@ -22,24 +22,7 @@ The game notation file uses the JSON format with a `.json` file extension.
     "result": "*",
     "initialFen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
     "flipMode": "random",
-    "currentFen": "FEN string of the current board state",
-    "unrevealedPieceCounts": {
-      "R": 1,
-      "N": 2,
-      "B": 1,
-      "A": 0,
-      "C": 1,
-      "P": 3,
-      "K": 0,
-      "r": 0,
-      "n": 1,
-      "b": 0,
-      "a": 1,
-      "c": 2,
-      "p": 4,
-      "k": 0
-    },
-    "totalMoves": 15
+    "currentFen": "FEN string of the current board state"
   },
   "moves": [
     {
@@ -50,8 +33,7 @@ The game notation file uses the JSON format with a `.json` file extension.
       "engineScore": 0.5,
       "engineTime": 1250
     }
-  ],
-  "currentMoveIndex": 15
+  ]
 }
 ```
 
@@ -69,8 +51,6 @@ The game notation file uses the JSON format with a `.json` file extension.
 - `initialFen`: FEN string for the initial board setup.
 - `flipMode`: Flip mode (`"random"` or `"free"`).
 - `currentFen`: FEN string for the current board state.
-- `unrevealedPieceCounts`: A dictionary of counts for each piece type in the unrevealed pool.
-- `totalMoves`: Total number of moves.
 
 ### moves
 
@@ -83,9 +63,7 @@ Each move record contains:
 - `engineScore`: Engine analysis score for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
 - `engineTime`: Engine analysis time in milliseconds for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
 
-### currentMoveIndex
 
-The index of the current move, used to restore the game position.
 
 ## FEN Format Specification
 
@@ -126,27 +104,9 @@ The format is `[PieceChar][Count]`, for example, `A2B2N2R2C2P5a2b2n2r2c2p5`.
     "result": "*",
     "initialFen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
     "flipMode": "random",
-    "currentFen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1",
-    "unrevealedPieceCounts": {
-      "R": 2,
-      "N": 2,
-      "B": 2,
-      "A": 2,
-      "C": 2,
-      "P": 5,
-      "K": 1,
-      "r": 2,
-      "n": 2,
-      "b": 2,
-      "a": 2,
-      "c": 2,
-      "p": 5,
-      "k": 1
-    },
-    "totalMoves": 0
+    "currentFen": "xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX A2B2N2R2C2P5a2b2n2r2c2p5 w - - 0 1"
   },
-  "moves": [],
-  "currentMoveIndex": 0
+  "moves": []
 }
 ```
 

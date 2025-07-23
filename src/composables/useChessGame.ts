@@ -40,11 +40,8 @@ export interface GameNotation {
     initialFen?: string
     flipMode?: 'random' | 'free'
     currentFen?: string
-    unrevealedPieceCounts?: { [key: string]: number }
-    totalMoves?: number
   }
   moves: HistoryEntry[]
-  currentMoveIndex: number
 }
 
 export function useChessGame() {
@@ -1535,11 +1532,8 @@ export function useChessGame() {
         initialFen: initialFen.value, // Use the actual initial FEN
         flipMode: flipMode.value,
         currentFen: generateFen(),
-        unrevealedPieceCounts: { ...unrevealedPieceCounts.value },
-        totalMoves: history.value.length,
       },
       moves: [...history.value],
-      currentMoveIndex: currentMoveIndex.value,
     }
   }
 
@@ -1602,8 +1596,7 @@ export function useChessGame() {
       // Validate the game notation format
       if (
         !notation.metadata ||
-        !notation.moves ||
-        typeof notation.currentMoveIndex !== 'number'
+        !notation.moves
       ) {
         throw new Error('无效的棋谱格式')
       }
@@ -1615,7 +1608,7 @@ export function useChessGame() {
 
       // Restore the history
       history.value = [...notation.moves]
-      currentMoveIndex.value = notation.currentMoveIndex
+      currentMoveIndex.value = notation.moves.length
 
       // Always set the initial FEN from notation if available
       if (notation.metadata.initialFen) {
@@ -1625,21 +1618,18 @@ export function useChessGame() {
       // If there is a current FEN, load the current state directly
       if (notation.metadata.currentFen) {
         loadFen(notation.metadata.currentFen, false)
+        // Derive unrevealed piece counts from current FEN
+        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(notation.metadata.currentFen)
       } else if (notation.metadata.initialFen) {
         // Otherwise, replay from the initial FEN
         loadFen(notation.metadata.initialFen, false)
+        // Derive unrevealed piece counts from initial FEN
+        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(notation.metadata.initialFen)
         if (currentMoveIndex.value > 0) {
           replayToMove(currentMoveIndex.value)
         }
       } else {
         setupNewGame()
-      }
-
-      // Restore the unrevealed piece pool state
-      if (notation.metadata.unrevealedPieceCounts) {
-        unrevealedPieceCounts.value = {
-          ...notation.metadata.unrevealedPieceCounts,
-        }
       }
 
       // Reset zIndex for all pieces when loading game notation
@@ -1881,6 +1871,29 @@ export function useChessGame() {
   }
 
   setupNewGame()
+
+  // Derive unrevealed piece counts from FEN string
+  const deriveUnrevealedPieceCountsFromFen = (fen: string): { [key: string]: number } => {
+    const parts = fen.split(' ')
+    const hiddenPart = parts.length >= 2 ? parts[1] : '-'
+    
+    const newCounts: { [key: string]: number } = {}
+    'RNBAKCP rnbakcp'
+      .split('')
+      .filter(c => c !== ' ')
+      .forEach(c => (newCounts[c] = 0))
+    
+    if (hiddenPart && hiddenPart !== '-') {
+      const hiddenMatches = hiddenPart.match(/[a-zA-Z]\d+/g) || []
+      hiddenMatches.forEach(match => {
+        const char = match[0]
+        const count = parseInt(match.slice(1), 10)
+        newCounts[char] = count
+      })
+    }
+    
+    return newCounts
+  }
 
   return {
     pieces,
