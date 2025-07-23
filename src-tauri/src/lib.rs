@@ -331,14 +331,25 @@ async fn spawn_engine(
         let _ = child.kill();
     }
 
+    // Get the directory where the engine file is located to set as working directory
+    let engine_dir = Path::new(&final_path)
+        .parent()
+        .ok_or_else(|| "Failed to get engine directory".to_string())?
+        .to_str()
+        .ok_or_else(|| "Failed to convert engine directory to string".to_string())?;
+    
+    if cfg!(target_os = "android") {
+        let _ = app.emit("engine-output", format!("[DEBUG] Setting working directory to: {}", engine_dir));
+    }
+    
     // The command is simply the path to the executable.
-    let command = final_path;
+    let command = final_path.clone();
     if cfg!(target_os = "android") {
         let _ = app.emit("engine-output", format!("[DEBUG] Attempting to spawn executable: {}", command));
     }
 
-    // Start new process
-    let (mut rx, child) = match app.shell().command(command).spawn() {
+    // Start new process with working directory set to engine directory
+    let (mut rx, child) = match app.shell().command(command).current_dir(engine_dir).spawn() {
         Ok(result) => {
             if cfg!(target_os = "android") {
                 let _ = app.emit("engine-output", "[DEBUG] Engine process spawned successfully.");
@@ -524,12 +535,21 @@ async fn spawn_engine_internal(
         let _ = child.kill();
     }
 
+    // Get the directory where the engine file is located to set as working directory
+    let engine_dir = Path::new(&final_path)
+        .parent()
+        .ok_or_else(|| "Failed to get engine directory".to_string())?
+        .to_str()
+        .ok_or_else(|| "Failed to convert engine directory to string".to_string())?;
+    
+    let _ = app.emit("engine-output", format!("[DEBUG] Setting working directory to: {}", engine_dir));
+    
     // The command is simply the path to the executable.
-    let command = final_path;
+    let command = final_path.clone();
     let _ = app.emit("engine-output", format!("[DEBUG] Attempting to spawn executable: {}", command));
 
-    // Start new process
-    let (mut rx, child) = match app.shell().command(command).spawn() {
+    // Start new process with working directory set to engine directory
+    let (mut rx, child) = match app.shell().command(command).current_dir(engine_dir).spawn() {
         Ok(result) => {
             let _ = app.emit("engine-output", "[DEBUG] Engine process spawned successfully.");
             result
