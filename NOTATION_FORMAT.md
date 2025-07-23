@@ -63,8 +63,6 @@ Each move record contains:
 - `engineScore`: Engine analysis score for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
 - `engineTime`: Engine analysis time in milliseconds for this move (number). Only recorded if engine was thinking before the move. Default is 0 if engine was not thinking.
 
-
-
 ## FEN Format Specification
 
 The FEN string format is: `[Board] [Dark Piece Pool] [Side to Move] [Other Info]`

@@ -1594,10 +1594,7 @@ export function useChessGame() {
       const notation: GameNotation = JSON.parse(text)
 
       // Validate the game notation format
-      if (
-        !notation.metadata ||
-        !notation.moves
-      ) {
+      if (!notation.metadata || !notation.moves) {
         throw new Error('无效的棋谱格式')
       }
 
@@ -1619,12 +1616,16 @@ export function useChessGame() {
       if (notation.metadata.currentFen) {
         loadFen(notation.metadata.currentFen, false)
         // Derive unrevealed piece counts from current FEN
-        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(notation.metadata.currentFen)
+        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(
+          notation.metadata.currentFen
+        )
       } else if (notation.metadata.initialFen) {
         // Otherwise, replay from the initial FEN
         loadFen(notation.metadata.initialFen, false)
         // Derive unrevealed piece counts from initial FEN
-        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(notation.metadata.initialFen)
+        unrevealedPieceCounts.value = deriveUnrevealedPieceCountsFromFen(
+          notation.metadata.initialFen
+        )
         if (currentMoveIndex.value > 0) {
           replayToMove(currentMoveIndex.value)
         }
@@ -1873,16 +1874,18 @@ export function useChessGame() {
   setupNewGame()
 
   // Derive unrevealed piece counts from FEN string
-  const deriveUnrevealedPieceCountsFromFen = (fen: string): { [key: string]: number } => {
+  const deriveUnrevealedPieceCountsFromFen = (
+    fen: string
+  ): { [key: string]: number } => {
     const parts = fen.split(' ')
     const hiddenPart = parts.length >= 2 ? parts[1] : '-'
-    
+
     const newCounts: { [key: string]: number } = {}
     'RNBAKCP rnbakcp'
       .split('')
       .filter(c => c !== ' ')
       .forEach(c => (newCounts[c] = 0))
-    
+
     if (hiddenPart && hiddenPart !== '-') {
       const hiddenMatches = hiddenPart.match(/[a-zA-Z]\d+/g) || []
       hiddenMatches.forEach(match => {
@@ -1891,7 +1894,7 @@ export function useChessGame() {
         newCounts[char] = count
       })
     }
-    
+
     return newCounts
   }
 
@@ -1899,7 +1902,7 @@ export function useChessGame() {
   const determineGameResult = (): string => {
     // Get all legal moves for the current side to move
     const legalMoves = getAllLegalMovesForCurrentPosition()
-    
+
     // If no legal moves are available, the current side has lost
     if (legalMoves.length === 0) {
       // Determine which side has no legal moves and set the result accordingly
@@ -1909,7 +1912,7 @@ export function useChessGame() {
         return '1-0' // Black has no legal moves, Red wins
       }
     }
-    
+
     // Game is still ongoing
     return '*'
   }
