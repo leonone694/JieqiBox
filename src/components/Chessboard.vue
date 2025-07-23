@@ -115,13 +115,13 @@
 
       <!-- Panel -->
       <div class="panel">
-        <v-btn @click="copyFenToClipboard" size="small">{{
+        <v-btn @click="copyFenToClipboard" size="small" color="button">{{
           $t('chessboard.copyFen')
         }}</v-btn>
-        <v-btn @click="inputFenStringWithArrow" size="small">{{
+        <v-btn @click="inputFenStringWithArrow" size="small" color="button">{{
           $t('chessboard.inputFen')
         }}</v-btn>
-        <v-btn @click="setupNewGameWithArrow" size="small">{{
+        <v-btn @click="setupNewGameWithArrow" size="small" color="button">{{
           $t('chessboard.newGame')
         }}</v-btn>
       </div>
