@@ -5,7 +5,7 @@
         <span>{{ $t('timeDialog.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
-          <v-icon color="black">mdi-close</v-icon>
+          <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
@@ -286,7 +286,7 @@
 
   .setting-label {
     font-weight: 500;
-    color: #333;
+    color: rgb(var(--v-theme-on-surface));
     min-width: 120px;
     font-size: 14px;
   }
@@ -298,8 +298,8 @@
 
   .dialog-actions {
     padding: 16px 24px;
-    background: #f9f9f9;
-    border-top: 1px solid #e0e0e0;
+    background: rgb(var(--v-theme-surface-variant));
+    border-top: 1px solid rgb(var(--v-border-color));
 
     .v-btn {
       text-transform: none;

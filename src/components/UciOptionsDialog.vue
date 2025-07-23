@@ -9,7 +9,7 @@
         <span class="title-text">{{ $t('uciOptions.title') }}</span>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog" class="close-btn">
-          <v-icon color="black">mdi-close</v-icon>
+          <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
@@ -598,7 +598,7 @@
     padding: 40px 20px;
 
     .loading-text {
-      color: #666;
+      color: rgb(var(--v-theme-on-surface-variant));
       font-size: 16px;
       text-align: center;
     }
@@ -610,7 +610,7 @@
     align-items: center;
     gap: 20px;
     padding: 40px 20px;
-    color: #666;
+    color: rgb(var(--v-theme-on-surface-variant));
 
     .empty-text {
       margin: 0;
@@ -631,14 +631,14 @@
   }
 
   .option-item {
-    border: 1px solid #e0e0e0;
+    border: 1px solid rgb(var(--v-border-color));
     border-radius: 12px;
     padding: 16px;
-    background: #fafafa;
+    background: rgb(var(--v-theme-surface));
     transition: all 0.2s ease;
 
     &:hover {
-      background: #f5f5f5;
+      background: rgb(var(--v-theme-surface-variant));
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
@@ -658,15 +658,16 @@
 
   .option-label {
     font-weight: 600;
-    color: #333;
+    color: rgb(var(--v-theme-on-surface));
     font-size: 16px;
     line-height: 1.4;
   }
 
   .option-range {
     font-size: 12px;
-    color: #666;
+    color: rgb(var(--v-theme-on-surface));
     font-weight: 400;
+    opacity: 0.7;
   }
 
   .option-controls {
@@ -704,8 +705,8 @@
 
   .dialog-actions {
     padding: 16px 20px;
-    background: #f9f9f9;
-    border-top: 1px solid #e0e0e0;
+    background: rgb(var(--v-theme-surface-variant));
+    border-top: 1px solid rgb(var(--v-border-color));
 
     .actions-container {
       display: flex;
@@ -791,7 +792,7 @@
     }
   }
 
-  // 超小屏幕优化
+  // Extra small screen optimization
   @media (max-width: 480px) {
     .options-container {
       max-height: 55vh;
@@ -837,16 +838,16 @@
   }
 
   .options-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: rgb(var(--v-theme-surface-variant));
     border-radius: 2px;
   }
 
   .options-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: rgb(var(--v-theme-outline));
     border-radius: 2px;
 
     &:hover {
-      background: #a8a8a8;
+      background: rgb(var(--v-theme-outline-variant));
     }
   }
 </style>
