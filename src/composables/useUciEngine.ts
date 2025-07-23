@@ -368,8 +368,10 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     if (isPondering.value) {
       stopPonder({ playBestMoveOnStop: false })
     }
+    // Reset isThinking and isPondering flags
     isThinking.value = false
     isPondering.value = false
+
     isEngineLoading.value = true // Set loading to true
     try {
       let path: string

@@ -74,6 +74,14 @@
     time: '',
   })
 
+  /* ---------- Zoom & Pan State ---------- */
+  const zoomLevel = ref(1.0)
+  const minZoom = 1.0
+  const maxZoom = 20.0 // Allow zooming in up to 20x
+  const panOffset = ref(0) // The starting move index for the visible area
+  const isPanning = ref(false)
+  const lastPanX = ref(0)
+
   /* ---------- Dimensions ---------- */
   const chartWidth = ref(0)
   const chartHeight = ref(0)
@@ -135,7 +143,12 @@
 
   /* ---------- Move Labels ---------- */
   const moveLabels = computed(() => {
-    if (!showMoveLabels.value || !chartData.value.length) return []
+    if (
+      !showMoveLabels.value ||
+      !chartData.value.length ||
+      !chartContainer.value
+    )
+      return []
 
     const labels: Array<{
       text: string
@@ -144,20 +157,35 @@
     }> = []
 
     const points = chartData.value
-    const xStep =
-      (chartWidth.value - padding.left - padding.right) /
-      Math.max(1, points.length - 1)
+    const totalMoves = Math.max(1, points.length - 1)
+    const visibleMoves = totalMoves / zoomLevel.value
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
+    const areaWidth = chartWidth.value - padding.left - padding.right
 
-    points.forEach((p, i) => {
-      if (p.score !== null && p.score !== undefined) {
-        const x = padding.left + i * xStep
-        labels.push({
-          text: p.moveText,
-          style: { left: `${x}px`, top: `${padding.top + 10}px` },
-          isCurrentMove: p.moveIndex === props.currentMoveIndex,
-        })
+    // Determine label density to avoid clutter when zoomed out
+    const labelStep = Math.max(1, Math.floor(visibleMoves / (areaWidth / 70))) // Show a label roughly every 70px
+
+    for (let i = startIndex; i <= endIndex; i += 1) {
+      if (i >= points.length) break
+      const p = points[i]
+      if (
+        p &&
+        p.score !== null &&
+        p.score !== undefined &&
+        p.moveNumber % labelStep === 0
+      ) {
+        const x =
+          padding.left + ((i - panOffset.value) / visibleMoves) * areaWidth
+        if (x >= padding.left && x <= chartWidth.value - padding.right) {
+          labels.push({
+            text: p.moveText,
+            style: { left: `${x}px`, top: `${padding.top + 10}px` },
+            isCurrentMove: p.moveIndex === props.currentMoveIndex,
+          })
+        }
       }
-    })
+    }
     return labels
   })
 
@@ -177,15 +205,33 @@
       height: chartHeight.value - padding.top - padding.bottom,
     }
 
-    /* ------- Calculate range after asinh transform ------- */
-    const scores = points.map(p => p.score).filter(s => s !== null) as number[]
+    // Determine visible range based on zoom and pan
+    const totalMoves = points.length - 1
+    const visibleMoves = totalMoves / zoomLevel.value
+    // Clamp panOffset to ensure the chart stays within bounds
+    panOffset.value = Math.max(
+      0,
+      Math.min(panOffset.value, totalMoves - visibleMoves)
+    )
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
+
+    // Get scores only from the visible (plus a small buffer) points for dynamic Y-axis scaling
+    const visiblePoints = points.slice(
+      Math.max(0, startIndex - 1),
+      Math.min(points.length, endIndex + 2)
+    )
+    const scores = visiblePoints
+      .map(p => p.score)
+      .filter(s => s !== null) as number[]
+
     if (!scores.length) {
       ctx.fillStyle = '#999'
       ctx.font = '14px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(
-        t('evaluationChart.noData') || 'No analysis data available',
+        t('evaluationChart.noData'),
         area.x + area.width / 2,
         area.y + area.height / 2
       )
@@ -198,24 +244,34 @@
     const pad = Math.max(0.5, (maxT - minT) * 0.1)
     const displayMinT = minT - pad
     const displayMaxT = maxT + pad
-    const rangeT = displayMaxT - displayMinT
+    const rangeT = displayMaxT - displayMinT || 1
 
     /* ------- Draw grid / axes / line / points ------- */
-    drawGrid(ctx, area)
+    drawGrid(ctx, area, visibleMoves)
     drawScoreAxis(ctx, area, displayMinT, displayMaxT)
-    drawMoveAxis(ctx, area, points)
-    drawScoreLine(ctx, area, points, displayMinT, rangeT)
-    drawDataPoints(ctx, area, points, displayMinT, rangeT)
+    drawMoveAxis(ctx, area, points, visibleMoves)
+    drawScoreLine(ctx, area, points, displayMinT, rangeT, visibleMoves)
+    drawDataPoints(ctx, area, points, displayMinT, rangeT, visibleMoves)
   }
 
-  /* ---------- Grid ---------- */
+  /* ---------- Drawing Helpers ---------- */
+  const getX = (
+    index: number,
+    areaWidth: number,
+    visibleMoves: number
+  ): number => {
+    return padding.left + ((index - panOffset.value) / visibleMoves) * areaWidth
+  }
+
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
-    area: { x: number; y: number; width: number; height: number }
+    area: any,
+    visibleMoves: number
   ) => {
     ctx.strokeStyle = '#e0e0e0'
     ctx.lineWidth = 1
 
+    // Horizontal grid lines
     const rows = 5
     for (let i = 0; i <= rows; i++) {
       const y = area.y + (i / rows) * area.height
@@ -225,18 +281,20 @@
       ctx.stroke()
     }
 
-    const cols = chartData.value.length
-    const xStep = area.width / Math.max(1, cols - 1)
-    for (let i = 0; i < cols; i++) {
-      const x = area.x + i * xStep
-      ctx.beginPath()
-      ctx.moveTo(x, area.y)
-      ctx.lineTo(x, area.y + area.height)
-      ctx.stroke()
+    // Vertical grid lines (dynamic based on zoom)
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
+    for (let i = startIndex; i <= endIndex; i++) {
+      const x = getX(i, area.width, visibleMoves)
+      if (x >= area.x && x <= area.x + area.width) {
+        ctx.beginPath()
+        ctx.moveTo(x, area.y)
+        ctx.lineTo(x, area.y + area.height)
+        ctx.stroke()
+      }
     }
   }
 
-  /* ---------- Score Axis (asinh) ---------- */
   const drawScoreAxis = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -249,79 +307,90 @@
     ctx.textBaseline = 'middle'
 
     const rows = 5
+    const rangeT = maxT - minT
     for (let i = 0; i <= rows; i++) {
-      const tVal = minT + (i / rows) * (maxT - minT)
-      const y =
-        area.y + area.height - ((tVal - minT) / (maxT - minT)) * area.height
+      const tVal = minT + (i / rows) * rangeT
+      const y = area.y + area.height - ((tVal - minT) / rangeT) * area.height
       const dispScore = inverseTransform(tVal)
       ctx.fillText(formatScore(dispScore), area.x - 10, y)
     }
   }
 
-  /* ---------- Move Axis ---------- */
   const drawMoveAxis = (
     ctx: CanvasRenderingContext2D,
     area: any,
-    points: any[]
+    points: any[],
+    visibleMoves: number
   ) => {
     ctx.fillStyle = '#666'
     ctx.font = '10px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
 
-    const xStep = area.width / Math.max(1, points.length - 1)
-    points.forEach((p, i) => {
-      if (p.score !== null && p.score !== undefined) {
-        const x = area.x + i * xStep
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
+    const step = Math.max(1, Math.floor(visibleMoves / (area.width / 40))) // Show label approx every 40px
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (i >= 0 && i < points.length && points[i].moveNumber % step === 0) {
+        const p = points[i]
+        const x = getX(i, area.width, visibleMoves)
         ctx.fillText(p.moveNumber.toString(), x, area.y + area.height + 5)
       }
-    })
+    }
   }
 
-  /* ---------- Score Line ---------- */
   const drawScoreLine = (
     ctx: CanvasRenderingContext2D,
     area: any,
     points: any[],
     minT: number,
-    rangeT: number
+    rangeT: number,
+    visibleMoves: number
   ) => {
     ctx.strokeStyle = '#1976d2'
     ctx.lineWidth = 2
     ctx.beginPath()
 
-    const xStep = area.width / Math.max(1, points.length - 1)
     let first = true
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
 
-    points.forEach((p, i) => {
+    for (let i = Math.max(0, startIndex); i <= endIndex + 1; i++) {
+      if (i >= points.length) break
+      const p = points[i]
       if (p.score !== null && p.score !== undefined) {
-        const x = area.x + i * xStep
+        const x = getX(i, area.width, visibleMoves)
         const t = transform(p.score)
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
         first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
         first = false
       }
-    })
+    }
     ctx.stroke()
   }
 
-  /* ---------- Data Points ---------- */
   const drawDataPoints = (
     ctx: CanvasRenderingContext2D,
     area: any,
     points: any[],
     minT: number,
-    rangeT: number
+    rangeT: number,
+    visibleMoves: number
   ) => {
-    const xStep = area.width / Math.max(1, points.length - 1)
+    const startIndex = Math.floor(panOffset.value)
+    const endIndex = Math.ceil(panOffset.value + visibleMoves)
 
-    points.forEach((p, i) => {
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (i < 0 || i >= points.length) continue
+      const p = points[i]
       if (p.score !== null && p.score !== undefined) {
-        const x = area.x + i * xStep
+        const x = getX(i, area.width, visibleMoves)
+        if (x < area.x || x > area.x + area.width) continue
+
         const t = transform(p.score)
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
 
-        /* Color logic is still based on the original score */
         let color = '#666'
         if (p.score > 100) color = '#c62828'
         else if (p.score < -100) color = '#2e7d32'
@@ -341,7 +410,7 @@
           ctx.stroke()
         }
       }
-    })
+    }
   }
 
   /* ---------- Utility Functions ---------- */
@@ -361,62 +430,104 @@
   const formatTime = (ms: number) =>
     ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
 
-  /* ---------- Tooltip ---------- */
+  /* ---------- Event Handlers ---------- */
+  const handleWheel = (e: WheelEvent) => {
+    if (!chartCanvas.value) return
+    e.preventDefault()
+
+    const areaWidth = chartWidth.value - padding.left - padding.right
+    if (areaWidth <= 0) return
+
+    const mouseX = e.offsetX
+    const totalMoves = Math.max(1, chartData.value.length - 1)
+    const currentVisibleMoves = totalMoves / zoomLevel.value
+
+    const mouseProportion = (mouseX - padding.left) / areaWidth
+    const moveIndexAtCursor =
+      panOffset.value + mouseProportion * currentVisibleMoves
+
+    const zoomFactor = 1.15
+    const oldZoomLevel = zoomLevel.value
+    let newZoomLevel =
+      e.deltaY < 0 ? oldZoomLevel * zoomFactor : oldZoomLevel / zoomFactor
+    zoomLevel.value = Math.max(minZoom, Math.min(maxZoom, newZoomLevel))
+
+    const newVisibleMoves = totalMoves / zoomLevel.value
+    panOffset.value = moveIndexAtCursor - mouseProportion * newVisibleMoves
+
+    nextTick(drawChart)
+  }
+
+  const handleMouseDown = (e: MouseEvent) => {
+    isPanning.value = true
+    lastPanX.value = e.clientX
+    if (chartContainer.value) chartContainer.value.style.cursor = 'grabbing'
+  }
+
+  const handlePanEnd = () => {
+    isPanning.value = false
+    if (chartContainer.value) {
+      chartContainer.value.style.cursor =
+        zoomLevel.value > 1.0 ? 'grab' : 'default'
+    }
+  }
+
   const handleMouseMove = (e: MouseEvent) => {
-    if (!chartCanvas.value || !chartContainer.value) {
+    if (!chartCanvas.value || !chartContainer.value) return
+
+    if (isPanning.value) {
       tooltipVisible.value = false
+      const totalMoves = Math.max(1, chartData.value.length - 1)
+      const visibleMoves = totalMoves / zoomLevel.value
+      const areaWidth = chartWidth.value - padding.left - padding.right
+      const deltaX = e.clientX - lastPanX.value
+      lastPanX.value = e.clientX
+      const panDelta = (deltaX / areaWidth) * visibleMoves
+      panOffset.value -= panDelta
+      nextTick(drawChart)
       return
     }
 
-    // Use event.offsetX to get mouse coordinates relative to the canvas, this method is more stable and less affected by scaling
-    const x = e.offsetX
-
+    // Tooltip logic
     const points = chartData.value
     if (points.length < 2) {
       tooltipVisible.value = false
       return
     }
 
-    // Use the canvas's width attribute, which is the actual width of its drawing surface
-    const plotAreaWidth = chartCanvas.value.width - padding.left - padding.right
+    const areaWidth = chartCanvas.value.width - padding.left - padding.right
+    const totalMoves = points.length - 1
+    const visibleMoves = totalMoves / zoomLevel.value
+    const mouseProportion = (e.offsetX - padding.left) / areaWidth
+    const moveIndex = panOffset.value + mouseProportion * visibleMoves
+    const closestIndex = Math.round(moveIndex)
 
-    if (plotAreaWidth <= 0) {
+    if (closestIndex < 0 || closestIndex >= points.length) {
       tooltipVisible.value = false
       return
     }
 
-    const xStep = plotAreaWidth / (points.length - 1)
+    const closestPoint = points[closestIndex]
+    const pointX = getX(closestIndex, areaWidth, visibleMoves)
+    const distance = Math.abs(e.offsetX - pointX)
+    const threshold = areaWidth / visibleMoves / 2 // Half a move's width
 
-    const closestIndex = Math.round((x - padding.left) / xStep)
-    const clampedIndex = Math.max(0, Math.min(points.length - 1, closestIndex))
-
-    const closestPoint = points[clampedIndex]
-
-    if (closestPoint && closestPoint.score !== null) {
-      const pointX = padding.left + clampedIndex * xStep
-      const distance = Math.abs(x - pointX)
-
-      if (distance < xStep / 2) {
-        tooltipVisible.value = true
-        tooltipData.value = {
-          move: closestPoint.moveText,
-          score: formatScore(closestPoint.score!),
-          scoreClass: getScoreClass(closestPoint.score!),
-          time: closestPoint.time ? formatTime(closestPoint.time) : '',
-        }
-
-        // Use a combination of offsetLeft and offsetX/Y for precise positioning
-        const left = chartCanvas.value.offsetLeft + e.offsetX - 15
-        const top = chartCanvas.value.offsetTop + e.offsetY + 15
-        tooltipStyle.value = { left: `${left}px`, top: `${top}px` }
-      } else {
-        tooltipVisible.value = false
+    if (closestPoint && closestPoint.score !== null && distance < threshold) {
+      tooltipVisible.value = true
+      tooltipData.value = {
+        move: closestPoint.moveText,
+        score: formatScore(closestPoint.score!),
+        scoreClass: getScoreClass(closestPoint.score!),
+        time: closestPoint.time ? formatTime(closestPoint.time) : '',
+      }
+      tooltipStyle.value = {
+        left: `${e.offsetX + 15}px`,
+        top: `${e.offsetY + 15}px`,
       }
     } else {
       tooltipVisible.value = false
     }
   }
-  const handleMouseLeave = () => (tooltipVisible.value = false)
 
   /* ---------- Resize Listener ---------- */
   const handleResize = () => {
@@ -434,24 +545,41 @@
   /* ---------- Watchers for Data / Controls ---------- */
   watch(
     [() => props.history, () => props.currentMoveIndex],
-    () => nextTick(drawChart),
+    () => {
+      // Reset zoom/pan on history change
+      zoomLevel.value = 1.0
+      panOffset.value = 0
+      nextTick(drawChart)
+    },
     { deep: true }
   )
   watch([showMoveLabels], () => nextTick(drawChart))
 
   /* ---------- Lifecycle Hooks ---------- */
   onMounted(() => {
-    if (chartCanvas.value) {
+    if (chartCanvas.value && chartContainer.value) {
       chartContext.value = chartCanvas.value.getContext('2d')
+      chartCanvas.value.addEventListener('wheel', handleWheel, {
+        passive: false,
+      })
+      chartCanvas.value.addEventListener('mousedown', handleMouseDown)
       chartCanvas.value.addEventListener('mousemove', handleMouseMove)
-      chartCanvas.value.addEventListener('mouseleave', handleMouseLeave)
+      // Listen on container for mouse up/leave to catch events outside canvas
+      chartContainer.value.addEventListener('mouseup', handlePanEnd)
+      chartContainer.value.addEventListener('mouseleave', handlePanEnd)
       handleResize()
       window.addEventListener('resize', handleResize)
     }
   })
+
   onUnmounted(() => {
-    chartCanvas.value?.removeEventListener('mousemove', handleMouseMove)
-    chartCanvas.value?.removeEventListener('mouseleave', handleMouseLeave)
+    if (chartCanvas.value && chartContainer.value) {
+      chartCanvas.value.removeEventListener('wheel', handleWheel)
+      chartCanvas.value.removeEventListener('mousedown', handleMouseDown)
+      chartCanvas.value.removeEventListener('mousemove', handleMouseMove)
+      chartContainer.value.removeEventListener('mouseup', handlePanEnd)
+      chartContainer.value.removeEventListener('mouseleave', handlePanEnd)
+    }
     window.removeEventListener('resize', handleResize)
   })
 </script>
@@ -477,6 +605,8 @@
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     overflow: hidden;
+    cursor: default; /* Default cursor */
+    user-select: none; /* Prevent text selection while panning */
   }
   .chart-canvas {
     display: block;
