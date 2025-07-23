@@ -362,6 +362,14 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
   /* ---------- Load Engine ---------- */
   const loadEngine = async () => {
+    if (isThinking.value) {
+      stopAnalysis({ playBestMoveOnStop: false })
+    }
+    if (isPondering.value) {
+      stopPonder({ playBestMoveOnStop: false })
+    }
+    isThinking.value = false
+    isPondering.value = false
     isEngineLoading.value = true // Set loading to true
     try {
       let path: string

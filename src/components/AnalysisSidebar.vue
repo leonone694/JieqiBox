@@ -771,7 +771,14 @@
   // Load engine using SAF file selection (Android only)
   const loadEngineWithSaf = async () => {
     if (!isAndroidPlatform.value) return
-
+    if (isThinking.value) {
+      stopAnalysis({ playBestMoveOnStop: false })
+    }
+    if (isPondering.value) {
+      stopPonder({ playBestMoveOnStop: false })
+    }
+    isThinking.value = false
+    isPondering.value = false
     try {
       // Use JavaScript interface to request SAF file selection
       if (typeof (window as any).SafFileInterface !== 'undefined') {
