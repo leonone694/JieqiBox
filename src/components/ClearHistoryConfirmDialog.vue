@@ -41,7 +41,8 @@
     justify-content: center;
   }
   .dialog-container {
-    background: #fff;
+    background: rgb(var(--v-theme-surface));
+    color: rgb(var(--v-theme-on-surface));
     border-radius: 8px;
     min-width: 320px;
     max-width: 90vw;
@@ -55,11 +56,13 @@
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 12px;
+    color: rgb(var(--v-theme-on-surface));
   }
   .dialog-message {
     font-size: 15px;
     margin-bottom: 20px;
     text-align: center;
+    color: rgb(var(--v-theme-on-surface));
   }
   .dialog-actions {
     display: flex;
@@ -75,17 +78,17 @@
     transition: background 0.2s;
   }
   .btn.confirm {
-    background: #409eff;
-    color: #fff;
+    background: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
   }
   .btn.cancel {
-    background: #f2f2f2;
-    color: #333;
+    background: rgb(var(--v-theme-surface-variant));
+    color: rgb(var(--v-theme-on-surface-variant));
   }
   .btn.confirm:hover {
-    background: #1976d2;
+    background: rgb(var(--v-theme-primary-darken-1));
   }
   .btn.cancel:hover {
-    background: #e0e0e0;
+    background: rgb(var(--v-theme-surface-variant-darken-1));
   }
 </style>
