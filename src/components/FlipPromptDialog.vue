@@ -295,8 +295,8 @@
   /* Pieces grid */
   .pieces-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 8px;
     margin-bottom: 20px;
   }
 
