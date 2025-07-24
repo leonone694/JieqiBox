@@ -51,6 +51,28 @@ export default {
     confirmClearSettings:
       'Are you sure you want to clear all UCI option configurations for the current engine? This action cannot be undone.',
     settingsCleared: 'UCI option configurations cleared',
+    // UCI option descriptions
+    optionDescriptions: {
+      'Debug Log File':
+        'The debug file that records communication between the engine and the GUI.',
+      Threads:
+        'Number of threads used for engine search. It is recommended to set this to the number of available system threads minus one or two.',
+      Hash: 'Size of the engine’s hash table (in MB). It is recommended to set this to the maximum value minus one or two GiB of system memory.',
+      'Clear Hash': 'Clears the hash table.',
+      MultiPV:
+        'Multi-Principal Variation. Allows the engine to show multiple recommended moves. It is recommended to set this to 1. If set higher, the quality of the best move may decrease because resources will be allocated to evaluating alternative lines.',
+      NumaPolicy:
+        'Binds threads to specific NUMA nodes to ensure execution. Improves performance on systems with multiple CPUs or CPUs with multiple NUMA domains.',
+      Ponder: 'Allows the engine to think during the opponent’s turn.',
+      'Move Overhead':
+        'Assumes an x-millisecond delay due to network and GUI overhead. Useful for avoiding time losses due to delays.',
+      nodestime:
+        'Instructs the engine to use the number of searched nodes instead of wall clock time to calculate elapsed time. Useful for engine testing.',
+      UCI_ShowWDL:
+        'If enabled, displays approximate WDL (Win/Draw/Loss) statistics in the engine output. These WDL numbers estimate expected outcomes based on evaluation and depth from self-play simulations.',
+      EvalFile:
+        'The name of the NNUE evaluation parameter file. Depending on the GUI, the filename may need to include the full path to the folder containing the file.',
+    },
   },
 
   // Time dialog

@@ -51,6 +51,29 @@ export default {
     confirmClearSettings:
       'Bạn có chắc chắn muốn xóa tất cả cấu hình tùy chọn UCI cho động cơ hiện tại không? Hành động này không thể hoàn tác.',
     settingsCleared: 'Đã xóa cấu hình tùy chọn UCI',
+    // Mô tả tùy chọn UCI
+    optionDescriptions: {
+      'Debug Log File':
+        'Tệp gỡ lỗi để ghi lại giao tiếp giữa engine và giao diện.',
+      Threads:
+        'Số luồng tìm kiếm của engine. Khuyến nghị đặt thành số luồng tối đa có sẵn của hệ thống trừ đi 1 hoặc 2 luồng.',
+      Hash: 'Kích thước bảng băm của engine (tính bằng MB). Khuyến nghị đặt ở mức tối đa có thể trừ đi 1 hoặc 2 GiB bộ nhớ.',
+      'Clear Hash': 'Xóa bảng băm.',
+      MultiPV:
+        'Đa biến thể chính, có thể hiển thị nhiều nước đi được đề xuất. Khuyến nghị đặt là 1. Nếu đặt lớn hơn 1, chất lượng của nước đi tốt nhất sẽ giảm, vì chương trình sẽ phân bổ một phần tài nguyên để tính toán các nước đi khả dĩ khác.',
+      NumaPolicy:
+        'Gán các luồng vào các nút NUMA cụ thể để đảm bảo việc thực thi. Cải thiện hiệu suất trên các hệ thống có nhiều CPU hoặc CPU có nhiều miền NUMA.',
+      Ponder:
+        'Cho phép engine suy nghĩ trong nền trong khi đối thủ đang suy nghĩ.',
+      'Move Overhead':
+        'Giả định độ trễ thời gian là x mili giây do chi phí mạng và GUI. Hữu ích trong việc tránh thua do hết giờ.',
+      nodestime:
+        'Yêu cầu engine sử dụng số lượng nút đã tìm kiếm thay vì thời gian thực để tính toán thời gian đã trôi qua. Hữu ích cho việc kiểm tra engine.',
+      UCI_ShowWDL:
+        'Nếu được bật, sẽ hiển thị thống kê WDL (Thắng-Hòa-Thua) gần đúng trong đầu ra của engine. Những con số WDL này mô phỏng kết quả ván cờ dự kiến khi engine tự đấu với chính nó ở một mức đánh giá và độ sâu nhất định.',
+      EvalFile:
+        'Tên của tệp tham số đánh giá NNUE. Tùy thuộc vào GUI, tên tệp có thể cần bao gồm đường dẫn đầy đủ đến thư mục chứa tệp.',
+    },
   },
 
   // Hộp thoại thời gian

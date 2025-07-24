@@ -57,99 +57,123 @@
             :key="option.name"
             class="option-item"
           >
-            <!-- 数值类型选项 (spin) -->
-            <div v-if="option.type === 'spin'" class="option-row spin-option">
-              <div class="option-header">
-                <label class="option-label">{{ option.name }}</label>
-                <span class="option-range"
-                  >{{ $t('uciOptions.range') }}: {{ option.min }} -
-                  {{ option.max }}</span
-                >
+            <!-- Conditional rendering for controls -->
+            <div>
+              <!-- 数值类型选项 (spin) -->
+              <div v-if="option.type === 'spin'" class="option-row spin-option">
+                <div class="option-header">
+                  <label class="option-label">{{ option.name }}</label>
+                  <span class="option-range"
+                    >{{ $t('uciOptions.range') }}: {{ option.min }} -
+                    {{ option.max }}</span
+                  >
+                </div>
+                <div class="option-controls">
+                  <v-text-field
+                    v-model.number="option.currentValue"
+                    :min="option.min"
+                    :max="option.max"
+                    type="number"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    class="number-input"
+                    @update:model-value="updateOption(option.name, $event)"
+                  ></v-text-field>
+                  <v-slider
+                    v-model="option.currentValue as number"
+                    :min="option.min"
+                    :max="option.max"
+                    :step="1"
+                    thumb-label
+                    track-color="grey-lighten-1"
+                    class="option-slider"
+                    @update:model-value="updateOption(option.name, $event)"
+                  ></v-slider>
+                </div>
               </div>
-              <div class="option-controls">
-                <v-text-field
-                  v-model.number="option.currentValue"
-                  :min="option.min"
-                  :max="option.max"
-                  type="number"
+
+              <!-- 布尔类型选项 (check) -->
+              <div
+                v-else-if="option.type === 'check'"
+                class="option-row check-option"
+              >
+                <div class="d-flex justify-space-between align-center">
+                  <label class="option-label">{{ option.name }}</label>
+                  <v-switch
+                    v-model="option.currentValue as boolean"
+                    color="primary"
+                    class="option-switch flex-grow-0"
+                    hide-details
+                    @update:model-value="
+                      updateOption(option.name, $event ?? false)
+                    "
+                  ></v-switch>
+                </div>
+              </div>
+
+              <!-- 下拉选择类型选项 (combo) -->
+              <div
+                v-else-if="option.type === 'combo'"
+                class="option-row combo-option"
+              >
+                <label class="option-label">{{ option.name }}</label>
+                <v-select
+                  v-model="option.currentValue as string"
+                  :items="option.vars"
                   variant="outlined"
                   density="compact"
                   hide-details
-                  class="number-input"
-                  @update:model-value="updateOption(option.name, $event)"
+                  class="option-select"
+                  @update:model-value="updateOption(option.name, $event || '')"
+                ></v-select>
+              </div>
+
+              <!-- 字符串类型选项 (string) -->
+              <div
+                v-else-if="option.type === 'string'"
+                class="option-row string-option"
+              >
+                <label class="option-label">{{ option.name }}</label>
+                <v-text-field
+                  v-model="option.currentValue as string"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  class="option-input"
+                  @update:model-value="updateOption(option.name, $event || '')"
                 ></v-text-field>
-                <v-slider
-                  v-model="option.currentValue as number"
-                  :min="option.min"
-                  :max="option.max"
-                  :step="1"
-                  thumb-label
-                  track-color="grey-lighten-1"
-                  class="option-slider"
-                  @update:model-value="updateOption(option.name, $event)"
-                ></v-slider>
+              </div>
+
+              <!-- 按钮类型选项 (button) -->
+              <div
+                v-else-if="option.type === 'button'"
+                class="option-row button-option"
+              >
+                <div class="d-flex justify-space-between align-center">
+                  <label class="option-label">{{ option.name }}</label>
+                  <v-btn
+                    color="primary"
+                    variant="outlined"
+                    class="execute-btn"
+                    @click="executeButtonOption(option.name)"
+                  >
+                    {{ $t('uciOptions.execute') }}
+                  </v-btn>
+                </div>
               </div>
             </div>
 
-            <!-- 布尔类型选项 (check) -->
             <div
-              v-else-if="option.type === 'check'"
-              class="option-row check-option"
+              v-if="getOptionDescription(option.name)"
+              class="option-description"
             >
-              <label class="option-label">{{ option.name }}</label>
-              <v-switch
-                v-model="option.currentValue as boolean"
-                color="primary"
-                class="option-switch"
-                @update:model-value="updateOption(option.name, $event ?? false)"
-              ></v-switch>
-            </div>
-
-            <!-- 下拉选择类型选项 (combo) -->
-            <div
-              v-else-if="option.type === 'combo'"
-              class="option-row combo-option"
-            >
-              <label class="option-label">{{ option.name }}</label>
-              <v-select
-                v-model="option.currentValue as string"
-                :items="option.vars"
-                variant="outlined"
-                density="compact"
-                class="option-select"
-                @update:model-value="updateOption(option.name, $event || '')"
-              ></v-select>
-            </div>
-
-            <!-- 字符串类型选项 (string) -->
-            <div
-              v-else-if="option.type === 'string'"
-              class="option-row string-option"
-            >
-              <label class="option-label">{{ option.name }}</label>
-              <v-text-field
-                v-model="option.currentValue as string"
-                variant="outlined"
-                density="compact"
-                class="option-input"
-                @update:model-value="updateOption(option.name, $event || '')"
-              ></v-text-field>
-            </div>
-
-            <!-- 按钮类型选项 (button) -->
-            <div
-              v-else-if="option.type === 'button'"
-              class="option-row button-option"
-            >
-              <label class="option-label">{{ option.name }}</label>
-              <v-btn
-                color="primary"
-                variant="outlined"
-                class="execute-btn"
-                @click="executeButtonOption(option.name)"
+              <v-icon size="small" class="description-icon"
+                >mdi-information-outline</v-icon
               >
-                {{ $t('uciOptions.execute') }}
-              </v-btn>
+              <span class="description-text">{{
+                getOptionDescription(option.name)
+              }}</span>
             </div>
           </div>
         </div>
@@ -547,6 +571,21 @@
     }
   })
 
+  // Function to get option description from i18n
+  const getOptionDescription = (optionName: string): string => {
+    // Construct the full key path to the specific translation.
+    // For example: 'uciOptions.optionDescriptions.Threads' or 'uciOptions.optionDescriptions.Debug Log File'
+    const fullKey = `uciOptions.optionDescriptions.${optionName}`
+
+    // Use the t() function to get the final translated string directly.
+    const description = t(fullKey)
+
+    // IMPORTANT: If the t() function cannot find a corresponding translation, it will return the key itself.
+    // We need to check if the returned value is equal to the key we provided to determine if the translation exists.
+    // If they are equal, it means the translation was not found, so we return an empty string, which will cause the v-if to hide the element.
+    return description !== fullKey ? description : ''
+  }
+
   // Function to clear settings
   const clearSettings = async () => {
     if (confirm(t('uciOptions.confirmClearSettings'))) {
@@ -731,6 +770,33 @@
     align-self: flex-end;
     margin-top: 8px;
     min-width: 100px;
+  }
+
+  .option-description {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background-color: rgba(var(--v-theme-primary), 0.08);
+    border-radius: 8px;
+    color: rgb(var(--v-theme-on-surface));
+
+    .description-icon {
+      color: inherit;
+      margin-top: 2px;
+    }
+
+    .description-text {
+      flex: 1;
+    }
+  }
+
+  // Tweak for dark mode
+  .v-theme--dark .option-description {
+    background-color: rgba(var(--v-theme-primary), 0.15);
   }
 
   .dialog-actions {
