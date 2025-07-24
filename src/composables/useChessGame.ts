@@ -449,6 +449,12 @@ export function useChessGame() {
                 ? 10000
                 : -10000
               : scoreValue
+
+          // If pondering, invert the score
+          if (engineState.isPondering?.value) {
+            engineScore = -engineScore
+          }
+
           console.log('[DEBUG] RECORD_AND_FINALIZE: Extracted score:', {
             scoreType,
             scoreValue,
