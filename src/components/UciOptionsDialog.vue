@@ -462,20 +462,28 @@
 
   // Function to close the dialog
   const closeDialog = async () => {
-    // Identify modified options and send `setoption` command
-    for (const option of uciOptions.value) {
-      if (
-        option.type !== 'button' &&
-        originalOptions.value[option.name] !== option.currentValue
-      ) {
-        sendOptionToEngine(option.name, option.currentValue)
+    try {
+      // Identify modified options and send `setoption` command
+      for (const option of uciOptions.value) {
+        if (
+          option.type !== 'button' &&
+          originalOptions.value[option.name] !== option.currentValue
+        ) {
+          sendOptionToEngine(option.name, option.currentValue)
+        }
       }
+
+      // Save all current option values to config. This is an async operation that might fail.
+      await saveOptionsToStorage()
+    } catch (error) {
+      // If saving fails, log the error for debugging purposes.
+      // This prevents an unhandled promise rejection from stopping execution.
+      console.error('Failed to save UCI options on close:', error)
+    } finally {
+      // CRUCIAL: Ensure the dialog is always closed, regardless of whether the save operation succeeded or failed.
+      // This makes the close button robust and reliable for the user.
+      isVisible.value = false
     }
-
-    // Save all current option values to config
-    await saveOptionsToStorage()
-
-    isVisible.value = false
   }
 
   // Watch engine output to get UCI options
