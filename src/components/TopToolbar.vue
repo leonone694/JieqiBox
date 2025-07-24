@@ -34,6 +34,15 @@
         @click="toggleDarkMode"
         :title="darkMode ? $t('toolbar.lightMode') : $t('toolbar.darkMode')"
       />
+      <v-btn
+        icon="mdi-content-save"
+        size="small"
+        color="success"
+        variant="text"
+        @click="handleSaveNotation"
+        :loading="isSaving"
+        :title="$t('toolbar.saveNotation')"
+      />
     </div>
 
     <div class="toolbar-center">
@@ -66,15 +75,6 @@
         @click="handleVariation"
         :disabled="!isVariationAvailable"
         :title="$t('toolbar.variation')"
-      />
-      <v-btn
-        icon="mdi-content-save"
-        size="small"
-        color="success"
-        variant="text"
-        @click="handleSaveNotation"
-        :loading="isSaving"
-        :title="$t('toolbar.saveNotation')"
       />
       <v-btn
         icon="mdi-folder-open"
