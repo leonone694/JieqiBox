@@ -88,7 +88,7 @@
     <div class="autoplay-settings">
       <v-btn
         @click="toggleRedAi"
-        :color="isRedAi ? 'error' : 'red-darken-1'"
+        :color="isRedAi ? 'error' : 'blue-grey-darken-1'"
         class="half-btn"
         size="small"
         :disabled="isManualAnalysis || !isEngineLoaded"
