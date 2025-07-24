@@ -6,6 +6,7 @@
   import Chessboard from './components/Chessboard.vue'
   import AnalysisSidebar from './components/AnalysisSidebar.vue'
   import FlipPromptDialog from './components/FlipPromptDialog.vue'
+  import FenInputDialog from './components/FenInputDialog.vue'
 
   import { useChessGame } from './composables/useChessGame'
   import { useUciEngine } from './composables/useUciEngine'
@@ -100,6 +101,7 @@
       </div>
       <AnalysisSidebar />
       <FlipPromptDialog />
+      <FenInputDialog v-model="game.isFenInputDialogVisible.value" @confirm="game.confirmFenInput" />
     </div>
   </div>
 </template>

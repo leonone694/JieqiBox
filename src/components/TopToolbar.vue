@@ -10,22 +10,6 @@
         :title="$t('toolbar.newGame')"
       />
       <v-btn
-        icon="mdi-content-copy"
-        size="small"
-        color="deep-orange"
-        variant="text"
-        @click="copyFenToClipboard"
-        :title="$t('toolbar.copyFen')"
-      />
-      <v-btn
-        icon="mdi-text-box"
-        size="small"
-        color="cyan"
-        variant="text"
-        @click="inputFenString"
-        :title="$t('toolbar.inputFen')"
-      />
-      <v-btn
         icon="mdi-pencil-box"
         size="small"
         color="amber"
@@ -115,7 +99,6 @@
       @position-changed="handlePositionChanged"
     />
     <InterfaceSettingsDialog v-model="showInterfaceSettingsDialog" />
-    <FenInputDialog v-model="isFenDialogVisible" @confirm="confirmFenInput" />
   </div>
 </template>
 
@@ -125,7 +108,6 @@
   import UciOptionsDialog from './UciOptionsDialog.vue'
   import TimeDialog from './TimeDialog.vue'
   import PositionEditorDialog from './PositionEditorDialog.vue'
-  import FenInputDialog from './FenInputDialog.vue'
   import LanguageSelector from './LanguageSelector.vue'
   import InterfaceSettingsDialog from './InterfaceSettingsDialog.vue'
   import { useInterfaceSettings } from '../composables/useInterfaceSettings'
@@ -133,7 +115,6 @@
   const { t } = useI18n()
   const gameState: any = inject('game-state')
   const engineState: any = inject('engine-state')
-  const isFenDialogVisible: any = inject('fen-input-dialog-visible')
 
   // Get dark mode setting from interface settings
   const { darkMode } = useInterfaceSettings()
@@ -327,31 +308,7 @@
     gameState.setupNewGame()
   }
 
-  // Copy FEN
-  const copyFenToClipboard = async () => {
-    await gameState.copyFenToClipboard()
-  }
 
-  // Input FEN
-  const inputFenString = () => {
-    isFenDialogVisible.value = true
-  }
-
-  // Confirm FEN input - stop engine analysis before loading new position
-  const confirmFenInput = (fen: string) => {
-    // Stop engine analysis before loading new position to prevent continued thinking
-    if (engineState.stopAnalysis) {
-      engineState.stopAnalysis()
-    }
-    // Reset variation state when loading new position
-    resetVariationState()
-    // Only process if FEN string is not empty
-    if (fen && fen.trim()) {
-      gameState.confirmFenInput(fen)
-    }
-    // Ensure local state is also synchronized to close
-    isFenDialogVisible.value = false
-  }
 
   // Save notation
   const handleSaveNotation = async () => {

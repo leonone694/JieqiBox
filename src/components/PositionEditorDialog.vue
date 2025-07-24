@@ -16,10 +16,20 @@
           <v-row class="mb-2">
             <v-col cols="12">
               <div class="d-flex gap-1 flex-wrap">
-                <v-btn @click="flipBoard" color="primary" variant="outlined" size="small">
+                <v-btn
+                  @click="flipBoard"
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                >
                   {{ $t('positionEditor.flipBoard') }}
                 </v-btn>
-                <v-btn @click="switchSide" color="secondary" variant="outlined" size="small">
+                <v-btn
+                  @click="switchSide"
+                  color="secondary"
+                  variant="outlined"
+                  size="small"
+                >
                   {{ $t('positionEditor.switchSide') }}
                 </v-btn>
                 <v-btn
@@ -134,7 +144,10 @@
                     {{ String.fromCharCode(97 + selectedCell.col)
                     }}{{ 9 - selectedCell.row }}
                   </p>
-                  <p v-if="getPieceAt(selectedCell.row, selectedCell.col)" class="mb-0">
+                  <p
+                    v-if="getPieceAt(selectedCell.row, selectedCell.col)"
+                    class="mb-0"
+                  >
                     {{ $t('positionEditor.piece') }}:
                     {{
                       getPieceDisplayName(
