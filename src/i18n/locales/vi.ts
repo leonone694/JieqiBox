@@ -202,6 +202,7 @@ export default {
   // Phần dưới bàn cờ
   chessboard: {
     copyFen: 'Sao chép FEN',
+    pasteFen: 'Dán FEN',
     inputFen: 'Nhập FEN',
     newGame: 'Ván mới',
     copied: '✓ Đã sao chép',
@@ -232,7 +233,7 @@ export default {
     showCoordinates: 'Hiển thị số hàng và cột',
     parseUciInfo: 'Phân tích thông tin UCI',
     showAnimations: 'Bật hoạt ảnh di chuyển quân cờ',
-    showPositionChart: 'Hiển thị biểu đồ vị trí',
+    showPositionChart: 'Hiển thị biểu đồ cục diện',
     darkMode: 'Chế độ tối',
   },
 

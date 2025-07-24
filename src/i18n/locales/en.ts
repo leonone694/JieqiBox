@@ -202,6 +202,7 @@ export default {
   // Chessboard bottom
   chessboard: {
     copyFen: 'Copy FEN',
+    pasteFen: 'Paste FEN',
     inputFen: 'Input FEN',
     newGame: 'New Game',
     copied: '✓ Copied',

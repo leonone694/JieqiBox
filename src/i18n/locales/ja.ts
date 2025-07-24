@@ -203,6 +203,7 @@ export default {
   // 盤下部
   chessboard: {
     copyFen: 'FENをコピー',
+    pasteFen: 'FENを貼り付け',
     inputFen: 'FENを入力',
     newGame: '新しいゲーム',
     copied: '✓ コピーしました',

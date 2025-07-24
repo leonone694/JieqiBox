@@ -201,6 +201,7 @@ export default {
   // 棋盘底部
   chessboard: {
     copyFen: '复制FEN',
+    pasteFen: '粘贴FEN',
     inputFen: '输入FEN',
     newGame: '新对局',
     copied: '✓ 已复制',

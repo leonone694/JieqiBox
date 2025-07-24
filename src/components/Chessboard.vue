@@ -118,6 +118,9 @@
         <v-btn @click="copyFenToClipboard" size="small" color="button">{{
           $t('chessboard.copyFen')
         }}</v-btn>
+        <v-btn @click="pasteFenFromClipboard" size="small" color="button">{{
+          $t('chessboard.pasteFen')
+        }}</v-btn>
         <v-btn @click="inputFenStringWithArrow" size="small" color="button">{{
           $t('chessboard.inputFen')
         }}</v-btn>
@@ -452,6 +455,23 @@
     }
     // Directly call the inputFenString function from game-state
     inputFenString()
+  }
+
+  // Paste FEN from clipboard functionality
+  const pasteFenFromClipboard = async () => {
+    // Stop engine analysis before pasting FEN to prevent continued thinking
+    if (es.stopAnalysis) {
+      es.stopAnalysis()
+    }
+
+    // Get FEN string from clipboard
+    const clipboardText = await navigator.clipboard.readText()
+
+    // Clean the FEN string
+    const trimmedFen = clipboardText.trim()
+
+    // Apply the FEN string to the game using the same method as FEN input dialog
+    gs.confirmFenInput(trimmedFen)
   }
 
   /* ===== Arrow Colors ===== */

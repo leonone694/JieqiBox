@@ -308,8 +308,6 @@
     gameState.setupNewGame()
   }
 
-
-
   // Save notation
   const handleSaveNotation = async () => {
     isSaving.value = true

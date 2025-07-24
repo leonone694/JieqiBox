@@ -101,7 +101,10 @@
       </div>
       <AnalysisSidebar />
       <FlipPromptDialog />
-      <FenInputDialog v-model="game.isFenInputDialogVisible.value" @confirm="game.confirmFenInput" />
+      <FenInputDialog
+        v-model="game.isFenInputDialogVisible.value"
+        @confirm="game.confirmFenInput"
+      />
     </div>
   </div>
 </template>
