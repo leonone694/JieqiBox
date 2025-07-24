@@ -2,30 +2,31 @@
   <v-dialog
     v-model="isVisible"
     persistent
-    max-width="800px"
+    max-width="700px"
     :fullscreen="$vuetify.display.smAndDown"
   >
     <v-card>
-      <v-card-title>
-        <span class="text-h5">{{ $t('positionEditor.title') }}</span>
+      <v-card-title class="pb-2">
+        <span class="text-h6">{{ $t('positionEditor.title') }}</span>
       </v-card-title>
 
-      <v-card-text>
-        <v-container>
+      <v-card-text class="pt-0">
+        <v-container class="pa-0">
           <!-- Action Buttons -->
-          <v-row class="mb-4">
+          <v-row class="mb-2">
             <v-col cols="12">
-              <div class="d-flex gap-2 flex-wrap">
-                <v-btn @click="flipBoard" color="primary" variant="outlined">
+              <div class="d-flex gap-1 flex-wrap">
+                <v-btn @click="flipBoard" color="primary" variant="outlined" size="small">
                   {{ $t('positionEditor.flipBoard') }}
                 </v-btn>
-                <v-btn @click="switchSide" color="secondary" variant="outlined">
+                <v-btn @click="switchSide" color="secondary" variant="outlined" size="small">
                   {{ $t('positionEditor.switchSide') }}
                 </v-btn>
                 <v-btn
                   @click="resetPosition"
                   color="warning"
                   variant="outlined"
+                  size="small"
                 >
                   {{ $t('positionEditor.resetPosition') }}
                 </v-btn>
@@ -34,9 +35,9 @@
           </v-row>
 
           <!-- Board Editing Area - Responsive Layout -->
-          <v-row>
+          <v-row class="g-0">
             <!-- Board area - 8 columns on desktop, 12 columns on mobile -->
-            <v-col cols="12" md="8">
+            <v-col cols="12" md="8" class="pa-1">
               <div class="position-editor-board">
                 <div class="board-grid">
                   <div
@@ -82,13 +83,13 @@
             </v-col>
 
             <!-- Piece selector panel - 4 columns on desktop, 12 columns on mobile -->
-            <v-col cols="12" md="4">
+            <v-col cols="12" md="4" class="pa-1">
               <div class="piece-selector">
-                <h4>{{ $t('positionEditor.addPieces') }}</h4>
+                <h5 class="mb-2">{{ $t('positionEditor.addPieces') }}</h5>
 
                 <!-- Known Piece Selection -->
                 <div class="piece-category">
-                  <h5>{{ $t('positionEditor.brightPieces') }}</h5>
+                  <h6 class="mb-1">{{ $t('positionEditor.brightPieces') }}</h6>
                   <div class="piece-grid">
                     <div
                       v-for="piece in knownPieces"
@@ -108,7 +109,7 @@
 
                 <!-- Unknown Piece Selection -->
                 <div class="piece-category">
-                  <h5>{{ $t('positionEditor.darkPieces') }}</h5>
+                  <h6 class="mb-1">{{ $t('positionEditor.darkPieces') }}</h6>
                   <div class="piece-grid">
                     <div
                       v-for="piece in unknownPieces"
@@ -128,12 +129,12 @@
 
                 <!-- Current Selection Info -->
                 <div v-if="selectedCell.row !== -1" class="selected-info">
-                  <p>
+                  <p class="mb-1">
                     {{ $t('positionEditor.selectedPosition') }}:
                     {{ String.fromCharCode(97 + selectedCell.col)
                     }}{{ 9 - selectedCell.row }}
                   </p>
-                  <p v-if="getPieceAt(selectedCell.row, selectedCell.col)">
+                  <p v-if="getPieceAt(selectedCell.row, selectedCell.col)" class="mb-0">
                     {{ $t('positionEditor.piece') }}:
                     {{
                       getPieceDisplayName(
@@ -147,7 +148,7 @@
           </v-row>
 
           <!-- Validation Status -->
-          <v-row>
+          <v-row class="mt-2">
             <v-col cols="12">
               <v-alert
                 :type="validationStatus === 'normal' ? 'success' : 'error'"
@@ -155,19 +156,21 @@
                   $t('positionEditor.validationStatus.' + validationStatus)
                 "
                 variant="tonal"
+                density="compact"
               />
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="pa-3">
         <v-spacer></v-spacer>
-        <v-btn color="error" variant="text" @click="cancelEdit">
+        <v-btn color="error" variant="text" size="small" @click="cancelEdit">
           {{ $t('positionEditor.cancel') }}
         </v-btn>
         <v-btn
           color="primary"
+          size="small"
           @click="applyChanges"
           :disabled="validationStatus !== 'normal'"
         >
@@ -470,7 +473,7 @@
 <style lang="scss" scoped>
   .position-editor-board {
     border: 2px solid #333;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
     background: #f5f5dc;
     // Ensure board has appropriate max-width on mobile
@@ -501,7 +504,7 @@
     justify-content: center;
     cursor: pointer;
     position: relative;
-    min-height: 40px;
+    min-height: 32px;
 
     &:hover {
       background-color: #e3f2fd;
@@ -518,7 +521,7 @@
 
     // Adjust piece size on mobile
     @media (max-width: 768px) {
-      min-height: 30px;
+      min-height: 24px;
     }
   }
 
@@ -530,71 +533,71 @@
   }
 
   .piece-img {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
 
     // Adjust piece image size on mobile
     @media (max-width: 768px) {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
     }
   }
 
   .remove-btn {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: -4px;
+    right: -4px;
     z-index: 10;
-    width: 16px !important;
-    height: 16px !important;
-    min-width: 16px !important;
-    min-height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
 
     // Adjust remove button size on mobile
     @media (max-width: 768px) {
-      width: 14px !important;
-      height: 14px !important;
-      min-width: 14px !important;
-      min-height: 14px !important;
-      top: -4px;
-      right: -4px;
+      width: 12px !important;
+      height: 12px !important;
+      min-width: 12px !important;
+      min-height: 12px !important;
+      top: -3px;
+      right: -3px;
     }
   }
 
   .piece-selector {
-    padding: 16px;
+    padding: 12px;
     background-color: rgb(var(--v-theme-surface));
-    border-radius: 8px;
+    border-radius: 6px;
     height: 100%;
     overflow-y: auto;
 
     // Adjust selector style on mobile
     @media (max-width: 768px) {
       height: auto;
-      margin-top: 16px;
-      max-height: 400px;
+      margin-top: 12px;
+      max-height: 300px;
     }
   }
 
   .piece-category {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 
-    h5 {
-      margin: 0 0 8px 0;
+    h6 {
+      margin: 0 0 6px 0;
       color: rgb(var(--v-theme-on-surface));
-      font-size: 14px;
+      font-size: 12px;
     }
   }
 
   .piece-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
 
     // Increase columns on mobile to show more pieces
     @media (max-width: 768px) {
       grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
+      gap: 4px;
     }
   }
 
@@ -602,7 +605,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px;
+    padding: 6px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     cursor: pointer;
@@ -614,45 +617,45 @@
     }
 
     .piece-img {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
+      width: 20px;
+      height: 20px;
+      margin-bottom: 2px;
 
       // Adjust piece image size in selector on mobile
       @media (max-width: 768px) {
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
       }
     }
 
     .piece-name {
-      font-size: 10px;
+      font-size: 9px;
       text-align: center;
       color: rgb(var(--v-theme-on-surface));
 
       // Adjust text size on mobile
       @media (max-width: 768px) {
-        font-size: 8px;
+        font-size: 7px;
       }
     }
   }
 
   .selected-info {
-    margin-top: 16px;
-    padding: 12px;
+    margin-top: 12px;
+    padding: 8px;
     background-color: rgb(var(--v-theme-surface));
     border-radius: 4px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 
     p {
-      margin: 4px 0;
-      font-size: 12px;
+      margin: 2px 0;
+      font-size: 11px;
       color: rgb(var(--v-theme-on-surface));
     }
   }
 
-  .gap-2 {
-    gap: 8px;
+  .gap-1 {
+    gap: 4px;
   }
 
   .flex-wrap {
