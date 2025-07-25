@@ -137,19 +137,13 @@ async fn save_game_notation(content: String, filename: String, app: AppHandle) -
 
 /// Get the path to the configuration file, which varies by platform.
 fn get_config_file_path(app: &AppHandle) -> Result<String, String> {
-    let bundle_identifier = &app.config().identifier;
-    let _ = app.emit("engine-output", format!("[DEBUG] get_config_file_path: Bundle identifier: {}", bundle_identifier));
-    
     if cfg!(target_os = "android") {
         // On Android, use the app's private internal data directory
-        let config_path = format!("/data/data/{}/files/config.ini", bundle_identifier);
-        let _ = app.emit("engine-output", format!("[DEBUG] get_config_file_path: Android config path: {}", config_path));
-        Ok(config_path)
+        let bundle_identifier = &app.config().identifier;
+        Ok(format!("/data/data/{}/files/config.ini", bundle_identifier))
     } else {
         // On desktop, for simplicity, use the same directory as the executable
-        let config_path = "config.ini".to_string();
-        let _ = app.emit("engine-output", format!("[DEBUG] get_config_file_path: Desktop config path: {}", config_path));
-        Ok(config_path)
+        Ok("config.ini".to_string())
     }
 }
 
@@ -173,42 +167,19 @@ async fn load_config(app: AppHandle) -> Result<String, String> {
 /// Save configuration content to the config file.
 #[tauri::command]
 async fn save_config(content: String, app: AppHandle) -> Result<(), String> {
-    let _ = app.emit("engine-output", "[DEBUG] save_config: Starting configuration save process");
-    
     let config_path = get_config_file_path(&app)?;
-    let _ = app.emit("engine-output", format!("[DEBUG] save_config: Config path resolved to: {}", config_path));
-    
     let path = Path::new(&config_path);
-    let _ = app.emit("engine-output", format!("[DEBUG] save_config: Path object created, exists: {}", path.exists()));
     
     // Ensure the parent directory exists before writing
     if let Some(parent) = path.parent() {
-        let _ = app.emit("engine-output", format!("[DEBUG] save_config: Parent directory: {}", parent.display()));
-        let _ = app.emit("engine-output", format!("[DEBUG] save_config: Parent directory exists: {}", parent.exists()));
-        
         if let Err(e) = fs::create_dir_all(parent) {
-            let error_msg = format!("Failed to create config directory: {}", e);
-            let _ = app.emit("engine-output", format!("[DEBUG] save_config: {}", error_msg));
-            return Err(error_msg);
-        } else {
-            let _ = app.emit("engine-output", "[DEBUG] save_config: Successfully created parent directory");
+            return Err(format!("Failed to create config directory: {}", e));
         }
-    } else {
-        let _ = app.emit("engine-output", "[DEBUG] save_config: No parent directory found (path is root)");
     }
     
-    let _ = app.emit("engine-output", format!("[DEBUG] save_config: Attempting to write {} bytes to config file", content.len()));
-    
     match fs::write(path, content) {
-        Ok(_) => {
-            let _ = app.emit("engine-output", "[DEBUG] save_config: Successfully wrote config file");
-            Ok(())
-        },
-        Err(e) => {
-            let error_msg = format!("Failed to write config file: {}", e);
-            let _ = app.emit("engine-output", format!("[DEBUG] save_config: {}", error_msg));
-            Err(error_msg)
-        },
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to write config file: {}", e)),
     }
 }
 
