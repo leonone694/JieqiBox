@@ -247,13 +247,12 @@ export function useChessGame() {
     try {
       const parts = fen.split(' ')
       let boardPart: string,
-        hiddenPart: string,
+        hiddenPart: string = '-',
         sidePart: string,
         halfmove: string,
         fullmove: string
       if (parts.length === 2) {
         ;[boardPart, sidePart] = parts
-        hiddenPart = '-'
         halfmove = '0'
         fullmove = '1'
       } else if (parts.length === 6) {
