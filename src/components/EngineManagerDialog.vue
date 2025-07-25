@@ -115,6 +115,7 @@
   import { open } from '@tauri-apps/plugin-dialog'
   import { invoke } from '@tauri-apps/api/core'
   import type { UnlistenFn } from '@tauri-apps/api/event'
+  import { isAndroidPlatform as checkAndroidPlatform } from '../utils/platform'
 
   // Props and Emits
   const props = defineProps<{ modelValue: boolean }>()
@@ -158,15 +159,7 @@
       : t('engineManager.addEngine')
   })
 
-  const isAndroidPlatform = computed(() => {
-    if (typeof window !== 'undefined') {
-      const tauriPlatform = (window as any).__TAURI__?.platform
-      if (tauriPlatform === 'android') return true
-      if (navigator.userAgent.includes('Android')) return true
-      if (/Android/i.test(navigator.userAgent)) return true
-    }
-    return false
-  })
+  const isAndroidPlatform = computed(() => checkAndroidPlatform())
 
   // Table headers
   const headers = computed(() => [

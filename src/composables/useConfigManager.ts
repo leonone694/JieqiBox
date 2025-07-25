@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import Ini from 'ini'
+import { isAndroidPlatform as checkAndroidPlatform } from '../utils/platform'
 
 // Add this new interface and export it
 export interface ManagedEngine {
@@ -62,20 +63,7 @@ const defaultConfig: ConfigData = {
 const configData = ref<ConfigData>({ ...defaultConfig })
 
 // Platform detection utility
-const isAndroid = () => {
-  if (typeof window !== 'undefined') {
-    // Check Tauri platform if available
-    const tauriPlatform = (window as any).__TAURI__?.platform
-    if (tauriPlatform === 'android') return true
-
-    // Check user agent
-    if (navigator.userAgent.includes('Android')) return true
-    if (/Android/i.test(navigator.userAgent)) return true
-  }
-  return false
-}
-
-const isAndroidPlatform = computed(() => isAndroid())
+const isAndroidPlatform = computed(() => checkAndroidPlatform())
 
 // Configuration file manager composable
 export function useConfigManager() {

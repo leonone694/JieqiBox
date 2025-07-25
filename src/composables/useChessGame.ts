@@ -5,6 +5,7 @@ import {
   REVERSE_FEN_MAP,
   INITIAL_PIECE_COUNTS,
 } from '@/utils/constants'
+import { isAndroidPlatform as checkAndroidPlatform } from '../utils/platform'
 
 export interface Piece {
   id: number
@@ -1561,18 +1562,8 @@ export function useChessGame() {
       const notation = generateGameNotation()
       const content = JSON.stringify(notation, null, 2)
 
-      // Check if running on Android platform using the same detection logic as useUciEngine
-      const isAndroid = () => {
-        if (typeof window !== 'undefined') {
-          const tauriPlatform = (window as any).__TAURI__?.platform
-          if (tauriPlatform === 'android') return true
-          if (navigator.userAgent.includes('Android')) return true
-          if (/Android/i.test(navigator.userAgent)) return true
-        }
-        return false
-      }
-
-      const isAndroidPlatform = isAndroid()
+      // Check if running on Android platform using centralized detection logic
+      const isAndroidPlatform = checkAndroidPlatform()
 
       if (isAndroidPlatform) {
         // Use Tauri command to save to Android internal storage
