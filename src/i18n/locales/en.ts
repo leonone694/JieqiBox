@@ -42,7 +42,8 @@ export default {
     title: 'UCI Engine Options',
     loadingText: 'Loading engine options...',
     noEngineLoaded: 'No engine is currently loaded.',
-    pleaseLoadEngineFirst: 'Please load an engine first to configure its options.',
+    pleaseLoadEngineFirst:
+      'Please load an engine first to configure its options.',
     loadEngine: 'Load Engine',
     noOptionsAvailable: 'No UCI options available for this engine.',
     refreshOptions: 'Refresh Options',
@@ -226,9 +227,11 @@ export default {
     arguments: 'Command-line Arguments',
     actions: 'Actions',
     confirmDeleteTitle: 'Confirm Deletion',
-    confirmDeleteMessage: 'Are you sure you want to delete the engine "{name}"? This action cannot be undone.',
+    confirmDeleteMessage:
+      'Are you sure you want to delete the engine "{name}"? This action cannot be undone.',
     promptEngineName: 'Please enter a unique name for the engine:',
-    promptEngineArgs: 'Please enter command-line arguments for the engine (optional):',
+    promptEngineArgs:
+      'Please enter command-line arguments for the engine (optional):',
     nameExists: 'This name already exists. Please use a unique name.',
     engineAddedSuccess: 'Engine {name} was added successfully!',
   },

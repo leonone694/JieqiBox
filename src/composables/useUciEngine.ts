@@ -426,7 +426,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     const lastEngineId = configManager.getLastSelectedEngineId()
     if (lastEngineId) {
       const engines = configManager.getEngines()
-      console.log(`[DEBUG] Auto-loading: Found last engine ID: ${lastEngineId}, Available engines: ${engines.length}`)
+      console.log(
+        `[DEBUG] Auto-loading: Found last engine ID: ${lastEngineId}, Available engines: ${engines.length}`
+      )
       const engineToLoad = engines.find(e => e.id === lastEngineId)
       if (engineToLoad) {
         console.log(
@@ -434,7 +436,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
         )
         await loadEngine(engineToLoad)
       } else {
-        console.log(`[DEBUG] Auto-loading: Last selected engine (${lastEngineId}) not found in engine list`)
+        console.log(
+          `[DEBUG] Auto-loading: Last selected engine (${lastEngineId}) not found in engine list`
+        )
         // Clear the invalid last selected engine ID
         await configManager.clearLastSelectedEngineId()
       }
@@ -803,7 +807,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     await configManager.loadConfig()
     const engines = configManager.getEngines()
     if (engines.length === 0) {
-      console.log(`[DEBUG] useUciEngine: Engine list is empty on mount, clearing last selected engine ID`)
+      console.log(
+        `[DEBUG] useUciEngine: Engine list is empty on mount, clearing last selected engine ID`
+      )
       await configManager.clearLastSelectedEngineId()
     }
 

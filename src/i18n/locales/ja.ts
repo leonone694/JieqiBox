@@ -42,7 +42,8 @@ export default {
     title: 'UCIエンジンオプション',
     loadingText: 'エンジンオプションを読み込み中...',
     noEngineLoaded: 'エンジンがロードされていません。',
-    pleaseLoadEngineFirst: 'エンジンのオプションを設定するには、まずエンジンを読み込んでください。',
+    pleaseLoadEngineFirst:
+      'エンジンのオプションを設定するには、まずエンジンを読み込んでください。',
     loadEngine: 'エンジンを読み込む',
     noOptionsAvailable: 'このエンジンには利用可能なUCIオプションがありません。',
     refreshOptions: 'オプションを更新',
@@ -223,10 +224,13 @@ export default {
     arguments: 'コマンドライン引数',
     actions: '操作',
     confirmDeleteTitle: '削除の確認',
-    confirmDeleteMessage: 'エンジン「{name}」を本当に削除しますか？この操作は元に戻せません。',
+    confirmDeleteMessage:
+      'エンジン「{name}」を本当に削除しますか？この操作は元に戻せません。',
     promptEngineName: 'エンジンの一意な名前を入力してください：',
-    promptEngineArgs: 'エンジンのコマンドライン引数を入力してください（任意）：',
-    nameExists: 'この名前は既に使用されています。別の一意な名前を使用してください。',
+    promptEngineArgs:
+      'エンジンのコマンドライン引数を入力してください（任意）：',
+    nameExists:
+      'この名前は既に使用されています。別の一意な名前を使用してください。',
     engineAddedSuccess: 'エンジン{name}が正常に追加されました！',
   },
 

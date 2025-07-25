@@ -86,11 +86,13 @@
       ) {
         locale.value = savedLocale
       }
-      
+
       // Check if engine list is empty and clear last selected engine ID if needed
       const engines = configManager.getEngines()
       if (engines.length === 0) {
-        console.log(`[DEBUG] App: Engine list is empty on startup, clearing last selected engine ID`)
+        console.log(
+          `[DEBUG] App: Engine list is empty on startup, clearing last selected engine ID`
+        )
         await configManager.clearLastSelectedEngineId()
       }
     } catch (error) {

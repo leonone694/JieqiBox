@@ -767,9 +767,13 @@
       selectedEngineId.value = null
     } else if (selectedEngineId.value) {
       // Check if the selected engine still exists in the list
-      const engineExists = managedEngines.value.some(e => e.id === selectedEngineId.value)
+      const engineExists = managedEngines.value.some(
+        e => e.id === selectedEngineId.value
+      )
       if (!engineExists) {
-        console.log(`[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list, clearing selection`)
+        console.log(
+          `[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list, clearing selection`
+        )
         selectedEngineId.value = null
       }
     }
@@ -787,7 +791,9 @@
     if (engineToLoad) {
       loadEngine(engineToLoad) // This now calls the powerful loadEngine from useUciEngine
     } else {
-      console.log(`[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list`)
+      console.log(
+        `[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list`
+      )
       alert(t('errors.selectedEngineNotFound'))
       // Clear the invalid selection
       selectedEngineId.value = null
@@ -851,10 +857,12 @@
   onMounted(() => {
     // Load managed engines for the dropdown
     refreshManagedEngines()
-    
+
     // Clear last selected engine ID if the engine list is empty
     if (managedEngines.value.length === 0) {
-      console.log(`[DEBUG] AnalysisSidebar: Engine list is empty on mount, clearing last selected engine ID`)
+      console.log(
+        `[DEBUG] AnalysisSidebar: Engine list is empty on mount, clearing last selected engine ID`
+      )
       configManager.clearLastSelectedEngineId()
     }
 
@@ -955,7 +963,9 @@
       refreshManagedEngines()
       // Clear last selected engine ID if the engine list is empty
       if (managedEngines.value.length === 0) {
-        console.log(`[DEBUG] AnalysisSidebar: Engine list is empty after manager dialog closed, clearing last selected engine ID`)
+        console.log(
+          `[DEBUG] AnalysisSidebar: Engine list is empty after manager dialog closed, clearing last selected engine ID`
+        )
         configManager.clearLastSelectedEngineId()
       }
     }

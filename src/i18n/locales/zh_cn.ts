@@ -16,7 +16,7 @@ export default {
     success: '成功',
     warning: '警告',
     info: '信息',
-    delete: '删除'
+    delete: '删除',
   },
 
   // 顶部工具栏

@@ -169,7 +169,9 @@ export function useConfigManager() {
     await saveConfig()
     // Clear last selected engine ID if the list is empty
     if (engines.length === 0) {
-      console.log(`[DEBUG] ConfigManager: Engine list is empty, clearing last selected engine ID`)
+      console.log(
+        `[DEBUG] ConfigManager: Engine list is empty, clearing last selected engine ID`
+      )
       if (configData.value.Settings) {
         delete configData.value.Settings.lastSelectedEngineId
         await saveConfig()

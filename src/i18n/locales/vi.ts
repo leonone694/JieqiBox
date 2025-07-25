@@ -42,7 +42,8 @@ export default {
     title: 'Tùy chọn công cụ UCI',
     loadingText: 'Đang tải tùy chọn công cụ...',
     noEngineLoaded: 'Chưa có công cụ nào được tải.',
-    pleaseLoadEngineFirst: 'Vui lòng tải công cụ trước để cấu hình các tùy chọn của nó.',
+    pleaseLoadEngineFirst:
+      'Vui lòng tải công cụ trước để cấu hình các tùy chọn của nó.',
     loadEngine: 'Tải công cụ',
     noOptionsAvailable: 'Không có tùy chọn UCI nào cho công cụ này.',
     refreshOptions: 'Làm mới tùy chọn',
@@ -225,7 +226,8 @@ export default {
     arguments: 'Tham số dòng lệnh',
     actions: 'Hành động',
     confirmDeleteTitle: 'Xác nhận xóa',
-    confirmDeleteMessage: 'Bạn có chắc muốn xóa engine "{name}" không? Hành động này không thể hoàn tác.',
+    confirmDeleteMessage:
+      'Bạn có chắc muốn xóa engine "{name}" không? Hành động này không thể hoàn tác.',
     promptEngineName: 'Vui lòng nhập tên duy nhất cho engine:',
     promptEngineArgs: 'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn):',
     nameExists: 'Tên này đã tồn tại. Vui lòng sử dụng một tên khác.',

@@ -26,7 +26,9 @@
         <div v-else-if="!isEngineLoaded" class="empty-section">
           <v-icon size="64" color="grey">mdi-engine-off</v-icon>
           <p class="empty-text">{{ $t('uciOptions.noEngineLoaded') }}</p>
-          <p class="empty-text-secondary">{{ $t('uciOptions.pleaseLoadEngineFirst') }}</p>
+          <p class="empty-text-secondary">
+            {{ $t('uciOptions.pleaseLoadEngineFirst') }}
+          </p>
         </div>
 
         <div v-else-if="uciOptions.length === 0" class="empty-section">
@@ -247,12 +249,8 @@
   // Inject engine state
   const { t } = useI18n()
   const engineState = inject('engine-state') as any
-  const {
-    isEngineLoaded,
-    engineOutput,
-    uciOptionsText,
-    currentEnginePath,
-  } = engineState
+  const { isEngineLoaded, engineOutput, uciOptionsText, currentEnginePath } =
+    engineState
 
   // Theme detection
   const theme = useTheme()
