@@ -256,6 +256,15 @@ export function useChessGame() {
         hiddenPart = '-'
         halfmove = '0'
         fullmove = '1'
+      } else if (parts.length === 6) {
+        ;[
+          boardPart,
+          sidePart, // castling and en passant are ignored
+          ,
+          ,
+          halfmove,
+          fullmove,
+        ] = parts
       } else {
         ;[
           boardPart,
@@ -1468,7 +1477,6 @@ export function useChessGame() {
         const movesPart = processedFen.substring(movesIndex + 7).trim() // " moves " length is 7
 
         // Load base FEN first
-        initialFen.value = fenPart
         loadFen(fenPart, false)
         history.value = []
         currentMoveIndex.value = 0
@@ -1480,6 +1488,9 @@ export function useChessGame() {
         // Reset zIndex for all pieces
         pieces.value.forEach(p => (p.zIndex = undefined))
         updateAllPieceZIndexes()
+
+        // Reformat FEN using generateFen to ensure consistency for Opening section
+        initialFen.value = generateFen()
 
         // Execute historical moves
         const moves = movesPart.split(' ').filter(move => move.length >= 4)
@@ -1497,7 +1508,6 @@ export function useChessGame() {
         triggerArrowClear()
       } else {
         // No move history, process as before
-        initialFen.value = processedFen
         loadFen(processedFen, false)
         history.value = []
         currentMoveIndex.value = 0
@@ -1509,6 +1519,9 @@ export function useChessGame() {
         // Reset zIndex for all pieces
         pieces.value.forEach(p => (p.zIndex = undefined))
         updateAllPieceZIndexes()
+
+        // Reformat FEN using generateFen to ensure consistency for Opening section
+        initialFen.value = generateFen()
 
         // Trigger arrow clear event
         triggerArrowClear()
