@@ -57,7 +57,7 @@ export default {
         'Tệp gỡ lỗi để ghi lại giao tiếp giữa engine và giao diện.',
       Threads:
         'Số luồng tìm kiếm của engine. Khuyến nghị đặt thành số luồng tối đa có sẵn của hệ thống trừ đi 1 hoặc 2 luồng.',
-      Hash: 'Kích thước bảng băm của engine (tính bằng MB). Khuyến nghị đặt ở mức tối đa có thể trừ đi 1 hoặc 2 GiB bộ nhớ.',
+      Hash: 'Kích thước bảng băm của engine (đơn vị: MB). Khuyến nghị đặt giá trị này bằng tổng bộ nhớ khả dụng trừ đi 1 hoặc 2 GiB.',
       'Clear Hash': 'Xóa bảng băm.',
       MultiPV:
         'Đa biến thể chính, có thể hiển thị nhiều nước đi được đề xuất. Khuyến nghị đặt là 1. Nếu đặt lớn hơn 1, chất lượng của nước đi tốt nhất sẽ giảm, vì chương trình sẽ phân bổ một phần tài nguyên để tính toán các nước đi khả dĩ khác.',

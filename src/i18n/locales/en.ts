@@ -57,7 +57,7 @@ export default {
         'The debug file that records communication between the engine and the GUI.',
       Threads:
         'Number of threads used for engine search. It is recommended to set this to the number of available system threads minus one or two.',
-      Hash: 'Size of the engine’s hash table (in MB). It is recommended to set this to the maximum value minus one or two GiB of system memory.',
+      Hash: 'Engine\'s hash table size (in MB). It is recommended to set this value to the total available memory minus 1 to 2 GiB.',
       'Clear Hash': 'Clears the hash table.',
       MultiPV:
         'Multi-Principal Variation. Allows the engine to show multiple recommended moves. It is recommended to set this to 1. If set higher, the quality of the best move may decrease because resources will be allocated to evaluating alternative lines.',
