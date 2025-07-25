@@ -16,6 +16,7 @@ export default {
     success: 'Thành công',
     warning: 'Cảnh báo',
     info: 'Thông tin',
+    delete: 'Xóa',
   },
 
   // Thanh công cụ trên cùng
@@ -41,6 +42,7 @@ export default {
     title: 'Tùy chọn công cụ UCI',
     loadingText: 'Đang tải tùy chọn công cụ...',
     noEngineLoaded: 'Chưa có công cụ nào được tải.',
+    pleaseLoadEngineFirst: 'Vui lòng tải công cụ trước để cấu hình các tùy chọn của nó.',
     loadEngine: 'Tải công cụ',
     noOptionsAvailable: 'Không có tùy chọn UCI nào cho công cụ này.',
     refreshOptions: 'Làm mới tùy chọn',
@@ -210,6 +212,24 @@ export default {
     flipBoard: 'Lật bàn cờ',
     flipBoardBack: 'Khôi phục hướng',
     ponderMode: 'Chế độ suy nghĩ nền',
+  },
+
+  // Trình quản lý Engine
+  engineManager: {
+    title: 'Trình quản lý Engine',
+    addEngine: 'Thêm Engine',
+    addEngineAndroid: 'Thêm Engine (SAF)',
+    editEngine: 'Chỉnh sửa Engine',
+    engineName: 'Tên Engine',
+    enginePath: 'Đường dẫn Engine',
+    arguments: 'Tham số dòng lệnh',
+    actions: 'Hành động',
+    confirmDeleteTitle: 'Xác nhận xóa',
+    confirmDeleteMessage: 'Bạn có chắc muốn xóa engine "{name}" không? Hành động này không thể hoàn tác.',
+    promptEngineName: 'Vui lòng nhập tên duy nhất cho engine:',
+    promptEngineArgs: 'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn):',
+    nameExists: 'Tên này đã tồn tại. Vui lòng sử dụng một tên khác.',
+    engineAddedSuccess: 'Đã thêm thành công engine {name}!',
   },
 
   // Thông báo lỗi

@@ -15,31 +15,35 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 
 // -------------------------------------------------------------
+// type definition for the engine process state
 type EngineProcess = Arc<Mutex<Option<CommandChild>>>;
 // -------------------------------------------------------------
 
-/// Check if the engine file exists and is executable on Android
+/// Check if the engine file exists and is a file on Android.
+/// This is a prerequisite for setting permissions and spawning.
 #[cfg(target_os = "android")]
 fn check_android_engine_file(path: &str) -> Result<(), String> {
     let engine_path = Path::new(path);
     
-    // Check if file exists
+    // Check if file exists at the given path
     if !engine_path.exists() {
         return Err(format!("Engine file not found: {}", path));
     }
     
-    // Check if file is executable (Android requires specific permissions)
+    // Check if the path points to a file, not a directory
     if let Ok(metadata) = fs::metadata(engine_path) {
         if !metadata.is_file() {
-            return Err("Path is not a file".to_string());
+            return Err(format!("Path is not a file: {}", path));
         }
     } else {
-        return Err("Cannot access engine file".to_string());
+        // This can happen if we lack permissions to read metadata
+        return Err(format!("Cannot access engine file metadata: {}", path));
     }
     Ok(())
 }
 
-/// Copy file from user directory to app internal storage
+/// Copy a file from a user-accessible directory to the app's internal storage.
+/// Used for the legacy engine scanning mechanism.
 #[cfg(target_os = "android")]
 fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) -> Result<String, String> {
     let source_path = Path::new(source_path_str);
@@ -49,7 +53,7 @@ fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) 
         return Err(error_msg);
     }
 
-    // Use dynamic bundle identifier for internal storage path
+    // Use dynamic bundle identifier for a robust internal storage path
     let bundle_identifier = &app_handle.config().identifier;
     let internal_dir = format!("/data/data/{}/files/engines", bundle_identifier);
     if let Err(e) = fs::create_dir_all(&internal_dir) {
@@ -58,7 +62,7 @@ fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) 
         return Err(error_msg);
     }
 
-    // Generate destination path
+    // Generate destination path using the original filename
     let filename = source_path.file_name()
         .ok_or_else(|| "Invalid source path".to_string())?
         .to_str()
@@ -68,7 +72,7 @@ fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) 
 
     let _ = app_handle.emit("engine-output", format!("[DEBUG] Copying file from {} to {}", source_path.display(), dest_path.display()));
 
-    // Copy file
+    // Copy the file
     if let Err(e) = fs::copy(source_path, dest_path) {
         let error_msg = format!("Failed to copy file: {}", e);
         let _ = app_handle.emit("engine-output", format!("[DEBUG] {}", error_msg));
@@ -77,10 +81,11 @@ fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) 
 
     let _ = app_handle.emit("engine-output", "[DEBUG] Setting executable permission...");
     
+    // Set executable permissions (rwxr-xr-x) which is crucial on Android/Linux
     match fs::metadata(dest_path) {
         Ok(metadata) => {
             let mut permissions = metadata.permissions();
-            // Set permissions to rwxr-xr-x (0o755)
+            // Set permissions to 0o755
             permissions.set_mode(0o755);   
 
             if let Err(e) = fs::set_permissions(dest_path, permissions) {
@@ -100,7 +105,7 @@ fn copy_file_to_internal_storage(source_path_str: &str, app_handle: &AppHandle) 
     Ok(dest_path_str)
 }
 
-/// Save game notation to Android external storage (user accessible)
+/// Save game notation to Android's external, user-accessible storage.
 #[tauri::command]
 async fn save_game_notation(content: String, filename: String, app: AppHandle) -> Result<String, String> {
     if !cfg!(target_os = "android") {
@@ -111,17 +116,17 @@ async fn save_game_notation(content: String, filename: String, app: AppHandle) -
     let bundle_identifier = &app.config().identifier;
     let external_dir = format!("/storage/emulated/0/Android/data/{}/files/notations", bundle_identifier);
     
-    // Create notations directory if it doesn't exist
+    // Create the "notations" directory if it doesn't exist
     if let Err(e) = fs::create_dir_all(&external_dir) {
         let error_msg = format!("Failed to create notations directory: {}", e);
         return Err(error_msg);
     }
 
-    // Generate full file path
+    // Generate the full file path for the new notation file
     let file_path_str = format!("{}/{}", external_dir, filename);
     let file_path = Path::new(&file_path_str);
 
-    // Write content to file
+    // Write the provided content to the file
     if let Err(e) = fs::write(file_path, content) {
         let error_msg = format!("Failed to write notation file: {}", e);
         return Err(error_msg);
@@ -130,26 +135,26 @@ async fn save_game_notation(content: String, filename: String, app: AppHandle) -
     Ok(file_path_str)
 }
 
-/// Get the configuration file path based on platform
+/// Get the path to the configuration file, which varies by platform.
 fn get_config_file_path(app: &AppHandle) -> Result<String, String> {
     if cfg!(target_os = "android") {
-        // On Android, save to internal app data directory
+        // On Android, use the app's private internal data directory
         let bundle_identifier = &app.config().identifier;
         Ok(format!("/data/data/{}/files/config.ini", bundle_identifier))
     } else {
-        // On desktop, save to current directory
+        // On desktop, for simplicity, use the same directory as the executable
         Ok("config.ini".to_string())
     }
 }
 
-/// Load configuration from file
+/// Load configuration from the config file.
 #[tauri::command]
 async fn load_config(app: AppHandle) -> Result<String, String> {
     let config_path = get_config_file_path(&app)?;
     let path = Path::new(&config_path);
     
     if !path.exists() {
-        // Return empty string if config file doesn't exist
+        // If the config file doesn't exist, return an empty string, which is valid
         return Ok(String::new());
     }
     
@@ -159,13 +164,13 @@ async fn load_config(app: AppHandle) -> Result<String, String> {
     }
 }
 
-/// Save configuration to file
+/// Save configuration content to the config file.
 #[tauri::command]
 async fn save_config(content: String, app: AppHandle) -> Result<(), String> {
     let config_path = get_config_file_path(&app)?;
     let path = Path::new(&config_path);
     
-    // Create parent directory if it doesn't exist
+    // Ensure the parent directory exists before writing
     if let Some(parent) = path.parent() {
         if let Err(e) = fs::create_dir_all(parent) {
             return Err(format!("Failed to create config directory: {}", e));
@@ -178,7 +183,7 @@ async fn save_config(content: String, app: AppHandle) -> Result<(), String> {
     }
 }
 
-/// Clear configuration file
+/// Clear (delete) the configuration file.
 #[tauri::command]
 async fn clear_config(app: AppHandle) -> Result<(), String> {
     let config_path = get_config_file_path(&app)?;
@@ -190,19 +195,18 @@ async fn clear_config(app: AppHandle) -> Result<(), String> {
             Err(e) => Err(format!("Failed to delete config file: {}", e)),
         }
     } else {
-        Ok(()) // File doesn't exist, nothing to clear
+        Ok(()) // File doesn't exist, so there's nothing to do
     }
 }
 
-/// Get the user-accessible engine directory path
+/// Get the path to the user-accessible engine directory for manual placement.
 #[cfg(target_os = "android")]
 fn get_user_engine_directory() -> String {
-    // Use external storage that users can access
     "/storage/emulated/0/jieqibox/engines".to_string()
 }
 
-/// Scans user directory for engine files, copies them to internal storage,
-/// and then lists all available engine files in the internal storage.
+/// Scans user-facing directories for engines, copies them to internal storage,
+/// and then returns a list of all engines available in internal storage.
 #[cfg(target_os = "android")]
 fn sync_and_list_engines(app_handle: &AppHandle) -> Result<Vec<String>, String> {
     let bundle_identifier = &app_handle.config().identifier;
@@ -214,7 +218,7 @@ fn sync_and_list_engines(app_handle: &AppHandle) -> Result<Vec<String>, String> 
     
     let _ = app_handle.emit("engine-output", format!("[DEBUG] Syncing engines. Internal dir: {}. Source dirs: {:?}", internal_dir_str, source_dirs));
     
-    // Ensure internal engine directory exists
+    // Ensure the internal engine directory exists
     if let Err(e) = fs::create_dir_all(&internal_dir_str) {
         let error_msg = format!("Failed to create internal directory '{}': {}", internal_dir_str, e);
         let _ = app_handle.emit("engine-output", format!("[DEBUG] {}", error_msg));
@@ -228,67 +232,35 @@ fn sync_and_list_engines(app_handle: &AppHandle) -> Result<Vec<String>, String> 
         let _ = app_handle.emit("engine-output", format!("[DEBUG] Checking source directory: {}", user_dir));
         let user_path = Path::new(user_dir);
 
-        // Ensure user directory exists
         if !user_path.exists() {
             let _ = app_handle.emit("engine-output", format!("[DEBUG] Source directory does not exist, skipping: {}", user_dir));
             continue;
-        } else {
-            let _ = app_handle.emit("engine-output", format!("[DEBUG] Source directory exists: {}", user_dir));
         }
 
-        // Scan user directory and copy files
-        match fs::read_dir(user_path) {
-            Ok(entries) => {
-                let _ = app_handle.emit("engine-output", format!("[DEBUG] Successfully read source directory: {}", user_dir));
-                
-                let entries_vec: Vec<_> = entries.collect();
-                let _ = app_handle.emit("engine-output", format!("[DEBUG] Found {} entries in source directory '{}'.", entries_vec.len(), user_dir));
-
-                for entry_result in entries_vec {
-                    match entry_result {
-                        Ok(entry) => {
-                            let path = entry.path();
-                            let _ = app_handle.emit("engine-output", format!("[DEBUG] Found entry: {}", path.display()));
-                            if path.is_file() {
-                                let _ = app_handle.emit("engine-output", format!("[DEBUG] Entry is a file: {}", path.display()));
-                                if let Err(e) = copy_file_to_internal_storage(path.to_str().unwrap_or(""), app_handle) {
-                                    let _ = app_handle.emit("engine-output", format!("[DEBUG] Failed to copy file {}: {}", path.display(), e));
-                                }
-                            } else {
-                                let _ = app_handle.emit("engine-output", format!("[DEBUG] Entry is not a file: {}", path.display()));
-                            }
-                        }
-                        Err(e) => {
-                             let _ = app_handle.emit("engine-output", format!("[DEBUG] Error reading entry in source directory '{}': {}", user_dir, e));
+        if let Ok(entries) = fs::read_dir(user_path) {
+            for entry_result in entries {
+                if let Ok(entry) = entry_result {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Err(e) = copy_file_to_internal_storage(path.to_str().unwrap_or(""), app_handle) {
+                            let _ = app_handle.emit("engine-output", format!("[DEBUG] Failed to copy file {}: {}", path.display(), e));
                         }
                     }
                 }
-            }
-            Err(e) => {
-                let error_msg = format!("Failed to read source directory '{}': {}", user_dir, e);
-                let _ = app_handle.emit("engine-output", format!("[DEBUG] {}", error_msg));
             }
         }
     }
 
-    // Now, list all files in the internal directory and return their full paths
+    // List all files in the internal directory and return their full paths
     let mut available_engines = Vec::new();
-    match fs::read_dir(&internal_dir_str) {
-        Ok(entries) => {
-            let _ = app_handle.emit("engine-output", format!("[DEBUG] Successfully read internal directory: {}", internal_dir_str));
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_file() {
-                    if let Some(path_str) = path.to_str() {
-                        available_engines.push(path_str.to_string());
-                    }
+    if let Ok(entries) = fs::read_dir(&internal_dir_str) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(path_str) = path.to_str() {
+                    available_engines.push(path_str.to_string());
                 }
             }
-        }
-        Err(e) => {
-            let error_msg = format!("Failed to read internal directory '{}': {}", internal_dir_str, e);
-            let _ = app_handle.emit("engine-output", format!("[DEBUG] {}", error_msg));
-            // Don't return error, just log it. The function can return an empty list.
         }
     }
     
@@ -296,26 +268,32 @@ fn sync_and_list_engines(app_handle: &AppHandle) -> Result<Vec<String>, String> 
     Ok(available_engines)
 }
 
+/// Explicitly kills the currently running engine process, if any.
+#[tauri::command]
+async fn kill_engine(process_state: tauri::State<'_, EngineProcess>) -> Result<(), String> {
+    if let Some(child) = process_state.lock().unwrap().take() {
+        let _ = child.kill();
+    }
+    Ok(())
+}
+
+/// Spawns a new engine process with a given path and arguments.
 #[tauri::command]
 async fn spawn_engine(
     path: String,
+    args: Vec<String>,
     app: AppHandle,
     process_state: tauri::State<'_, EngineProcess>,
 ) -> Result<(), String> {
-    // Only output debug logs on Android
     if cfg!(target_os = "android") {
-        let _ = app.emit("engine-output", format!("[DEBUG] Spawning engine with provided path: {}", path));
+        let _ = app.emit("engine-output", format!("[DEBUG] Spawning engine: Path={}, Args={:?}", path, args));
     }
     
-    // On Android, the path provided should already be the absolute internal path.
-    // No more copying logic here.
+    // The path must be an absolute, accessible file path
     let final_path = path;
 
     #[cfg(target_os = "android")]
     {
-        let _ = app.emit("engine-output", format!("[DEBUG] Validating engine file: {}", final_path));
-
-        // Validate engine file
         if let Err(e) = check_android_engine_file(&final_path) {
             let _ = app.emit("engine-output", format!("[DEBUG] Engine file validation failed: {}", e));
             return Err(e);
@@ -323,41 +301,25 @@ async fn spawn_engine(
         let _ = app.emit("engine-output", "[DEBUG] Engine file validation passed.");
     }
     
-    // If there's an existing process, terminate it first
-    if let Some(child) = process_state.lock().unwrap().take() {
-        if cfg!(target_os = "android") {
-            let _ = app.emit("engine-output", "[DEBUG] Terminating existing engine process.");
-        }
-        let _ = child.kill();
-    }
-
-    // Get the directory where the engine file is located to set as working directory
+    // Ensure any previous engine process is terminated before starting a new one
+    kill_engine(process_state.clone()).await.ok();
+    
+    // The engine's working directory should be its parent directory
     let engine_dir = Path::new(&final_path)
         .parent()
         .ok_or_else(|| "Failed to get engine directory".to_string())?
         .to_str()
         .ok_or_else(|| "Failed to convert engine directory to string".to_string())?;
     
-    if cfg!(target_os = "android") {
-        let _ = app.emit("engine-output", format!("[DEBUG] Setting working directory to: {}", engine_dir));
-    }
-    
-    // The command is simply the path to the executable.
-    let command = final_path.clone();
-    if cfg!(target_os = "android") {
-        let _ = app.emit("engine-output", format!("[DEBUG] Attempting to spawn executable: {}", command));
-    }
-
-    // Start new process with working directory set to engine directory
-    let (mut rx, child) = match app.shell().command(command).current_dir(engine_dir).spawn() {
-        Ok(result) => {
-            if cfg!(target_os = "android") {
-                let _ = app.emit("engine-output", "[DEBUG] Engine process spawned successfully.");
-            }
-            result
-        }
+    // Spawn the new process
+    let (mut rx, child) = match app.shell().command(&final_path)
+        .args(args)
+        .current_dir(engine_dir)
+        .spawn() 
+    {
+        Ok(result) => result,
         Err(e) => {
-            let error_msg = format!("Failed to spawn engine: {e}");
+            let error_msg = format!("Failed to spawn engine: {}", e);
             if cfg!(target_os = "android") {
                 let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
             }
@@ -365,38 +327,30 @@ async fn spawn_engine(
         }
     };
 
+    // Store the new child process in the shared state
     *process_state.lock().unwrap() = Some(child);
-
-    if cfg!(target_os = "android") {
-        let _ = app.emit("engine-output", "[DEBUG] Engine process started, forwarding output.");
-    }
     
+    // Spawn an async task to listen for the engine's stdout/stderr
     let app_clone = app.clone();
     async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
-            match event {
-                CommandEvent::Stdout(buf) | CommandEvent::Stderr(buf) => {
-                    // Decode from GBK on Windows, UTF-8 on other platforms
-                    let text = if cfg!(target_os = "windows") {
-                        let (cow, _encoding_used, _had_errors) = GBK.decode(&buf);
-                        cow.into_owned()
-                    } else {
-                        // Use UTF-8 for Android and other platforms
-                        String::from_utf8_lossy(&buf).into_owned()
-                    };
-                    let _ = app_clone.emit("engine-output", text);
-                }
-                _ => {}
+            if let CommandEvent::Stdout(buf) | CommandEvent::Stderr(buf) = event {
+                // Decode output using GBK for Windows, UTF-8 for others
+                let text = if cfg!(target_os = "windows") {
+                    let (cow, ..) = GBK.decode(&buf);
+                    cow.into_owned()
+                } else {
+                    String::from_utf8_lossy(&buf).into_owned()
+                };
+                let _ = app_clone.emit("engine-output", text);
             }
         }
     });
 
-    if cfg!(target_os = "android") {
-        let _ = app.emit("engine-output", "[DEBUG] Engine spawn setup complete.");
-    }
     Ok(())
 }
 
+/// Sends a command string to the running engine process.
 #[tauri::command]
 async fn send_to_engine(
     command: String,
@@ -404,220 +358,147 @@ async fn send_to_engine(
 ) -> Result<(), String> {
     if let Some(child) = process_state.lock().unwrap().as_mut() {
         child
-            .write(format!("{command}\n").as_bytes())
-            .map_err(|e| format!("Failed to write to engine: {e}"))?;
+            .write(format!("{}\n", command).as_bytes())
+            .map_err(|e| format!("Failed to write to engine: {}", e))?;
         Ok(())
     } else {
         Err("Engine not running.".into())
     }
 }
 
-/// Get the default engine path for Android
+/// Get the path to a directory where users can manually place engines.
 #[cfg(target_os = "android")]
 #[tauri::command]
 async fn get_default_android_engine_path() -> Result<String, String> {
-    return Ok(get_user_engine_directory());
+    Ok(get_user_engine_directory())
 }
 
-/// Check if a file is executable on Android
+/// Check file permissions on Android.
 #[cfg(target_os = "android")]
 #[tauri::command]
 async fn check_android_file_permissions(path: String) -> Result<bool, String> {
-    if cfg!(target_os = "android") {
-        let file_path = Path::new(&path);
-        if file_path.exists() {
-            if let Ok(metadata) = fs::metadata(file_path) {
-                return Ok(metadata.is_file());
-            }
-        }
-        Ok(false)
+    if let Ok(metadata) = fs::metadata(Path::new(&path)) {
+        Ok(metadata.is_file())
     } else {
-        Err("This function is only available on Android".to_string())
+        Ok(false)
     }
 }
 
-/// Get the bundle identifier/package name
+/// Get the app's bundle identifier (package name).
 #[cfg(target_os = "android")]
 #[tauri::command]
 async fn get_bundle_identifier(app: AppHandle) -> Result<String, String> {
     Ok(app.config().identifier.clone())
 }
 
-/// Scan for available engines in the user directory
+/// Scan for engines available for the app to use.
 #[cfg(target_os = "android")]
 #[tauri::command]
 async fn scan_android_engines(app: AppHandle) -> Result<Vec<String>, String> {
-        return sync_and_list_engines(&app);
+    sync_and_list_engines(&app)
 }
 
-/// Request SAF file selection for engine loading
+/// Emits an event to the Android native side to request a file via SAF.
 #[cfg(target_os = "android")]
 #[tauri::command]
-async fn request_saf_file_selection(app: AppHandle) -> Result<(), String> {
-    if !cfg!(target_os = "android") {
-        return Err("This function is only available on Android".to_string());
-    }
-
-    // Emit event to request SAF file selection from Android native code
-    let _ = app.emit("request-saf-file-selection", "engine");
+async fn request_saf_file_selection(name: String, args: String, app: AppHandle) -> Result<(), String> {
+    // This command's only job is to forward the request to the native layer
+    let _ = app.emit("request-saf-file-selection", serde_json::json!({
+        "name": name,
+        "args": args
+    }));
     Ok(())
 }
 
-/// Handle SAF file selection result from Android native code
+/// Handles the result from the SAF file picker, after the native code has
+/// copied the selected file to a temporary, accessible location.
 #[cfg(target_os = "android")]
 #[tauri::command]
 async fn handle_saf_file_result(
-    uri: String,
+    temp_file_path: String, // IMPORTANT: This must be a real file path, not a content:// URI
     filename: String,
-    result: String,
+    name: String,
+    args: String,
     app: AppHandle,
-    process_state: tauri::State<'_, EngineProcess>,
-) -> Result<String, String> {
+) -> Result<(), String> {
+    let _ = app.emit("engine-output", format!("[DEBUG] SAF result for engine '{}': TempPath={}, Filename={}", name, temp_file_path, filename));
 
-    let _ = app.emit("engine-output", format!("[DEBUG] Received SAF file result: URI={}, filename={}, result={}", uri, filename, result));
+    if temp_file_path.is_empty() {
+        return Err("SAF file processing failed: temporary path is empty.".to_string());
+    }
 
-    // Check if we got a valid result
-    if result.is_empty() || result.contains("error") || result.contains("failed") {
-        let error_msg = format!("SAF file selection failed: {}", result);
+    // Define the final destination directory for the engine
+    let bundle_identifier = &app.config().identifier;
+    let engine_base_dir = format!("/data/data/{}/files/engines/{}", bundle_identifier, name);
+
+    // Create the engine-specific directory
+    if let Err(e) = fs::create_dir_all(&engine_base_dir) {
+        let error_msg = format!("Failed to create final engine directory: {}", e);
         let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
         return Err(error_msg);
     }
+    
+    // Define the final path for the engine executable
+    let final_path_str = format!("{}/{}", engine_base_dir, &filename);
 
-    // The result contains the internal path where the file was copied
-    let internal_path = result;
-    let _ = app.emit("engine-output", format!("[DEBUG] Successfully copied SAF file to: {}", internal_path));
-
-    // Automatically load the engine with the copied file
-    #[cfg(target_os = "android")]
-    {
-        match spawn_engine_internal(internal_path.clone(), app.clone(), process_state).await {
-            Ok(_) => {
-                let _ = app.emit("engine-output", format!("[DEBUG] Successfully loaded engine from SAF file: {}", internal_path));
-                Ok(internal_path)
-            }
-            Err(e) => {
-                let error_msg = format!("Failed to load engine from SAF file: {}", e);
-                let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
-                Err(error_msg)
-            }
+    // Move the file from the temporary location to the final destination
+    if let Err(e) = fs::rename(&temp_file_path, &final_path_str) {
+        let error_msg = format!("Failed to move engine file from temp to final destination: {}", e);
+        let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
+        // Fallback to copy if rename fails (e.g., cross-device link)
+        if let Err(copy_err) = fs::copy(&temp_file_path, &final_path_str) {
+             let copy_error_msg = format!("Fallback copy also failed: {}", copy_err);
+             let _ = app.emit("engine-output", format!("[DEBUG] {}", copy_error_msg));
+             return Err(copy_error_msg);
+        } else {
+            // Copy succeeded, remove the original temp file
+            let _ = fs::remove_file(&temp_file_path);
         }
     }
-    #[cfg(not(target_os = "android"))]
-    {
-        Err("This function is only available on Android".to_string())
-    }
-}
 
-/// Internal function to spawn engine (extracted from spawn_engine for reuse)
-#[cfg(target_os = "android")]
-async fn spawn_engine_internal(
-    path: String,
-    app: AppHandle,
-    process_state: tauri::State<'_, EngineProcess>,
-) -> Result<(), String> {
-    let _ = app.emit("engine-output", format!("[DEBUG] Spawning engine with provided path: {}", path));
-    
-    // On Android, the path provided should already be the absolute internal path.
-    let final_path = path;
+    // Set executable permission on the final file
+    let final_path = Path::new(&final_path_str);
+    let mut perms = fs::metadata(final_path).map_err(|e| e.to_string())?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(final_path, perms).map_err(|e| e.to_string())?;
 
-    let _ = app.emit("engine-output", format!("[DEBUG] Validating engine file: {}", final_path));
-
-    // Validate engine file
-    if let Err(e) = check_android_engine_file(&final_path) {
-        let _ = app.emit("engine-output", format!("[DEBUG] Engine file validation failed: {}", e));
-        return Err(e);
-    }
-    let _ = app.emit("engine-output", "[DEBUG] Engine file validation passed.");
-    
-    // If there's an existing process, terminate it first
-    if let Some(child) = process_state.lock().unwrap().take() {
-        let _ = app.emit("engine-output", "[DEBUG] Terminating existing engine process.");
-        let _ = child.kill();
-    }
-
-    // Get the directory where the engine file is located to set as working directory
-    let engine_dir = Path::new(&final_path)
-        .parent()
-        .ok_or_else(|| "Failed to get engine directory".to_string())?
-        .to_str()
-        .ok_or_else(|| "Failed to convert engine directory to string".to_string())?;
-    
-    let _ = app.emit("engine-output", format!("[DEBUG] Setting working directory to: {}", engine_dir));
-    
-    // The command is simply the path to the executable.
-    let command = final_path.clone();
-    let _ = app.emit("engine-output", format!("[DEBUG] Attempting to spawn executable: {}", command));
-
-    // Start new process with working directory set to engine directory
-    let (mut rx, child) = match app.shell().command(command).current_dir(engine_dir).spawn() {
-        Ok(result) => {
-            let _ = app.emit("engine-output", "[DEBUG] Engine process spawned successfully.");
-            result
-        }
-        Err(e) => {
-            let error_msg = format!("Failed to spawn engine: {e}");
-            let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
-            return Err(error_msg);
-        }
-    };
-
-    *process_state.lock().unwrap() = Some(child);
-
-    let _ = app.emit("engine-output", "[DEBUG] Engine process started, forwarding output.");
-    
-    let app_clone = app.clone();
-    async_runtime::spawn(async move {
-        while let Some(event) = rx.recv().await {
-            match event {
-                CommandEvent::Stdout(buf) | CommandEvent::Stderr(buf) => {
-                    // Decode from GBK on Windows, UTF-8 on other platforms
-                    let text = if cfg!(target_os = "windows") {
-                        let (cow, _encoding_used, _had_errors) = GBK.decode(&buf);
-                        cow.into_owned()
-                    } else {
-                        // Use UTF-8 for Android and other platforms
-                        String::from_utf8_lossy(&buf).into_owned()
-                    };
-                    let _ = app_clone.emit("engine-output", text);
-                }
-                _ => {}
-            }
-        }
+    // Create the ManagedEngine object to send back to the frontend
+    let new_engine_data = serde_json::json!({
+        "id": format!("engine_{}", chrono::Utc::now().timestamp_millis()),
+        "name": name,
+        "path": final_path_str,
+        "args": args
     });
 
-    let _ = app.emit("engine-output", "[DEBUG] Engine spawn setup complete.");
+    // Notify the frontend that the engine has been successfully added
+    app.emit("android-engine-added", new_engine_data).map_err(|e| e.to_string())?;
+    
     Ok(())
 }
 
+/// Opens a URL in the system's default browser.
 #[tauri::command]
 async fn open_external_url(url: String, app: AppHandle) -> Result<(), String> {
-    // Use different commands to open browser based on operating system
     let result = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(["/C", "start", &url])
-            .spawn()
+        Command::new("cmd").args(["/C", "start", &url]).spawn()
     } else if cfg!(target_os = "macos") {
-        Command::new("open")
-            .arg(&url)
-            .spawn()
+        Command::new("open").arg(&url).spawn()
     } else if cfg!(target_os = "android") {
-        // On Android, emit an event to trigger external browser opening
-        // This will be handled by the Android native code
+        // On Android, delegate to the native layer
         let _ = app.emit("open-external-url", url);
         return Ok(());
     } else {
-        // Linux and other Unix systems
-        Command::new("xdg-open")
-            .arg(&url)
-            .spawn()
+        // Linux
+        Command::new("xdg-open").arg(&url).spawn()
     };
 
     match result {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("Failed to open URL: {e}"))
+        Err(e) => Err(format!("Failed to open URL: {}", e))
     }
 }
 
+// The main entry point for the Tauri application.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -626,12 +507,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             spawn_engine, 
+            kill_engine,
             send_to_engine, 
             open_external_url,
             save_game_notation,
             load_config,
             save_config,
             clear_config,
+            // Android-specific commands
             #[cfg(target_os = "android")]
             get_bundle_identifier,
             #[cfg(target_os = "android")]
@@ -648,4 +531,3 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

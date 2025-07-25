@@ -16,6 +16,7 @@ export default {
     success: '成功',
     warning: '警告',
     info: '資訊',
+    delete: '刪除',
   },
 
   // 頂部工具列
@@ -41,6 +42,7 @@ export default {
     title: 'UCI引擎選項',
     loadingText: '正在載入引擎選項...',
     noEngineLoaded: '目前未載入任何引擎。',
+    pleaseLoadEngineFirst: '請先載入引擎以配置其選項。',
     loadEngine: '載入引擎',
     noOptionsAvailable: '該引擎無可用UCI選項。',
     refreshOptions: '重新整理選項',
@@ -207,6 +209,24 @@ export default {
     flipBoard: '翻轉棋盤',
     flipBoardBack: '恢復方向',
     ponderMode: '後台思考',
+  },
+
+  // 引擎管理器
+  engineManager: {
+    title: '引擎管理器',
+    addEngine: '新增引擎',
+    addEngineAndroid: '新增引擎 (SAF)',
+    editEngine: '編輯引擎',
+    engineName: '引擎名稱',
+    enginePath: '引擎路徑',
+    arguments: '命令列參數',
+    actions: '操作',
+    confirmDeleteTitle: '確認刪除',
+    confirmDeleteMessage: '您確定要刪除引擎「{name}」嗎？此操作無法復原。',
+    promptEngineName: '請輸入引擎的唯一名稱：',
+    promptEngineArgs: '請輸入引擎的命令列參數（可選）：',
+    nameExists: '該名稱已存在，請使用唯一的名稱。',
+    engineAddedSuccess: '引擎 {name} 新增成功！',
   },
 
   // 錯誤訊息

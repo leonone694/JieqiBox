@@ -26,16 +26,7 @@
         <div v-else-if="!isEngineLoaded" class="empty-section">
           <v-icon size="64" color="grey">mdi-engine-off</v-icon>
           <p class="empty-text">{{ $t('uciOptions.noEngineLoaded') }}</p>
-          <v-btn
-            color="primary"
-            @click="loadEngine"
-            :loading="isEngineLoading"
-            :disabled="isEngineLoading"
-            size="large"
-            class="action-btn"
-          >
-            {{ $t('uciOptions.loadEngine') }}
-          </v-btn>
+          <p class="empty-text-secondary">{{ $t('uciOptions.pleaseLoadEngineFirst') }}</p>
         </div>
 
         <div v-else-if="uciOptions.length === 0" class="empty-section">
@@ -258,8 +249,6 @@
   const engineState = inject('engine-state') as any
   const {
     isEngineLoaded,
-    isEngineLoading,
-    loadEngine,
     engineOutput,
     uciOptionsText,
     currentEnginePath,
@@ -291,8 +280,9 @@
 
   // Engine path hash for config storage
   const enginePathHash = computed(() => {
-    if (!currentEnginePath.value) return 'default'
-    return btoa(currentEnginePath.value).replace(/[^a-zA-Z0-9]/g, '')
+    // THIS IS THE KEY CHANGE. Use the engine's unique ID.
+    if (!props.engineId) return 'default'
+    return props.engineId
   })
 
   // Send UCI command to the engine
@@ -670,6 +660,15 @@
       text-align: center;
       line-height: 1.5;
       color: rgb(var(--v-theme-on-surface));
+    }
+
+    .empty-text-secondary {
+      margin: 0;
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.4;
+      color: rgb(var(--v-theme-on-surface));
+      opacity: 0.7;
     }
 
     .action-btn {

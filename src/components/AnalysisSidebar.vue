@@ -1,46 +1,39 @@
 <template>
   <div class="sidebar">
-    <!-- Engine loading button group -->
-    <div v-if="isAndroidPlatform" class="button-group">
+    <!-- Engine Management Section -->
+    <div class="engine-management">
+      <v-select
+        v-model="selectedEngineId"
+        :items="managedEngines"
+        item-title="name"
+        item-value="id"
+        :label="$t('analysis.selectEngine')"
+        density="compact"
+        hide-details
+        class="engine-select"
+        variant="outlined"
+      ></v-select>
       <v-btn
-        @click="loadEngine"
+        @click="loadSelectedEngine"
+        :loading="isEngineLoading"
+        :disabled="isEngineLoading || !selectedEngineId"
         :color="isEngineLoaded ? 'success' : 'teal'"
-        class="grouped-btn"
         size="small"
+        class="action-btn"
+        icon="mdi-play-circle"
+        :title="$t('analysis.loadEngine')"
       >
-        {{
-          isEngineLoaded
-            ? $t('analysis.engineLoaded')
-            : $t('analysis.loadEngine')
-        }}
       </v-btn>
       <v-btn
-        @click="loadEngineWithSaf"
-        :color="isEngineLoaded ? 'success' : 'deep-orange'"
-        class="grouped-btn"
+        @click="showEngineManager = true"
+        color="blue-grey"
         size="small"
-        :disabled="isEngineLoading"
+        class="action-btn"
+        icon="mdi-cogs"
+        :title="$t('analysis.manageEngines')"
       >
-        {{
-          isEngineLoaded
-            ? $t('analysis.engineLoaded')
-            : $t('analysis.loadEngineSaf')
-        }}
       </v-btn>
     </div>
-
-    <!-- Single load engine button (non-Android systems) -->
-    <v-btn
-      v-if="!isAndroidPlatform"
-      @click="loadEngine"
-      :color="isEngineLoaded ? 'success' : 'teal'"
-      class="full-btn"
-      size="small"
-    >
-      {{
-        isEngineLoaded ? $t('analysis.engineLoaded') : $t('analysis.loadEngine')
-      }}
-    </v-btn>
 
     <!-- Analysis control and execution button group -->
     <div class="button-group">
@@ -337,6 +330,7 @@
     </div>
 
     <AboutDialog ref="aboutDialogRef" />
+    <EngineManagerDialog v-model="showEngineManager" />
   </div>
 </template>
 
@@ -354,6 +348,12 @@
   import type { HistoryEntry } from '@/composables/useChessGame'
   import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
   import AboutDialog from './AboutDialog.vue'
+  // Import Engine Manager components and types
+  import EngineManagerDialog from './EngineManagerDialog.vue'
+  import {
+    useConfigManager,
+    type ManagedEngine,
+  } from '@/composables/useConfigManager'
 
   const { t } = useI18n()
 
@@ -392,10 +392,6 @@
     startAnalysis,
     stopAnalysis,
     currentSearchMoves,
-    pvMoves,
-    currentEnginePath,
-    send,
-    applySavedSettings,
     // Ponder related states
     isPondering,
     isInfinitePondering,
@@ -407,6 +403,12 @@
     // Helper functions
     isDarkPieceMove,
   } = engineState
+
+  /* ---------- Engine Management State ---------- */
+  const configManager = useConfigManager()
+  const showEngineManager = ref(false)
+  const managedEngines = ref<ManagedEngine[]>([])
+  const selectedEngineId = ref<string | null>(null)
 
   /* ---------- Auto Play ---------- */
   const isRedAi = ref(false)
@@ -438,17 +440,6 @@
   const engineLogElement = ref<HTMLElement | null>(null)
   const aboutDialogRef = ref<InstanceType<typeof AboutDialog> | null>(null)
 
-  /* ---------- Android Platform Detection ---------- */
-  const isAndroidPlatform = computed(() => {
-    if (typeof window !== 'undefined') {
-      const tauriPlatform = (window as any).__TAURI__?.platform
-      if (tauriPlatform === 'android') return true
-      if (navigator.userAgent.includes('Android')) return true
-      if (/Android/i.test(navigator.userAgent)) return true
-    }
-    return false
-  })
-
   /* ---------- Comment Management ---------- */
   const editingCommentIndex = ref<number | null>(null)
   const editingCommentText = ref<string>('')
@@ -473,9 +464,6 @@
   // Load analysis settings from config file
   const loadAnalysisSettings = async () => {
     try {
-      const configManager = (
-        await import('../composables/useConfigManager')
-      ).useConfigManager()
       await configManager.loadConfig()
       const settings = configManager.getAnalysisSettings()
       analysisSettings.value = {
@@ -497,9 +485,6 @@
     // Listen for settings changes within the same page (via interval check)
     configCheckInterval = setInterval(async () => {
       try {
-        const configManager = (
-          await import('../composables/useConfigManager')
-        ).useConfigManager()
         const settings = configManager.getAnalysisSettings()
         const currentSettings = analysisSettings.value
 
@@ -768,79 +753,46 @@
     undoLastMove()
   }
 
-  // Load engine using SAF file selection (Android only)
-  const loadEngineWithSaf = async () => {
-    if (!isAndroidPlatform.value) return
-
-    if (isThinking.value) {
-      stopAnalysis({ playBestMoveOnStop: false })
+  // Function to load engines into the dropdown
+  const refreshManagedEngines = async () => {
+    await configManager.loadConfig()
+    managedEngines.value = configManager.getEngines()
+    // Pre-select the last used engine, but only if one isn't already selected.
+    // This prevents the selection from resetting when the manager dialog closes.
+    if (!selectedEngineId.value) {
+      selectedEngineId.value = configManager.getLastSelectedEngineId()
     }
-    if (isPondering.value) {
-      stopPonder({ playBestMoveOnStop: false })
-    }
-    // Reset isThinking and isPondering flags
-    isThinking.value = false
-    isPondering.value = false
-
-    try {
-      // Use JavaScript interface to request SAF file selection
-      if (typeof (window as any).SafFileInterface !== 'undefined') {
-        ;(window as any).SafFileInterface.startFileSelection()
-      } else {
-        // Fallback to Tauri command if JavaScript interface is not available
-        const { invoke } = await import('@tauri-apps/api/core')
-        await invoke('request_saf_file_selection')
+    // Clear selected engine if the engine list is empty
+    if (managedEngines.value.length === 0) {
+      selectedEngineId.value = null
+    } else if (selectedEngineId.value) {
+      // Check if the selected engine still exists in the list
+      const engineExists = managedEngines.value.some(e => e.id === selectedEngineId.value)
+      if (!engineExists) {
+        console.log(`[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list, clearing selection`)
+        selectedEngineId.value = null
       }
-
-      // Listen for SAF file selection result
-      const handleSafFileResult = (event: Event) => {
-        const customEvent = event as CustomEvent
-        console.log('[DEBUG] Received SAF file result:', customEvent.detail)
-
-        const { result } = customEvent.detail
-        if (result && typeof result === 'string' && result.length > 0) {
-          // Successfully got a file, now load it as an engine
-          console.log('[DEBUG] Loading engine from SAF file:', result)
-
-          // Load the engine using the internal path
-          loadEngineFromPath(result)
-        } else {
-          console.log('[DEBUG] SAF file selection failed or cancelled')
-          alert('文件选择失败或已取消')
-        }
-
-        // Remove event listener
-        window.removeEventListener('saf-file-result', handleSafFileResult)
-      }
-
-      window.addEventListener('saf-file-result', handleSafFileResult)
-    } catch (error) {
-      console.error('Failed to request SAF file selection:', error)
-      alert('打开文件选择器失败')
     }
   }
 
-  // Load engine from a specific path
-  const loadEngineFromPath = async (path: string) => {
-    try {
-      engineOutput.value = []
-      bestMove.value = ''
-      analysis.value = ''
-      pvMoves.value = []
-      currentEnginePath.value = path // Store engine path
-
-      const { invoke } = await import('@tauri-apps/api/core')
-      await invoke('spawn_engine', { path })
-      isEngineLoaded.value = true
-      send('uci')
-
-      // Automatically apply saved configuration after engine loads
-      setTimeout(() => {
-        applySavedSettings()
-      }, 500)
-    } catch (e) {
-      console.error('Failed to load engine from path:', e)
-      alert('加载引擎失败')
+  // Function to load the selected engine from the manager
+  const loadSelectedEngine = () => {
+    if (!selectedEngineId.value) {
+      alert(t('analysis.selectEngine'))
+      return
+    }
+    const engineToLoad = managedEngines.value.find(
+      e => e.id === selectedEngineId.value
+    )
+    if (engineToLoad) {
+      loadEngine(engineToLoad) // This now calls the powerful loadEngine from useUciEngine
+    } else {
+      console.log(`[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list`)
+      alert(t('errors.selectedEngineNotFound'))
+      // Clear the invalid selection
+      selectedEngineId.value = null
+      // Clear the last selected engine ID from config
+      configManager.clearLastSelectedEngineId()
     }
   }
 
@@ -897,6 +849,15 @@
 
   // Load settings when the component is mounted
   onMounted(() => {
+    // Load managed engines for the dropdown
+    refreshManagedEngines()
+    
+    // Clear last selected engine ID if the engine list is empty
+    if (managedEngines.value.length === 0) {
+      console.log(`[DEBUG] AnalysisSidebar: Engine list is empty on mount, clearing last selected engine ID`)
+      configManager.clearLastSelectedEngineId()
+    }
+
     loadAnalysisSettings()
     watchConfigChanges()
 
@@ -987,6 +948,19 @@
   })
 
   /* ---------- Watchers ---------- */
+
+  // Watch for the manager dialog to close and refresh the engine list
+  watch(showEngineManager, isShown => {
+    if (!isShown) {
+      refreshManagedEngines()
+      // Clear last selected engine ID if the engine list is empty
+      if (managedEngines.value.length === 0) {
+        console.log(`[DEBUG] AnalysisSidebar: Engine list is empty after manager dialog closed, clearing last selected engine ID`)
+        configManager.clearLastSelectedEngineId()
+      }
+    }
+  })
+
   watch(
     [sideToMove, isRedAi, isBlackAi, isEngineLoaded, pendingFlip],
     () => {
@@ -1089,11 +1063,6 @@
       }
     }
   })
-
-  // Clean up the storage watcher when the component is unmounted
-  // onUnmounted(() => {
-  //   cleanupStorageWatch();
-  // });
 
   const validationStatusKey = computed(() => {
     if (!validationStatus.value) return 'error'
@@ -1372,6 +1341,23 @@
       gap: 6px;
     }
   }
+
+  /* Styles for the engine manager section */
+  .engine-management {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+
+    .engine-select {
+      flex-grow: 1;
+    }
+
+    .action-btn {
+      flex-shrink: 0;
+    }
+  }
+
   .full-btn {
     width: 100%;
   }

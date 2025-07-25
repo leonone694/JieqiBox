@@ -89,7 +89,10 @@
     </div>
 
     <!-- Dialog components -->
-    <UciOptionsDialog v-model="showUciOptionsDialog" />
+    <UciOptionsDialog
+      v-model="showUciOptionsDialog"
+      :engine-id="currentEngineId"
+    />
     <TimeDialog
       v-model="showTimeDialog"
       @settings-changed="handleSettingsChanged"
@@ -149,6 +152,11 @@
 
   // Check if engine is currently analyzing (including pondering)
   const isAnalyzing = computed(() => engineState.isThinking?.value)
+
+  // Get the currently loaded engine's ID
+  const currentEngineId = computed(
+    () => engineState.currentEngine?.value?.id || ''
+  )
 
   // Computed property to determine if variation button should be enabled
   const isVariationAvailable = computed(

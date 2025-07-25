@@ -16,6 +16,7 @@ export default {
     success: '成功',
     warning: '警告',
     info: '信息',
+    delete: '删除'
   },
 
   // 顶部工具栏
@@ -41,6 +42,7 @@ export default {
     title: 'UCI引擎选项',
     loadingText: '正在加载引擎选项...',
     noEngineLoaded: '当前未加载任何引擎。',
+    pleaseLoadEngineFirst: '请先加载引擎以配置其选项。',
     loadEngine: '加载引擎',
     noOptionsAvailable: '该引擎无可用UCI选项。',
     refreshOptions: '刷新选项',
@@ -207,6 +209,26 @@ export default {
     flipBoard: '翻转棋盘',
     flipBoardBack: '恢复方向',
     ponderMode: '后台思考',
+    selectEngine: '选择引擎',
+    manageEngines: '管理',
+  },
+
+  // 引擎管理器
+  engineManager: {
+    title: '引擎管理器',
+    addEngine: '添加引擎',
+    addEngineAndroid: '添加引擎 (SAF)',
+    editEngine: '编辑引擎',
+    engineName: '引擎名称',
+    enginePath: '引擎路径',
+    arguments: '命令行参数',
+    actions: '操作',
+    confirmDeleteTitle: '确认删除',
+    confirmDeleteMessage: '您确定要删除引擎“{name}”吗？此操作无法撤销。',
+    promptEngineName: '请输入引擎的唯一名称:',
+    promptEngineArgs: '请输入引擎的命令行参数 (可选):',
+    nameExists: '该名称已存在，请使用唯一的名称。',
+    engineAddedSuccess: '引擎 {name} 添加成功!',
   },
 
   // 错误消息
@@ -217,6 +239,7 @@ export default {
     engineSendUnavailable: '引擎send方法不可用',
     darkPiecesMismatch: '错误: {darkCount}暗子 > {poolCount}池',
     pieceCountExceeded: '错误: {pieceName} 总数超限!',
+    engineLoadFailed: '加载引擎 {name} 失败: {error}',
   },
 
   // 棋盘底部

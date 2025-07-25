@@ -16,6 +16,7 @@ export default {
     success: 'Success',
     warning: 'Warning',
     info: 'Info',
+    delete: 'Delete',
   },
 
   // Top toolbar
@@ -41,6 +42,7 @@ export default {
     title: 'UCI Engine Options',
     loadingText: 'Loading engine options...',
     noEngineLoaded: 'No engine is currently loaded.',
+    pleaseLoadEngineFirst: 'Please load an engine first to configure its options.',
     loadEngine: 'Load Engine',
     noOptionsAvailable: 'No UCI options available for this engine.',
     refreshOptions: 'Refresh Options',
@@ -57,7 +59,7 @@ export default {
         'The debug file that records communication between the engine and the GUI.',
       Threads:
         'Number of threads used for engine search. It is recommended to set this to the number of available system threads minus one or two.',
-      Hash: 'Engine\'s hash table size (in MB). It is recommended to set this value to the total available memory minus 1 to 2 GiB.',
+      Hash: "Engine's hash table size (in MB). It is recommended to set this value to the total available memory minus 1 to 2 GiB.",
       'Clear Hash': 'Clears the hash table.',
       MultiPV:
         'Multi-Principal Variation. Allows the engine to show multiple recommended moves. It is recommended to set this to 1. If set higher, the quality of the best move may decrease because resources will be allocated to evaluating alternative lines.',
@@ -171,7 +173,7 @@ export default {
     viewLicense: 'View License Details',
   },
 
-  // Analysis sidebar
+  // Analysis related
   analysis: {
     title: 'Engine Analysis',
     startAnalysis: 'Start Analysis',
@@ -209,6 +211,26 @@ export default {
     flipBoard: 'Flip Board',
     flipBoardBack: 'Restore Orientation',
     ponderMode: 'Ponder Mode',
+    selectEngine: 'Select Engine',
+    manageEngines: 'Manage',
+  },
+
+  // Engine Manager
+  engineManager: {
+    title: 'Engine Manager',
+    addEngine: 'Add Engine',
+    addEngineAndroid: 'Add Engine (SAF)',
+    editEngine: 'Edit Engine',
+    engineName: 'Engine Name',
+    enginePath: 'Engine Path',
+    arguments: 'Command-line Arguments',
+    actions: 'Actions',
+    confirmDeleteTitle: 'Confirm Deletion',
+    confirmDeleteMessage: 'Are you sure you want to delete the engine "{name}"? This action cannot be undone.',
+    promptEngineName: 'Please enter a unique name for the engine:',
+    promptEngineArgs: 'Please enter command-line arguments for the engine (optional):',
+    nameExists: 'This name already exists. Please use a unique name.',
+    engineAddedSuccess: 'Engine {name} was added successfully!',
   },
 
   // Error messages
@@ -219,6 +241,9 @@ export default {
     engineSendUnavailable: 'Engine send method unavailable',
     darkPiecesMismatch: 'Error: {darkCount} dark pieces > {poolCount} pool',
     pieceCountExceeded: 'Error: {pieceName} total count exceeded!',
+    engineLoadFailed: 'Failed to load engine {name}: {error}',
+    failedToOpenFileSelector: 'Failed to open file selector',
+    failedToProcessEngine: 'Failed to process engine file',
   },
 
   // Chessboard bottom

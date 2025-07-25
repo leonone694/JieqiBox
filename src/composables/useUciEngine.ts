@@ -1,8 +1,8 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
 import { listen } from '@tauri-apps/api/event'
 import { useI18n } from 'vue-i18n'
+import { useConfigManager, type ManagedEngine } from './useConfigManager' // Import new types
 
 export interface EngineLine {
   text: string
@@ -10,20 +10,20 @@ export interface EngineLine {
 }
 
 // Platform detection utility
-const isAndroid = () => {
-  // Check multiple ways to detect Android platform
-  if (typeof window !== 'undefined') {
-    // Check Tauri platform if available
-    const tauriPlatform = (window as any).__TAURI__?.platform
-    if (tauriPlatform === 'android') return true
+// const isAndroid = () => { // Removed unused function
+//   // Check multiple ways to detect Android platform
+//   if (typeof window !== 'undefined') {
+//     // Check Tauri platform if available
+//     const tauriPlatform = (window as any).__TAURI__?.platform
+//     if (tauriPlatform === 'android') return true
 
-    // Check user agent
-    if (navigator.userAgent.includes('Android')) return true
-    if (/Android/i.test(navigator.userAgent)) return true
-  }
+//     // Check user agent
+//     if (navigator.userAgent.includes('Android')) return true
+//     if (/Android/i.test(navigator.userAgent)) return true
+//   }
 
-  return false
-}
+//   return false
+// }
 
 // function dbg(tag: string, ...m: any[]) { // console.log('[UCI]', tag, ...m) }
 
@@ -32,6 +32,8 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   const engineOutput = ref<EngineLine[]>([])
   const isEngineLoaded = ref(false)
   const isEngineLoading = ref(false) // Add a new state for engine loading
+  const currentEngine = ref<ManagedEngine | null>(null) // Store the currently loaded engine object
+  const uciOkReceived = ref(false) // For validation
   const bestMove = ref('')
   const analysis = ref('')
   const isThinking = ref(false)
@@ -56,8 +58,6 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   const ignoreNextBestMove = ref(false) // Skip first bestmove after ponder stop
 
   // Android-specific state
-  const isAndroidPlatform = ref(isAndroid())
-  const androidEnginePath = ref('')
   const bundleIdentifier = ref('')
 
   // Throttling mechanism for engine output processing
@@ -321,121 +321,175 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     lastProcessedTime = 0
   }
 
-  /* ---------- Android Engine Path Management ---------- */
-  const getBundleIdentifier = async () => {
-    if (!isAndroidPlatform.value) return ''
+  /* ---------- Engine Loading and Validation ---------- */
 
-    try {
-      const identifier = await invoke<string>('get_bundle_identifier')
-      bundleIdentifier.value = identifier
-      return identifier
-    } catch (error) {
-      console.error('Failed to get bundle identifier:', error)
-      return ''
-    }
-  }
+  // This function is now the single point of entry for loading an engine
+  const loadEngine = async (engine: ManagedEngine) => {
+    if (isEngineLoading.value) return
+    isEngineLoading.value = true
+    isEngineLoaded.value = false
+    currentEngine.value = null
+    engineOutput.value = [] // Clear log
 
-  const getAndroidEnginePath = async () => {
-    if (!isAndroidPlatform.value) return ''
+    // Teardown previous engine if any
+    if (isThinking.value) stopAnalysis({ playBestMoveOnStop: false })
+    if (isPondering.value) stopPonder({ playBestMoveOnStop: false })
+    await invoke('kill_engine').catch(e =>
+      console.warn('Failed to kill previous engine:', e)
+    )
 
-    try {
-      const path = await invoke<string>('get_default_android_engine_path')
-      androidEnginePath.value = path
-      return path
-    } catch (error) {
-      console.error('Failed to get Android engine path:', error)
-      return ''
-    }
-  }
+    // Prepare for validation
+    uciOkReceived.value = false
+    const validationTimeout = 5000 // 5 seconds
 
-  const scanAndroidEngines = async () => {
-    if (!isAndroidPlatform.value) return []
-
-    try {
-      const engines = await invoke<string[]>('scan_android_engines')
-      return engines
-    } catch (error) {
-      console.error('Failed to scan Android engines:', error)
-      return []
-    }
-  }
-
-  /* ---------- Load Engine ---------- */
-  const loadEngine = async () => {
-    if (isThinking.value) {
-      stopAnalysis({ playBestMoveOnStop: false })
-    }
-    if (isPondering.value) {
-      stopPonder({ playBestMoveOnStop: false })
-    }
-    // Reset isThinking and isPondering flags
-    isThinking.value = false
-    isPondering.value = false
-
-    isEngineLoading.value = true // Set loading to true
-    try {
-      let path: string
-
-      if (isAndroidPlatform.value) {
-        // On Android, first sync and get the list of available engines
-        const availableEngines = await scanAndroidEngines()
-
-        if (availableEngines.length > 0) {
-          // Use the first available engine's full internal path
-          path = availableEngines[0]
-        } else {
-          // If no engines found, show a message to the user
-          const userDir = await getAndroidEnginePath()
-          const bundleId = await getBundleIdentifier()
-          const externalPath = bundleId
-            ? `/storage/emulated/0/Android/data/${bundleId}/files/engines`
-            : '/storage/emulated/0/Android/data/[包名]/files/engines'
-          alert(
-            `请在以下路径放置UCI引擎文件：\n${userDir}\n或\n${externalPath}\n\n应用会自动扫描并复制引擎文件到内部存储。`
+    // A promise that resolves when 'uciok' is received
+    const uciOkPromise = new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(
+          new Error(
+            `Validation timeout: No 'uciok' received within ${validationTimeout}ms.`
           )
-          isEngineLoading.value = false
-          return
-        }
-      } else {
-        // On desktop platforms, use file dialog
-        const selectedPath = await open({
-          multiple: false,
-          title: '选择UCI引擎',
-        })
-        if (typeof selectedPath !== 'string' || !selectedPath) {
-          isEngineLoading.value = false
-          return
-        }
-        path = selectedPath
-      }
+        )
+      }, validationTimeout)
 
-      engineOutput.value = []
-      bestMove.value = ''
-      analysis.value = ''
-      pvMoves.value = []
-      currentEnginePath.value = path // Store engine path
+      // Listen specifically for the uciok signal
+      listen<string>('engine-output', event => {
+        if (event.payload.trim() === 'uciok') {
+          console.log(
+            `[DEBUG] Received uciok for ${engine.name}. Validation successful.`
+          )
+          uciOkReceived.value = true
+          clearTimeout(timeoutId)
+          resolve()
+        }
+      }).then(unsub => {
+        // When the promise resolves or rejects, we'll stop listening
+        const cleanup = () => unsub()
+        uciOkPromise.finally(cleanup)
+      })
+    })
 
-      await invoke('spawn_engine', { path })
-      isEngineLoaded.value = true
+    try {
+      // Spawn engine process
+      console.log(
+        `[DEBUG] Spawning engine: ${engine.name}, Path: ${engine.path}, Args: ${engine.args}`
+      )
+      await invoke('spawn_engine', {
+        path: engine.path,
+        args: engine.args.split(' ').filter(Boolean),
+      })
+
+      // Send 'uci' to start validation
       send('uci')
+
+      // Wait for validation to complete or time out
+      await uciOkPromise
+
+      // If we reach here, engine is valid
+      isEngineLoaded.value = true
+      currentEngine.value = engine
+      analysis.value = t('uci.engineReady')
+
+      const configManager = useConfigManager()
+      await configManager.saveLastSelectedEngineId(engine.id)
 
       // Automatically apply saved configuration after engine loads
       setTimeout(async () => {
         await applySavedSettings()
       }, 500)
-    } catch (e) {
-      console.error('Failed to load engine:', e)
-      alert('Failed to load engine')
+    } catch (e: any) {
+      console.error(
+        `Failed to load or validate engine ${engine.name}:`,
+        e.message || e
+      )
+      alert(
+        t('errors.engineLoadFailed', {
+          name: engine.name,
+          error: e.message || e,
+        })
+      )
+      isEngineLoaded.value = false
+      // Clear the last selected engine ID if loading fails
+      const configManager = useConfigManager()
+      await configManager.clearLastSelectedEngineId()
+      await invoke('kill_engine').catch(err =>
+        console.warn('Failed to kill invalid engine:', err)
+      )
     } finally {
-      isEngineLoading.value = false // Set loading to false
+      isEngineLoading.value = false
     }
   }
 
+  const autoLoadLastEngine = async () => {
+    const configManager = useConfigManager()
+    await configManager.loadConfig()
+    const lastEngineId = configManager.getLastSelectedEngineId()
+    if (lastEngineId) {
+      const engines = configManager.getEngines()
+      console.log(`[DEBUG] Auto-loading: Found last engine ID: ${lastEngineId}, Available engines: ${engines.length}`)
+      const engineToLoad = engines.find(e => e.id === lastEngineId)
+      if (engineToLoad) {
+        console.log(
+          `[DEBUG] Auto-loading last used engine: ${engineToLoad.name}`
+        )
+        await loadEngine(engineToLoad)
+      } else {
+        console.log(`[DEBUG] Auto-loading: Last selected engine (${lastEngineId}) not found in engine list`)
+        // Clear the invalid last selected engine ID
+        await configManager.clearLastSelectedEngineId()
+      }
+    } else {
+      console.log(`[DEBUG] Auto-loading: No last selected engine ID found`)
+    }
+  }
+
+  /* ---------- Android Engine Path Management ---------- */
+  // const getBundleIdentifier = async () => { // Removed unused function
+  //   if (!isAndroidPlatform.value) return ''
+
+  //   try {
+  //     const identifier = await invoke<string>('get_bundle_identifier')
+  //     bundleIdentifier.value = identifier
+  //     return identifier
+  //   } catch (error) {
+  //     console.error('Failed to get bundle identifier:', error)
+  //     return ''
+  //   }
+  // }
+
+  // const getAndroidEnginePath = async () => { // Removed unused function
+  //   if (!isAndroidPlatform.value) return ''
+
+  //   try {
+  //     const path = await invoke<string>('get_default_android_engine_path')
+  //     androidEnginePath.value = path
+  //     return path
+  //   } catch (error) {
+  //     console.error('Failed to get Android engine path:', error)
+  //     return ''
+  //   }
+  // }
+
+  // const scanAndroidEngines = async () => { // Removed unused function
+  //   if (!isAndroidPlatform.value) return []
+
+  //   try {
+  //     const engines = await invoke<string[]>('scan_android_engines')
+  //     return engines
+  //   } catch (error) {
+  //     console.error('Failed to scan Android engines:', error)
+  //     return []
+  //   }
+  // }
+
   /* ---------- Basic Send ---------- */
   const send = (cmd: string) => {
-    if (!isEngineLoaded.value) return
+    // No longer check isEngineLoaded, as we need to send 'uci' before it's true
     engineOutput.value.push({ text: cmd, kind: 'sent' })
-    invoke('send_to_engine', { command: cmd })
+    invoke('send_to_engine', { command: cmd }).catch(e => {
+      // Don't alert here, it can be noisy during initial load failure
+      console.warn('Failed to send to engine:', e)
+    })
   }
 
   /* ---------- Start Analysis ---------- */
@@ -714,22 +768,17 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
   /* ---------- Apply Saved Settings ---------- */
   const applySavedSettings = async () => {
-    if (!isEngineLoaded.value || !currentEnginePath.value) return
+    // The check now uses currentEngine.value
+    if (!isEngineLoaded.value || !currentEngine.value) return
 
     try {
-      // Import config manager dynamically to avoid circular dependency
-      const { useConfigManager } = await import('./useConfigManager')
       const configManager = useConfigManager()
-
-      // Ensure config is loaded
       await configManager.loadConfig()
 
-      // Apply UCI options settings
-      const enginePathHash = btoa(currentEnginePath.value).replace(
-        /[^a-zA-Z0-9]/g,
-        ''
+      // Use the engine's unique ID for settings
+      const savedUciOptions = configManager.getUciOptions(
+        currentEngine.value.id
       )
-      const savedUciOptions = configManager.getUciOptions(enginePathHash)
 
       Object.entries(savedUciOptions).forEach(([name, value]) => {
         const command = `setoption name ${name} value ${value}`
@@ -742,16 +791,29 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
   /* ---------- Listen to Output ---------- */
   onMounted(async () => {
+    // Central listener for all engine output for logging/display
     unlisten = await listen<string>('engine-output', ev => {
       const raw_ln = ev.payload
       console.log(`[DEBUG] ENGINE_RAW_OUTPUT: ${raw_ln}`)
-      queueOutputLine(raw_ln) // Use queueOutputLine for throttling
-      // All parsing logic is now handled by processPendingOutput function
+      queueOutputLine(raw_ln)
     })
+
+    // Check if engine list is empty and clear last selected engine ID if needed
+    const configManager = useConfigManager()
+    await configManager.loadConfig()
+    const engines = configManager.getEngines()
+    if (engines.length === 0) {
+      console.log(`[DEBUG] useUciEngine: Engine list is empty on mount, clearing last selected engine ID`)
+      await configManager.clearLastSelectedEngineId()
+    }
+
+    // Auto-load engine on startup
+    autoLoadLastEngine()
   })
   onUnmounted(() => {
     unlisten?.()
-    resetThrottling() // Clean up throttling state
+    invoke('kill_engine') // Kill engine on component unmount
+    resetThrottling()
   })
 
   return {
@@ -786,5 +848,6 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     isPonderMoveMatch,
     // Helper functions
     isDarkPieceMove,
+    currentEngine,
   }
 }

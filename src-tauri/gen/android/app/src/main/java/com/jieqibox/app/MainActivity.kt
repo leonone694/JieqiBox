@@ -19,6 +19,9 @@ class MainActivity : TauriActivity() {
     private val TAG = "MainActivity"
     private var webView: WebView? = null
     
+    // Store the current SAF request data
+    private var currentSafRequest: Map<String, String>? = null
+    
     // Activity result launcher for SAF file selection
     private val safFileSelectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -41,6 +44,8 @@ class MainActivity : TauriActivity() {
             Log.e(TAG, "SAF file selection cancelled or failed")
             sendSafFileResult("", "", "File selection cancelled")
         }
+        // Clear the current request after handling
+        currentSafRequest = null
     }
     
     override fun onWebViewCreate(webView: WebView) {
@@ -50,9 +55,40 @@ class MainActivity : TauriActivity() {
         
         // Listen for external URL opening events from Tauri
         webView.addJavascriptInterface(ExternalUrlInterface(), "ExternalUrlInterface")
+        
+        // Listen for Tauri events
+        setupTauriEventListeners()
     }
     
-    // JavaScript interface for SAF file selection
+    private fun setupTauriEventListeners() {
+        // Listen for SAF file selection requests from Tauri
+        webView?.addJavascriptInterface(object {
+            @JavascriptInterface
+            fun onTauriEvent(eventName: String, eventData: String) {
+                Log.d(TAG, "Received Tauri event: $eventName with data: $eventData")
+                when (eventName) {
+                    "request-saf-file-selection" -> {
+                        try {
+                            // Parse the JSON data
+                            val jsonData = org.json.JSONObject(eventData)
+                            val name = jsonData.getString("name")
+                            val args = jsonData.getString("args")
+                            
+                            currentSafRequest = mapOf("name" to name, "args" to args)
+                            
+                            runOnUiThread {
+                                requestSafFileSelection()
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parsing SAF request data", e)
+                        }
+                    }
+                }
+            }
+        }, "TauriEventHandler")
+    }
+    
+    // JavaScript interface for SAF file selection (legacy support)
     inner class SafFileInterface {
         @JavascriptInterface
         fun startFileSelection() {
@@ -108,7 +144,37 @@ class MainActivity : TauriActivity() {
             val internalPath = copyFileToInternalStorage(uri, filename)
             if (internalPath.isNotEmpty()) {
                 Log.d(TAG, "Successfully copied file to: $internalPath")
-                sendSafFileResult(uri.toString(), filename, internalPath)
+                
+                // If we have current SAF request data, send it to the Rust backend
+                if (currentSafRequest != null) {
+                    val name = currentSafRequest!!["name"] ?: ""
+                    val args = currentSafRequest!!["args"] ?: ""
+                    
+                    // Escape special characters in the parameters to prevent JavaScript errors
+                    val escapedInternalPath = internalPath.replace("\\", "\\\\").replace("'", "\\'")
+                    val escapedFilename = filename.replace("'", "\\'")
+                    val escapedName = name.replace("'", "\\'")
+                    val escapedArgs = args.replace("'", "\\'")
+                    
+                    // Call the Rust backend to handle the SAF file result
+                    val jsCode = "window.__TAURI__.invoke('handle_saf_file_result', { " +
+                        "tempFilePath: '$escapedInternalPath', " +
+                        "filename: '$escapedFilename', " +
+                        "name: '$escapedName', " +
+                        "args: '$escapedArgs' " +
+                        "}).catch(function(error) { " +
+                        "console.error('SAF file result handling failed:', error); " +
+                        "window.dispatchEvent(new CustomEvent('saf-file-result', { " +
+                        "detail: { uri: '', filename: '', result: 'Failed to process engine: ' + error } " +
+                        "})); " +
+                        "});"
+                    
+                    Log.d(TAG, "Executing JavaScript: $jsCode")
+                    webView?.evaluateJavascript(jsCode, null)
+                } else {
+                    // Fallback: send result via custom event
+                    sendSafFileResult(uri.toString(), filename, internalPath)
+                }
             } else {
                 Log.e(TAG, "Failed to copy file to internal storage")
                 sendSafFileResult("", "", "Failed to copy file to internal storage")
