@@ -213,6 +213,8 @@ export default {
     flipBoard: 'Lật bàn cờ',
     flipBoardBack: 'Khôi phục hướng',
     ponderMode: 'Chế độ suy nghĩ nền',
+    unloadEngine: 'Gỡ bỏ động cơ',
+    noEngineLoaded: 'Hiện tại chưa có động cơ nào được tải.',
   },
 
   // Trình quản lý Engine
@@ -242,6 +244,10 @@ export default {
     engineSendUnavailable: 'Phương thức send của động cơ không khả dụng',
     darkPiecesMismatch: 'Lỗi: {darkCount} quân úp > {poolCount} trong kho',
     pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!',
+    engineLoadFailed: 'Không thể tải động cơ {name}: {error}',
+    engineUnloadFailed: 'Gỡ bỏ động cơ thất bại',
+    failedToOpenFileSelector: 'Không thể mở trình chọn tệp',
+    failedToProcessEngine: 'Không thể xử lý tệp động cơ',
   },
 
   // Phần dưới bàn cờ

@@ -214,6 +214,8 @@ export default {
     ponderMode: 'Ponder Mode',
     selectEngine: 'Select Engine',
     manageEngines: 'Manage',
+    unloadEngine: 'Unload Engine',
+    noEngineLoaded: 'No engine is currently loaded.',
   },
 
   // Engine Manager
@@ -245,6 +247,7 @@ export default {
     darkPiecesMismatch: 'Error: {darkCount} dark pieces > {poolCount} pool',
     pieceCountExceeded: 'Error: {pieceName} total count exceeded!',
     engineLoadFailed: 'Failed to load engine {name}: {error}',
+    engineUnloadFailed: 'Failed to unload engine',
     failedToOpenFileSelector: 'Failed to open file selector',
     failedToProcessEngine: 'Failed to process engine file',
   },

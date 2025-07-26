@@ -209,6 +209,8 @@ export default {
     flipBoard: '翻轉棋盤',
     flipBoardBack: '恢復方向',
     ponderMode: '後台思考',
+    unloadEngine: '卸載引擎',
+    noEngineLoaded: '目前沒有載入任何引擎。',
   },
 
   // 引擎管理器
@@ -237,6 +239,10 @@ export default {
     engineSendUnavailable: '引擎send方法不可用',
     darkPiecesMismatch: '錯誤: {darkCount}暗子 > {poolCount}池',
     pieceCountExceeded: '錯誤: {pieceName} 總數超限!',
+    engineLoadFailed: '載入引擎 {name} 失敗: {error}',
+    engineUnloadFailed: '卸載引擎失敗',
+    failedToOpenFileSelector: '開啟檔案選擇器失敗',
+    failedToProcessEngine: '處理引擎檔案失敗',
   },
 
   // 棋盤底部

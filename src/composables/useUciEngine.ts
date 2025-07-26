@@ -770,6 +770,70 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     return actualMove === ponderMove.value
   }
 
+  /* ---------- Unload Engine ---------- */
+  const unloadEngine = async () => {
+    if (!isEngineLoaded.value) return
+
+    console.log('[DEBUG] UNLOAD_ENGINE: Unloading current engine')
+
+    // Stop any ongoing analysis or pondering
+    if (isThinking.value) {
+      stopAnalysis({ playBestMoveOnStop: false })
+    }
+    if (isPondering.value) {
+      stopPonder({ playBestMoveOnStop: false })
+    }
+
+    // Send quit command to gracefully terminate the engine
+    try {
+      send('quit')
+      console.log('[DEBUG] UNLOAD_ENGINE: Sent quit command to engine')
+
+      // Wait a bit for the engine to process the quit command
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // As a fallback, also kill the engine process
+      await invoke('kill_engine')
+      console.log(
+        '[DEBUG] UNLOAD_ENGINE: Engine process terminated successfully'
+      )
+    } catch (error) {
+      console.error(
+        '[DEBUG] UNLOAD_ENGINE: Failed to terminate engine process:',
+        error
+      )
+    }
+
+    // Reset all engine-related state
+    isEngineLoaded.value = false
+    isEngineLoading.value = false
+    currentEngine.value = null
+    isThinking.value = false
+    isPondering.value = false
+    isInfinitePondering.value = false
+    bestMove.value = ''
+    analysis.value = ''
+    engineOutput.value = []
+    pvMoves.value = []
+    multiPvMoves.value = []
+    ponderMove.value = ''
+    ponderhit.value = false
+    isStopping.value = false
+    playOnStop.value = false
+    ignoreNextBestMove.value = false
+    analysisStartTime.value = null
+    lastAnalysisTime.value = 0
+    currentSearchMoves.value = []
+    uciOptionsText.value = ''
+    currentEnginePath.value = ''
+
+    // Clear the last selected engine ID from config
+    const configManager = useConfigManager()
+    await configManager.clearLastSelectedEngineId()
+
+    console.log('[DEBUG] UNLOAD_ENGINE: Engine state reset completed')
+  }
+
   /* ---------- Apply Saved Settings ---------- */
   const applySavedSettings = async () => {
     // The check now uses currentEngine.value
@@ -832,6 +896,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     pvMoves,
     multiPvMoves,
     loadEngine,
+    unloadEngine,
     startAnalysis,
     stopAnalysis,
     uciOptionsText,

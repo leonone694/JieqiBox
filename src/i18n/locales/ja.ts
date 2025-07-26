@@ -211,6 +211,8 @@ export default {
     flipBoard: '盤を反転',
     flipBoardBack: '向きを復元',
     ponderMode: 'ポンダーモード',
+    unloadEngine: 'エンジンをアンロード',
+    noEngineLoaded: '現在、エンジンは読み込まれていません。',
   },
 
   // エンジンマネージャー
@@ -243,6 +245,10 @@ export default {
     engineSendUnavailable: 'エンジンのsendメソッドが利用できません',
     darkPiecesMismatch: 'エラー: {darkCount}暗子 > {poolCount}池',
     pieceCountExceeded: 'エラー: {pieceName} 総数超過!',
+    engineUnloadFailed: 'エンジンのアンロードに失敗しました',
+    failedToOpenFileSelector:
+      'ファイル選択ダイアログを開くことができませんでした',
+    failedToProcessEngine: 'エンジンファイルの処理に失敗しました',
   },
 
   // 盤下部

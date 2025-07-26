@@ -211,6 +211,8 @@ export default {
     ponderMode: '后台思考',
     selectEngine: '选择引擎',
     manageEngines: '管理',
+    unloadEngine: '卸载引擎',
+    noEngineLoaded: '当前没有加载引擎。',
   },
 
   // 引擎管理器
@@ -240,6 +242,9 @@ export default {
     darkPiecesMismatch: '错误: {darkCount}暗子 > {poolCount}池',
     pieceCountExceeded: '错误: {pieceName} 总数超限!',
     engineLoadFailed: '加载引擎 {name} 失败: {error}',
+    engineUnloadFailed: '卸载引擎失败',
+    failedToOpenFileSelector: '打开文件选择器失败',
+    failedToProcessEngine: '处理引擎文件失败',
   },
 
   // 棋盘底部

@@ -18,16 +18,26 @@
         :loading="isEngineLoading"
         :disabled="isEngineLoading || !selectedEngineId"
         :color="isEngineLoaded ? 'success' : 'teal'"
-        size="small"
+        size="x-small"
         class="action-btn"
         icon="mdi-play-circle"
         :title="$t('analysis.loadEngine')"
       >
       </v-btn>
       <v-btn
+        @click="handleUnloadEngine"
+        :disabled="!isEngineLoaded"
+        color="error"
+        size="x-small"
+        class="action-btn"
+        icon="mdi-stop-circle"
+        :title="$t('analysis.unloadEngine')"
+      >
+      </v-btn>
+      <v-btn
         @click="showEngineManager = true"
         color="blue-grey"
-        size="small"
+        size="x-small"
         class="action-btn"
         icon="mdi-cogs"
         :title="$t('analysis.manageEngines')"
@@ -389,6 +399,7 @@
     bestMove,
     isThinking,
     loadEngine,
+    unloadEngine,
     startAnalysis,
     stopAnalysis,
     currentSearchMoves,
@@ -799,6 +810,22 @@
       selectedEngineId.value = null
       // Clear the last selected engine ID from config
       configManager.clearLastSelectedEngineId()
+    }
+  }
+
+  // Function to unload the current engine
+  const handleUnloadEngine = async () => {
+    if (!isEngineLoaded.value) {
+      alert(t('analysis.noEngineLoaded'))
+      return
+    }
+
+    try {
+      await unloadEngine()
+      console.log('[DEBUG] AnalysisSidebar: Engine unloaded successfully')
+    } catch (error) {
+      console.error('[DEBUG] AnalysisSidebar: Failed to unload engine:', error)
+      alert(t('errors.engineUnloadFailed'))
     }
   }
 
