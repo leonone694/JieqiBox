@@ -17,6 +17,7 @@ export default {
     warning: '警告',
     info: '情報',
     delete: '削除',
+    required: 'この項目は必須です',
   },
 
   // 上部ツールバー

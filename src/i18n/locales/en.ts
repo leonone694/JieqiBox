@@ -17,6 +17,7 @@ export default {
     warning: 'Warning',
     info: 'Info',
     delete: 'Delete',
+    required: 'This field is required',
   },
 
   // Top toolbar

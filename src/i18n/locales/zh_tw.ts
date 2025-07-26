@@ -17,6 +17,7 @@ export default {
     warning: '警告',
     info: '資訊',
     delete: '刪除',
+    required: '此欄位為必填項',
   },
 
   // 頂部工具列

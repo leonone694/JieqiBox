@@ -17,6 +17,7 @@ export default {
     warning: '警告',
     info: '信息',
     delete: '删除',
+    required: '此字段为必填项',
   },
 
   // 顶部工具栏

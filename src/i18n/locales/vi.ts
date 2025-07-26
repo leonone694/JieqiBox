@@ -17,6 +17,7 @@ export default {
     warning: 'Cảnh báo',
     info: 'Thông tin',
     delete: 'Xóa',
+    required: 'Trường này là bắt buộc',
   },
 
   // Thanh công cụ trên cùng
