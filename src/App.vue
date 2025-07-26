@@ -12,6 +12,7 @@
   import { useUciEngine } from './composables/useUciEngine'
   import { useInterfaceSettings } from './composables/useInterfaceSettings'
   import { useConfigManager } from './composables/useConfigManager'
+  import { useAutosave } from './composables/useAutosave'
 
   const { locale } = useI18n()
   const configManager = useConfigManager()
@@ -74,6 +75,9 @@
   // Set global engine state for useChessGame to access
   ;(window as any).__ENGINE_STATE__ = engine
 
+  // Initialize autosave functionality after providing game state
+  const autosave = useAutosave()
+
   // Load configuration when app mounts
   onMounted(async () => {
     try {
@@ -95,6 +99,9 @@
         )
         await configManager.clearLastSelectedEngineId()
       }
+
+      // Initialize autosave after configuration is loaded
+      await autosave.initializeAutosave(game)
     } catch (error) {
       console.error('Failed to load configuration on app startup:', error)
     }

@@ -11,11 +11,11 @@ Built with Tauri and Vue 3, it aims to be a lightweight yet capable companion fo
 
 You can compile a supporting engine from the official Pikafish repository at <https://github.com/official-pikafish/Pikafish/tree/jieqi> or <https://github.com/official-pikafish/Pikafish/tree/jieqi_old>.
 
-| Platform | Screenshot |
-| -------- | ---------- |
-| Windows | <img src="./screenshot.png" alt="JieqiBox Windows Screenshot" width="300"> |
-| Android | <img src="./android_screenshot.png" alt="JieqiBox Android Screenshot" height="300"> |
-| Linux | <img src="./linux_screenshot.png" alt="JieqiBox Linux Screenshot" width="300"> |
+| Platform | Screenshot                                                                          |
+| -------- | ----------------------------------------------------------------------------------- |
+| Windows  | <img src="./screenshot.png" alt="JieqiBox Windows Screenshot" width="300">          |
+| Android  | <img src="./android_screenshot.png" alt="JieqiBox Android Screenshot" height="300"> |
+| Linux    | <img src="./linux_screenshot.png" alt="JieqiBox Linux Screenshot" width="300">      |
 
 ---
 

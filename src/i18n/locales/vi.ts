@@ -289,6 +289,7 @@ export default {
     showAnimations: 'Bật hoạt ảnh di chuyển quân cờ',
     showPositionChart: 'Hiển thị biểu đồ cục diện',
     darkMode: 'Chế độ tối',
+    autosave: 'Tự động lưu ván cờ vào Autosave.json',
   },
 
   // Tin nhắn UCI

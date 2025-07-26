@@ -17,6 +17,7 @@ const getInitialSettings = () => {
       showAnimations: true,
       showPositionChart: false,
       darkMode: false,
+      autosave: true,
     }
   }
 
@@ -28,6 +29,7 @@ const getInitialSettings = () => {
       showAnimations: settings.showAnimations !== false, // Default to true
       showPositionChart: !!settings.showPositionChart, // Default to false
       darkMode: !!settings.darkMode, // Default to false
+      autosave: settings.autosave !== false, // Default to true
     }
   } catch (e) {
     console.error('Failed to get interface settings:', e)
@@ -38,6 +40,7 @@ const getInitialSettings = () => {
       showAnimations: true,
       showPositionChart: false,
       darkMode: false,
+      autosave: true,
     }
   }
 }
@@ -49,6 +52,7 @@ const {
   showAnimations: initialShowAnimations,
   showPositionChart: initialShowPositionChart,
   darkMode: initialDarkMode,
+  autosave: initialAutosave,
 } = getInitialSettings()
 
 const showCoordinates = ref<boolean>(initialShowCoordinates)
@@ -56,19 +60,28 @@ const parseUciInfo = ref<boolean>(initialParseUciInfo)
 const showAnimations = ref<boolean>(initialShowAnimations)
 const showPositionChart = ref<boolean>(initialShowPositionChart)
 const darkMode = ref<boolean>(initialDarkMode)
+const autosave = ref<boolean>(initialAutosave)
 
 // Flag to track if config is loaded
 const isConfigLoaded = ref(false)
 
 // Watch for changes and persist to config file
 watch(
-  [showCoordinates, parseUciInfo, showAnimations, showPositionChart, darkMode],
+  [
+    showCoordinates,
+    parseUciInfo,
+    showAnimations,
+    showPositionChart,
+    darkMode,
+    autosave,
+  ],
   async ([
     newShowCoordinates,
     newParseUciInfo,
     newShowAnimations,
     newShowPositionChart,
     newDarkMode,
+    newAutosave,
   ]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
@@ -79,6 +92,7 @@ watch(
       showAnimations: newShowAnimations,
       showPositionChart: newShowPositionChart,
       darkMode: newDarkMode,
+      autosave: newAutosave,
     }
 
     try {
@@ -103,6 +117,7 @@ export function useInterfaceSettings() {
       showAnimations.value = settings.showAnimations !== false
       showPositionChart.value = !!settings.showPositionChart
       darkMode.value = !!settings.darkMode
+      autosave.value = settings.autosave !== false
 
       isConfigLoaded.value = true
     } catch (error) {
@@ -122,6 +137,7 @@ export function useInterfaceSettings() {
     showAnimations,
     showPositionChart,
     darkMode,
+    autosave,
     loadSettings,
   }
 }

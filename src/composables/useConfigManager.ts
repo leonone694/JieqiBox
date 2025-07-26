@@ -19,6 +19,7 @@ interface ConfigData {
     showAnimations: boolean
     showPositionChart: boolean
     darkMode: boolean
+    autosave: boolean
   }
   analysisSettings: {
     movetime: number
@@ -47,6 +48,7 @@ const defaultConfig: ConfigData = {
     showAnimations: true,
     showPositionChart: false,
     darkMode: false,
+    autosave: true,
   },
   analysisSettings: {
     movetime: 1000,

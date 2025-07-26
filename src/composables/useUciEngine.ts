@@ -74,36 +74,38 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     // A move is a "dark piece move" if the piece at the starting square is unknown.
     if (!uciMove || uciMove.length < 2) {
       // An invalid or empty move string cannot be a dark piece move.
-      return false;
+      return false
     }
 
     // Parse the UCI string to get the LOGICAL "from" coordinates.
-    const logicalFromCol = uciMove.charCodeAt(0) - 'a'.charCodeAt(0);
-    const logicalFromRow = 9 - parseInt(uciMove[1], 10);
+    const logicalFromCol = uciMove.charCodeAt(0) - 'a'.charCodeAt(0)
+    const logicalFromRow = 9 - parseInt(uciMove[1], 10)
 
     // Convert these logical coordinates to the current DISPLAY coordinates.
-    let displayFromRow = logicalFromRow;
-    let displayFromCol = logicalFromCol;
+    let displayFromRow = logicalFromRow
+    let displayFromCol = logicalFromCol
 
     // Access the flip state directly from the injected gameState.
     if (gameState.isBoardFlipped.value) {
       // If the board is flipped, we must invert both row and column to find the piece on the screen.
-      displayFromRow = 9 - logicalFromRow;
-      displayFromCol = 8 - logicalFromCol;
+      displayFromRow = 9 - logicalFromRow
+      displayFromCol = 8 - logicalFromCol
     }
 
     // Find the piece at the calculated DISPLAY coordinates.
     const piece = gameState.pieces.value.find(
       (p: any) => p.row === displayFromRow && p.col === displayFromCol
-    );
+    )
 
     // The move is a "dark piece move" if a piece exists at the location
     // and its 'isKnown' property is false.
-    const result = !!piece && !piece.isKnown;
+    const result = !!piece && !piece.isKnown
 
-    console.log(`[DEBUG] isDarkPieceMove Check: uci='${uciMove}', logical=(${logicalFromRow},${logicalFromCol}), isFlipped=${gameState.isBoardFlipped.value}, display=(${displayFromRow},${displayFromCol}), pieceFound=${!!piece}, isKnown=${piece?.isKnown}, result=${result}`);
+    console.log(
+      `[DEBUG] isDarkPieceMove Check: uci='${uciMove}', logical=(${logicalFromRow},${logicalFromCol}), isFlipped=${gameState.isBoardFlipped.value}, display=(${displayFromRow},${displayFromCol}), pieceFound=${!!piece}, isKnown=${piece?.isKnown}, result=${result}`
+    )
 
-    return result;
+    return result
   }
 
   /* ---------- Output Throttling Functions ---------- */
@@ -199,12 +201,16 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
           if (ignoreNextBestMove.value) {
             // This was a ponder miss, so we discard the move value.
-            console.log(`[DEBUG] BESTMOVE_IGNORED_ON_PONDER_STOP: The received bestmove value ('${mv}') will be discarded.`)
+            console.log(
+              `[DEBUG] BESTMOVE_IGNORED_ON_PONDER_STOP: The received bestmove value ('${mv}') will be discarded.`
+            )
             ignoreNextBestMove.value = false // Reset the flag for next time.
             bestMove.value = ''
           } else if (playOnStop.value) {
             // This was a "Move Now" command.
-            console.log(`[DEBUG] BESTMOVE_PROCESSED_ON_STOP: Setting bestMove to '${mv}'.`)
+            console.log(
+              `[DEBUG] BESTMOVE_PROCESSED_ON_STOP: Setting bestMove to '${mv}'.`
+            )
             bestMove.value = mv
           } else {
             // This was a simple cancellation.

@@ -290,6 +290,7 @@ export default {
     showAnimations: 'Enable move animations',
     showPositionChart: 'Show evaluation chart',
     darkMode: 'Dark Mode',
+    autosave: 'Auto-save game to Autosave.json',
   },
 
   // UCI messages

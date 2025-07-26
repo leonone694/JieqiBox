@@ -285,6 +285,7 @@ export default {
     showAnimations: '开启走子动画',
     showPositionChart: '显示局势图',
     darkMode: '暗黑模式',
+    autosave: '自动保存棋谱到Autosave.json',
   },
 
   // UCI消息

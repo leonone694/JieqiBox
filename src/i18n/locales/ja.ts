@@ -291,6 +291,7 @@ export default {
     showAnimations: '駒の動きのアニメーションを有効にする',
     showPositionChart: '形勢グラフを表示',
     darkMode: 'ダークモード',
+    autosave: 'ゲームをAutosave.jsonに自動保存',
   },
 
   // UCIメッセージ

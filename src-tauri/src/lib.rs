@@ -147,6 +147,18 @@ fn get_config_file_path(app: &AppHandle) -> Result<String, String> {
     }
 }
 
+/// Get the path to the autosave file, which varies by platform.
+fn get_autosave_file_path(app: &AppHandle) -> Result<String, String> {
+    if cfg!(target_os = "android") {
+        // On Android, use the app's private internal data directory
+        let bundle_identifier = &app.config().identifier;
+        Ok(format!("/data/data/{}/files/Autosave.json", bundle_identifier))
+    } else {
+        // On desktop, use the same directory as the config file
+        Ok("Autosave.json".to_string())
+    }
+}
+
 /// Load configuration from the config file.
 #[tauri::command]
 async fn load_config(app: AppHandle) -> Result<String, String> {
@@ -196,6 +208,42 @@ async fn clear_config(app: AppHandle) -> Result<(), String> {
         }
     } else {
         Ok(()) // File doesn't exist, so there's nothing to do
+    }
+}
+
+/// Save game notation to autosave file.
+#[tauri::command]
+async fn save_autosave(content: String, app: AppHandle) -> Result<(), String> {
+    let autosave_path = get_autosave_file_path(&app)?;
+    let path = Path::new(&autosave_path);
+    
+    // Ensure the parent directory exists before writing
+    if let Some(parent) = path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            return Err(format!("Failed to create autosave directory: {}", e));
+        }
+    }
+    
+    match fs::write(path, content) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to write autosave file: {}", e)),
+    }
+}
+
+/// Load game notation from autosave file.
+#[tauri::command]
+async fn load_autosave(app: AppHandle) -> Result<String, String> {
+    let autosave_path = get_autosave_file_path(&app)?;
+    let path = Path::new(&autosave_path);
+    
+    if !path.exists() {
+        // If the autosave file doesn't exist, return an empty string
+        return Ok(String::new());
+    }
+    
+    match fs::read_to_string(path) {
+        Ok(content) => Ok(content),
+        Err(e) => Err(format!("Failed to read autosave file: {}", e)),
     }
 }
 
@@ -514,6 +562,8 @@ pub fn run() {
             load_config,
             save_config,
             clear_config,
+            save_autosave,
+            load_autosave,
             // Android-specific commands
             #[cfg(target_os = "android")]
             get_bundle_identifier,

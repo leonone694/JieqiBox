@@ -537,13 +537,13 @@
   }
 
   /* ---------- Generate FEN and moves for current position ---------- */
-  
+
   // Helper function to find the last reveal index up to current move index
   const findLastRevealIndex = () => {
     if (currentMoveIndex.value === 0) {
       return -1
     }
-    
+
     const h = history.value.slice(0, currentMoveIndex.value)
     for (let i = h.length - 1; i >= 0; i--) {
       const entry = h[i]
@@ -566,7 +566,7 @@
     if (currentMoveIndex.value === 0) {
       return initialFen.value
     }
-    
+
     const lastRevealIdx = findLastRevealIndex()
     if (lastRevealIdx >= 0) {
       return history.value.slice(0, currentMoveIndex.value)[lastRevealIdx].fen
@@ -579,10 +579,10 @@
     if (currentMoveIndex.value === 0) {
       return []
     }
-    
+
     const lastRevealIdx = findLastRevealIndex()
     const h = history.value.slice(0, currentMoveIndex.value)
-    
+
     // Get moves from the last reveal to the current position
     const moves: string[] = []
     for (let i = lastRevealIdx + 1; i < h.length; i++) {
@@ -684,11 +684,11 @@
       !isThinking.value &&
       !pendingFlip.value
 
-     console.log(
+    console.log(
       `[DEBUG] CHECK_AND_TRIGGER_AI: Checking... isEngineLoaded=${isEngineLoaded.value}, isCurrentAiTurnNow()=${isCurrentAiTurnNow()}, isThinking=${isThinking.value}, isStopping=${isStopping.value}, pendingFlip=${pendingFlip.value}. Outcome: ${
         should ? 'STARTING ANALYSIS' : 'DOING NOTHING'
       }`
-     )
+    )
 
     if (should) {
       // AI auto-play mode uses limited analysis settings (time, depth, nodes)
@@ -941,7 +941,9 @@
         // ponder hit (sending 'ponderhit') or a miss (sending 'stop').
         // Stopping it here creates a race condition.
         if (isPondering.value) {
-          console.log('[DEBUG] HANDLE_FORCE_STOP_AI: Pondering detected, yielding to ponder logic.')
+          console.log(
+            '[DEBUG] HANDLE_FORCE_STOP_AI: Pondering detected, yielding to ponder logic.'
+          )
           return
         }
         if (isThinking.value) {

@@ -28,6 +28,11 @@
           :label="$t('interfaceSettings.darkMode')"
           color="primary"
         ></v-switch>
+        <v-switch
+          v-model="autosave"
+          :label="$t('interfaceSettings.autosave')"
+          color="primary"
+        ></v-switch>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -51,6 +56,7 @@
     showAnimations,
     showPositionChart,
     darkMode,
+    autosave,
   } = useInterfaceSettings()
 
   const closeDialog = () => {
