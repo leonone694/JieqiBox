@@ -13,9 +13,9 @@ You can compile a supporting engine from the official Pikafish repository at <ht
 
 | Platform | Screenshot |
 | -------- | ---------- |
-| Windows | ![JieqiBox Windows Screenshot](./screenshot.png) |
-| Android | ![JieqiBox Android Screenshot](./android_screenshot.png) |
-| Linux | ![JieqiBox Linux Screenshot](./linux_screenshot.png) |
+| Windows | <img src="./screenshot.png" alt="JieqiBox Windows Screenshot" width="300"> |
+| Android | <img src="./android_screenshot.png" alt="JieqiBox Android Screenshot" height="300"> |
+| Linux | <img src="./linux_screenshot.png" alt="JieqiBox Linux Screenshot" width="300"> |
 
 ---
 
