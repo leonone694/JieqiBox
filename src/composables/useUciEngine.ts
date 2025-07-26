@@ -70,20 +70,40 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   let unlisten: (() => void) | null = null
 
   /* ---------- Helper Functions ---------- */
-  // Check if a move involves a dark piece (for JieQi special logic)
   const isDarkPieceMove = (uciMove: string): boolean => {
-    // For JieQi, we need to check if the source square contains a dark piece
-    // Dark pieces are those that are not yet revealed (isKnown = false)
-    const fromCol = uciMove.charCodeAt(0) - 'a'.charCodeAt(0)
-    const fromRow = 9 - parseInt(uciMove[1], 10)
+    // A move is a "dark piece move" if the piece at the starting square is unknown.
+    if (!uciMove || uciMove.length < 2) {
+      // An invalid or empty move string cannot be a dark piece move.
+      return false;
+    }
 
-    // Find the piece at the source position
+    // Parse the UCI string to get the LOGICAL "from" coordinates.
+    const logicalFromCol = uciMove.charCodeAt(0) - 'a'.charCodeAt(0);
+    const logicalFromRow = 9 - parseInt(uciMove[1], 10);
+
+    // Convert these logical coordinates to the current DISPLAY coordinates.
+    let displayFromRow = logicalFromRow;
+    let displayFromCol = logicalFromCol;
+
+    // Access the flip state directly from the injected gameState.
+    if (gameState.isBoardFlipped.value) {
+      // If the board is flipped, we must invert both row and column to find the piece on the screen.
+      displayFromRow = 9 - logicalFromRow;
+      displayFromCol = 8 - logicalFromCol;
+    }
+
+    // Find the piece at the calculated DISPLAY coordinates.
     const piece = gameState.pieces.value.find(
-      (p: any) => p.row === fromRow && p.col === fromCol
-    )
+      (p: any) => p.row === displayFromRow && p.col === displayFromCol
+    );
 
-    // If piece exists and is not known (dark piece), return true
-    return piece && !piece.isKnown
+    // The move is a "dark piece move" if a piece exists at the location
+    // and its 'isKnown' property is false.
+    const result = !!piece && !piece.isKnown;
+
+    console.log(`[DEBUG] isDarkPieceMove Check: uci='${uciMove}', logical=(${logicalFromRow},${logicalFromCol}), isFlipped=${gameState.isBoardFlipped.value}, display=(${displayFromRow},${displayFromCol}), pieceFound=${!!piece}, isKnown=${piece?.isKnown}, result=${result}`);
+
+    return result;
   }
 
   /* ---------- Output Throttling Functions ---------- */
@@ -154,15 +174,6 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       }
 
       if (ln.startsWith('bestmove')) {
-        // If we have flagged to ignore this bestmove (e.g., after stopping ponder), just skip once
-        if (ignoreNextBestMove.value) {
-          console.log(
-            '[DEBUG] IGNORE_BESTMOVE: Skipping bestmove after ponder stop:',
-            ln
-          )
-          ignoreNextBestMove.value = false
-          return
-        }
         const parts = ln.split(' ')
         const mv = parts[1] ?? ''
         // Check if engine provided a ponder move
@@ -175,8 +186,37 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
         console.log(
           `[DEBUG] BESTMOVE_RECEIVED: '${mv}' ponder='${ponderMoveFromEngine}'. isThinking=${isThinking.value}, isStopping=${isStopping.value}.`
         )
-        if (ponderMoveFromEngine) {
-          ponderMove.value = ponderMoveFromEngine
+
+        // Refactored logic to handle stop confirmation as the highest priority.
+        // This solves the race condition where 'ignoreNextBestMove' caused an early return,
+        // leaving 'isStopping' permanently true.
+        if (isStopping.value) {
+          console.log(
+            `[DEBUG] STOP_CONFIRMED: Engine acknowledged stop command.`
+          )
+          isThinking.value = false
+          isStopping.value = false // Reset the lock first.
+
+          if (ignoreNextBestMove.value) {
+            // This was a ponder miss, so we discard the move value.
+            console.log(`[DEBUG] BESTMOVE_IGNORED_ON_PONDER_STOP: The received bestmove value ('${mv}') will be discarded.`)
+            ignoreNextBestMove.value = false // Reset the flag for next time.
+            bestMove.value = ''
+          } else if (playOnStop.value) {
+            // This was a "Move Now" command.
+            console.log(`[DEBUG] BESTMOVE_PROCESSED_ON_STOP: Setting bestMove to '${mv}'.`)
+            bestMove.value = mv
+          } else {
+            // This was a simple cancellation.
+            bestMove.value = ''
+          }
+
+          playOnStop.value = false // Always reset this.
+
+          nextTick(() => {
+            window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'))
+          })
+          return // This bestmove has been fully handled.
         }
 
         // If we are not in a thinking state and not pondering, this is a stray bestmove from a previous,
@@ -196,57 +236,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
           isPondering.value = false
           isInfinitePondering.value = false // Reset infinite pondering flag
 
-          // Check if we should play the best move after ponder stop
-          if (playOnStop.value) {
-            console.log(
-              `[DEBUG] PONDER_STOPPED: Playing best move after ponder stop: '${mv}'`
-            )
-            bestMove.value = mv // This will trigger the watcher in AnalysisSidebar
-            playOnStop.value = false // Reset for next time
-
-            // After a successful ponder stop with move play, trigger engine ready event
-            nextTick(() => {
-              window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'))
-            })
-          } else {
-            console.log(
-              `[DEBUG] PONDER_STOPPED: Not playing best move after ponder stop`
-            )
-            bestMove.value = '' // Ensure bestMove is cleared
-          }
-
           ponderhit.value = false
-          return
-        }
-
-        // If the 'isStopping' flag is true, this is the confirmation from the engine that
-        // the 'stop' command was received. We handle it based on the 'playOnStop' flag.
-        if (isStopping.value) {
-          console.log(
-            `[DEBUG] STOP_CONFIRMED: Engine acknowledged stop command.`
-          )
-          isThinking.value = false
-          isStopping.value = false
-
-          if (playOnStop.value) {
-            console.log(
-              `[DEBUG] BESTMOVE_PROCESSED_ON_STOP: Setting bestMove to '${mv}'.`
-            )
-            bestMove.value = mv // This will trigger the watcher in AnalysisSidebar
-          } else {
-            console.log(
-              `[DEBUG] BESTMOVE_IGNORED_ON_CANCEL: 'playOnStop' was false.`
-            )
-            bestMove.value = '' // Ensure bestMove is cleared
-          }
-          playOnStop.value = false // Reset for next time
-
-          // After a successful stop, immediately check if a new AI move should be triggered.
-          // This is crucial for the AI to respond after a manual user move.
-          nextTick(() => {
-            window.dispatchEvent(new CustomEvent('engine-stopped-and-ready'))
-          })
-
           return
         }
 
@@ -285,6 +275,8 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
         pvMoves.value = []
         multiPvMoves.value = []
+        // Clear analysis lines array when analysis completes
+        analysisLines.length = 0
         isInfinitePondering.value = false // Reset infinite pondering flag when analysis completes
       }
       if (ln === 'uciok') send('isready')
@@ -490,6 +482,17 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   const send = (cmd: string) => {
     // No longer check isEngineLoaded, as we need to send 'uci' before it's true
     engineOutput.value.push({ text: cmd, kind: 'sent' })
+
+    // Clear analysis lines when MultiPV setting changes to prevent stale data
+    if (cmd.startsWith('setoption name MultiPV value ')) {
+      analysisLines.length = 0
+      multiPvMoves.value = []
+      analysis.value = ''
+      console.log(
+        `[DEBUG] UCI_OPTION_CHANGE: Cleared analysis lines for MultiPV change`
+      )
+    }
+
     invoke('send_to_engine', { command: cmd }).catch(e => {
       // Don't alert here, it can be noisy during initial load failure
       console.warn('Failed to send to engine:', e)
@@ -520,6 +523,11 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
     // Reset throttling state for new analysis
     resetThrottling()
+
+    // Clear analysis lines and multiPvMoves for new analysis
+    analysisLines.length = 0
+    multiPvMoves.value = []
+    analysis.value = ''
 
     // Save current searchmoves for reuse in analysis restarts
     currentSearchMoves.value = [...searchmoves]
@@ -728,6 +736,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       `[DEBUG] STOP_PONDER: Stopping ponder, playBestMoveOnStop=${playBestMoveOnStop}`
     )
     isPondering.value = false
+    isStopping.value = true
     isInfinitePondering.value = false // Reset infinite pondering flag
 
     // Handle ponderhit scenario differently
@@ -816,6 +825,8 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     engineOutput.value = []
     pvMoves.value = []
     multiPvMoves.value = []
+    // Clear analysis lines array
+    analysisLines.length = 0
     ponderMove.value = ''
     ponderhit.value = false
     isStopping.value = false
@@ -893,6 +904,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     bestMove,
     analysis,
     isThinking,
+    isStopping,
     pvMoves,
     multiPvMoves,
     loadEngine,

@@ -40,13 +40,13 @@ export default {
 
   // Hộp thoại tùy chọn UCI
   uciOptions: {
-    title: 'Tùy chọn công cụ UCI',
-    loadingText: 'Đang tải tùy chọn công cụ...',
-    noEngineLoaded: 'Chưa có công cụ nào được tải.',
+    title: 'Tùy chọn engine UCI',
+    loadingText: 'Đang tải tùy chọn engine...',
+    noEngineLoaded: 'Chưa có engine nào được tải.',
     pleaseLoadEngineFirst:
-      'Vui lòng tải công cụ trước để cấu hình các tùy chọn của nó.',
-    loadEngine: 'Tải công cụ',
-    noOptionsAvailable: 'Không có tùy chọn UCI nào cho công cụ này.',
+      'Vui lòng tải engine trước để cấu hình các tùy chọn của nó.',
+    loadEngine: 'Tải engine',
+    noOptionsAvailable: 'Không có tùy chọn UCI nào cho engine này.',
     refreshOptions: 'Làm mới tùy chọn',
     range: 'Phạm vi',
     execute: 'Thực hiện',
@@ -82,7 +82,7 @@ export default {
 
   // Hộp thoại thời gian
   timeDialog: {
-    title: 'Cài đặt tham số phân tích động cơ',
+    title: 'Cài đặt tham số phân tích engine',
     movetime: 'Thời gian nước đi (ms)',
     maxThinkTime: 'Thời gian suy nghĩ tối đa (ms)',
     maxDepth: 'Độ sâu tối đa',
@@ -178,12 +178,12 @@ export default {
 
   // Thanh bên phân tích
   analysis: {
-    title: 'Phân tích động cơ',
+    title: 'Phân tích engine',
     startAnalysis: 'Bắt đầu phân tích',
     stopAnalysis: 'Dừng phân tích',
-    engineNotLoaded: 'Chưa tải động cơ',
-    loadEngine: 'Tải động cơ',
-    loadEngineSaf: 'Tải động cơ (SAF)',
+    engineNotLoaded: 'Chưa tải engine',
+    loadEngine: 'Tải engine',
+    loadEngineSaf: 'Tải engine (SAF)',
     analysisResults: 'Kết quả phân tích',
     bestMove: 'Nước đi tốt nhất',
     score: 'Điểm số',
@@ -200,7 +200,7 @@ export default {
     blackAiOff: 'AI Đen (Tắt)',
     freeFlipMode: 'Chế độ lật tự do',
     darkPiecePool: 'Kho quân úp',
-    engineAnalysis: 'Phân tích động cơ',
+    engineAnalysis: 'Phân tích engine',
     notation: 'Biên bản',
     moveComments: 'Ghi chú nước đi',
     noComment: 'Không có ghi chú',
@@ -209,13 +209,15 @@ export default {
     cancelComment: 'Hủy',
     opening: 'Khai cuộc',
     adjustment: 'Điều chỉnh',
-    engineLog: 'Nhật ký động cơ',
+    engineLog: 'Nhật ký engine',
     about: 'Về',
     flipBoard: 'Lật bàn cờ',
     flipBoardBack: 'Khôi phục hướng',
     ponderMode: 'Chế độ suy nghĩ nền',
-    unloadEngine: 'Gỡ bỏ động cơ',
-    noEngineLoaded: 'Hiện tại chưa có động cơ nào được tải.',
+    selectEngine: 'Chọn engine',
+    manageEngines: 'Quản lý',
+    unloadEngine: 'Gỡ bỏ engine',
+    noEngineLoaded: 'Hiện tại chưa có engine nào được tải.',
   },
 
   // Trình quản lý Engine
@@ -241,14 +243,14 @@ export default {
   errors: {
     saveNotationFailed: 'Lưu biên bản thất bại',
     openNotationFailed: 'Mở biên bản thất bại',
-    engineNotLoaded: 'Chưa tải động cơ, không thể gửi lệnh',
-    engineSendUnavailable: 'Phương thức send của động cơ không khả dụng',
+    engineNotLoaded: 'Chưa tải engine, không thể gửi lệnh',
+    engineSendUnavailable: 'Phương thức send của engine không khả dụng',
     darkPiecesMismatch: 'Lỗi: {darkCount} quân úp > {poolCount} trong kho',
     pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!',
-    engineLoadFailed: 'Không thể tải động cơ {name}: {error}',
-    engineUnloadFailed: 'Gỡ bỏ động cơ thất bại',
+    engineLoadFailed: 'Không thể tải engine {name}: {error}',
+    engineUnloadFailed: 'Gỡ bỏ engine thất bại',
     failedToOpenFileSelector: 'Không thể mở trình chọn tệp',
-    failedToProcessEngine: 'Không thể xử lý tệp động cơ',
+    failedToProcessEngine: 'Không thể xử lý tệp engine',
   },
 
   // Phần dưới bàn cờ

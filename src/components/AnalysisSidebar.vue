@@ -398,6 +398,7 @@
     analysis,
     bestMove,
     isThinking,
+    isStopping,
     loadEngine,
     unloadEngine,
     startAnalysis,
@@ -644,6 +645,14 @@
     return (redTurn && isRedAi.value) || (!redTurn && isBlackAi.value)
   }
   function checkAndTriggerAi() {
+    // Add a guard to prevent starting analysis while the engine is in the process of stopping.
+    if (isStopping.value) {
+      console.log(
+        '[DEBUG] CHECK_AND_TRIGGER_AI: Aborted. Engine is currently stopping.'
+      )
+      return
+    }
+
     // If the engine is thinking but it's not the AI's turn, stop the analysis first
     if (isThinking.value && !isCurrentAiTurnNow()) {
       // This is a "cancel" operation, not a "move now".
@@ -657,9 +666,11 @@
       !isThinking.value &&
       !pendingFlip.value
 
-    console.log(
-      `[DEBUG] CHECK_AND_TRIGGER_AI: Checking... isEngineLoaded=${isEngineLoaded.value}, isCurrentAiTurnNow()=${isCurrentAiTurnNow()}, isThinking=${isThinking.value}, pendingFlip=${pendingFlip.value}. Outcome: ${should ? 'STARTING ANALYSIS' : 'DOING NOTHING'}`
-    )
+     console.log(
+      `[DEBUG] CHECK_AND_TRIGGER_AI: Checking... isEngineLoaded=${isEngineLoaded.value}, isCurrentAiTurnNow()=${isCurrentAiTurnNow()}, isThinking=${isThinking.value}, isStopping=${isStopping.value}, pendingFlip=${pendingFlip.value}. Outcome: ${
+        should ? 'STARTING ANALYSIS' : 'DOING NOTHING'
+      }`
+     )
 
     if (should) {
       // AI auto-play mode uses limited analysis settings (time, depth, nodes)
@@ -907,6 +918,14 @@
       // For a manual move, we only stop the thinking process.
       // We don't turn off the AI toggles, allowing the AI to potentially start thinking for the next turn.
       if (event.detail?.reason === 'manual-move') {
+        // If the engine is pondering, we MUST NOT send a 'stop' command here.
+        // The 'handlePonderAfterMove' function will correctly handle whether it's a
+        // ponder hit (sending 'ponderhit') or a miss (sending 'stop').
+        // Stopping it here creates a race condition.
+        if (isPondering.value) {
+          console.log('[DEBUG] HANDLE_FORCE_STOP_AI: Pondering detected, yielding to ponder logic.')
+          return
+        }
         if (isThinking.value) {
           // This is a "cancel" operation.
           stopAnalysis({ playBestMoveOnStop: false })

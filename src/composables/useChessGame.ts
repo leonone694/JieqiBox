@@ -460,7 +460,10 @@ export function useChessGame() {
               : scoreValue
 
           // If pondering, invert the score
-          if (engineState.isPondering?.value) {
+          if (
+            engineState.isPondering?.value &&
+            !engineState.isInfinitePondering?.value
+          ) {
             engineScore = -engineScore
           }
 

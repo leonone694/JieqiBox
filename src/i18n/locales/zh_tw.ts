@@ -210,6 +210,8 @@ export default {
     flipBoard: '翻轉棋盤',
     flipBoardBack: '恢復方向',
     ponderMode: '後台思考',
+    selectEngine: '選擇引擎',
+    manageEngines: '管理',
     unloadEngine: '卸載引擎',
     noEngineLoaded: '目前沒有載入任何引擎。',
   },

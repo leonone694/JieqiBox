@@ -212,6 +212,8 @@ export default {
     flipBoard: '盤を反転',
     flipBoardBack: '向きを復元',
     ponderMode: 'ポンダーモード',
+    selectEngine: 'エンジンを選択',
+    manageEngines: '管理',
     unloadEngine: 'エンジンをアンロード',
     noEngineLoaded: '現在、エンジンは読み込まれていません。',
   },
