@@ -536,9 +536,15 @@
     return (boardPart.match(/[xX]/g) || []).length
   }
 
-  /* ---------- Find the index of the last piece reveal (when the number of unknown pieces changes) ---------- */
-  function findLastRevealIndex(): number {
-    const h = history.value
+  /* ---------- Generate FEN and moves for current position ---------- */
+  
+  // Helper function to find the last reveal index up to current move index
+  const findLastRevealIndex = () => {
+    if (currentMoveIndex.value === 0) {
+      return -1
+    }
+    
+    const h = history.value.slice(0, currentMoveIndex.value)
     for (let i = h.length - 1; i >= 0; i--) {
       const entry = h[i]
       // Position edits or adjustments reset the engine state
@@ -549,26 +555,38 @@
       const prevUnknown = countUnknownPieces(prevFen)
       const currUnknown = countUnknownPieces(h[i].fen)
       if (prevUnknown !== currUnknown) {
-        return i // Reveal happened at index i (after executing move i)
+        return i
       }
     }
     return -1
   }
 
-  /* ---------- Generate starting FEN and moves based on the last reveal ---------- */
   const baseFenForEngine = computed(() => {
-    const idx = findLastRevealIndex()
-    if (idx >= 0) {
-      return history.value[idx].fen // The FEN already includes the result of the reveal
+    // If we're at the beginning (move index 0), use initial FEN
+    if (currentMoveIndex.value === 0) {
+      return initialFen.value
+    }
+    
+    const lastRevealIdx = findLastRevealIndex()
+    if (lastRevealIdx >= 0) {
+      return history.value.slice(0, currentMoveIndex.value)[lastRevealIdx].fen
     }
     return initialFen.value
   })
 
   const engineMovesSinceLastReveal = computed(() => {
-    const idx = findLastRevealIndex()
+    // If we're at the beginning (move index 0), no moves
+    if (currentMoveIndex.value === 0) {
+      return []
+    }
+    
+    const lastRevealIdx = findLastRevealIndex()
+    const h = history.value.slice(0, currentMoveIndex.value)
+    
+    // Get moves from the last reveal to the current position
     const moves: string[] = []
-    for (let i = idx + 1; i < history.value.length; i++) {
-      const entry = history.value[i]
+    for (let i = lastRevealIdx + 1; i < h.length; i++) {
+      const entry = h[i]
       if (entry.type === 'move') {
         moves.push(entry.data)
       }
