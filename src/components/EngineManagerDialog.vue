@@ -180,10 +180,10 @@
       if (isEditing.value) {
         // When editing, check uniqueness against other engines (excluding current one)
         return (
-          !engines.value.some((e: ManagedEngine) => 
-            e.name === value && e.id !== editedEngine.value.id
-          ) ||
-          t('common.nameMustBeUnique')
+          !engines.value.some(
+            (e: ManagedEngine) =>
+              e.name === value && e.id !== editedEngine.value.id
+          ) || t('common.nameMustBeUnique')
         )
       }
       // When adding new engine, check against all engines
@@ -341,7 +341,7 @@
       if (index > -1) {
         const oldEngine = engines.value[index]
         engines.value.splice(index, 1, { ...editedEngine.value })
-        
+
         // Check if the engine name changed and clear last selected engine ID if needed
         if (oldEngine.name !== editedEngine.value.name) {
           console.log(

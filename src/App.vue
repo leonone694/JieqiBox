@@ -131,7 +131,9 @@
     gap: 20px;
     box-sizing: border-box;
     background-color: rgb(var(--v-theme-background));
-    max-height: calc(100vh - 80px); /* Prevent layout from exceeding viewport height */
+    max-height: calc(
+      100vh - 80px
+    ); /* Prevent layout from exceeding viewport height */
     overflow: hidden; /* Prevent scrolling when content fits */
 
     // Mobile responsive layout - switch to vertical on narrow screens
