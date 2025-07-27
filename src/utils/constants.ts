@@ -66,3 +66,14 @@ export const INITIAL_PIECE_COUNTS: { [k: string]: number } = {
   p: 5,
   k: 1,
 }
+
+/**
+ * Language to HTML lang attribute mapping
+ */
+export const LANGUAGE_TO_HTML_LANG: { [key: string]: string } = {
+  zh_cn: 'zh-CN',
+  zh_tw: 'zh-TW',
+  ja: 'ja-JP',
+  en: 'en-US',
+  vi: 'vi-VN',
+}

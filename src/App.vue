@@ -13,6 +13,7 @@
   import { useInterfaceSettings } from './composables/useInterfaceSettings'
   import { useConfigManager } from './composables/useConfigManager'
   import { useAutosave } from './composables/useAutosave'
+  import { LANGUAGE_TO_HTML_LANG } from './utils/constants'
 
   const { locale } = useI18n()
   const configManager = useConfigManager()
@@ -32,28 +33,14 @@
 
   // Set HTML lang attribute based on current language
   const htmlLang = computed(() => {
-    const langMap: { [key: string]: string } = {
-      zh_cn: 'zh-CN',
-      zh_tw: 'zh-TW',
-      ja: 'ja-JP',
-      en: 'en-US',
-      vi: 'vi-VN',
-    }
-    return langMap[locale.value] || 'en-US'
+    return LANGUAGE_TO_HTML_LANG[locale.value] || 'en-US'
   })
 
   // Watch for language changes and update HTML lang attribute
   watch(
     locale,
     newLocale => {
-      const langMap: { [key: string]: string } = {
-        zh_cn: 'zh-CN',
-        zh_tw: 'zh-TW',
-        ja: 'ja-JP',
-        en: 'en-US',
-        vi: 'vi-VN',
-      }
-      const htmlLang = langMap[newLocale] || 'en-US'
+      const htmlLang = LANGUAGE_TO_HTML_LANG[newLocale] || 'en-US'
       document.documentElement.lang = htmlLang
       document.documentElement.setAttribute('lang', htmlLang)
     },
