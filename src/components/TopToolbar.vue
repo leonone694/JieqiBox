@@ -68,7 +68,7 @@
         :title="$t('toolbar.analysisParams')"
       />
       <v-btn
-        icon="mdi-chart-line-variant"
+        icon="mdi-close-circle"
         size="small"
         color="deep-purple"
         variant="text"
