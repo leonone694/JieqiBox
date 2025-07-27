@@ -109,6 +109,19 @@
       </v-btn>
     </div>
 
+    <!-- Panel Layout Control -->
+    <div class="button-group">
+      <v-btn
+        @click="restoreDefaultLayout"
+        color="grey"
+        class="grouped-btn"
+        size="small"
+        prepend-icon="mdi-backup-restore"
+      >
+        {{ $t('analysis.restorePanels') }}
+      </v-btn>
+    </div>
+
     <div class="switch-row">
       <v-switch
         v-model="flipMode"
@@ -131,17 +144,19 @@
       />
     </div>
 
-    <div class="section">
-      <h3 class="section-title">
-        {{ $t('analysis.darkPiecePool') }}
-        <v-chip
-          size="x-small"
-          :color="validationStatusKey === 'normal' ? 'green' : 'red'"
-          variant="flat"
-        >
-          {{ validationStatusMessage }}
-        </v-chip>
-      </h3>
+    <DraggablePanel panel-id="dark-piece-pool">
+      <template #header>
+        <h3 class="section-title">
+          {{ $t('analysis.darkPiecePool') }}
+          <v-chip
+            size="x-small"
+            :color="validationStatusKey === 'normal' ? 'green' : 'red'"
+            variant="flat"
+          >
+            {{ validationStatusMessage }}
+          </v-chip>
+        </h3>
+      </template>
       <div class="pool-manager">
         <div
           v-for="item in unrevealedPiecesForDisplay"
@@ -170,10 +185,12 @@
           />
         </div>
       </div>
-    </div>
+    </DraggablePanel>
 
-    <div class="section">
-      <h3>{{ $t('analysis.engineAnalysis') }}</h3>
+    <DraggablePanel panel-id="engine-analysis">
+      <template #header>
+        <h3>{{ $t('analysis.engineAnalysis') }}</h3>
+      </template>
       <div class="analysis-output">
         <div
           v-for="(ln, idx) in parsedAnalysisLines"
@@ -181,10 +198,12 @@
           v-html="ln"
         ></div>
       </div>
-    </div>
+    </DraggablePanel>
 
-    <div class="section">
-      <h3>{{ $t('analysis.notation') }}</h3>
+    <DraggablePanel panel-id="notation">
+      <template #header>
+        <h3>{{ $t('analysis.notation') }}</h3>
+      </template>
       <div class="move-list" ref="moveListElement">
         <div
           class="move-item"
@@ -229,10 +248,12 @@
           </template>
         </div>
       </div>
-    </div>
+    </DraggablePanel>
 
-    <div class="section">
-      <h3>{{ $t('analysis.moveComments') }}</h3>
+    <DraggablePanel panel-id="move-comments">
+      <template #header>
+        <h3>{{ $t('analysis.moveComments') }}</h3>
+      </template>
       <div class="comments-list" ref="commentsListElement">
         <div
           class="comment-item"
@@ -311,10 +332,12 @@
           </div>
         </div>
       </div>
-    </div>
+    </DraggablePanel>
 
-    <div class="section">
-      <h3>{{ $t('analysis.engineLog') }}</h3>
+    <DraggablePanel panel-id="engine-log">
+      <template #header>
+        <h3>{{ $t('analysis.engineLog') }}</h3>
+      </template>
       <div class="engine-log" ref="engineLogElement">
         <div
           v-for="(ln, Idx) in engineOutput"
@@ -324,7 +347,7 @@
           {{ ln.text }}
         </div>
       </div>
-    </div>
+    </DraggablePanel>
 
     <div class="about-section">
       <v-btn
@@ -364,8 +387,12 @@
     useConfigManager,
     type ManagedEngine,
   } from '@/composables/useConfigManager'
+  import DraggablePanel from './DraggablePanel.vue'
+  import { usePanelManager } from '@/composables/usePanelManager'
 
   const { t } = useI18n()
+
+  const { restoreDefaultLayout } = usePanelManager()
 
   // Get interface settings
   const { parseUciInfo } = useInterfaceSettings()
@@ -1782,5 +1809,12 @@
     display: flex;
     gap: 4px;
     margin-top: 4px;
+  }
+
+  .panel-header .section-title {
+    margin: 0;
+    padding-left: 8px;
+    font-size: 0.9rem;
+    flex-grow: 1;
   }
 </style>

@@ -10,6 +10,7 @@ import '@mdi/font/css/materialdesignicons.css' // Import MDI icon styles
 
 // Import i18n
 import i18n from './i18n'
+import { usePanelManager } from './composables/usePanelManager'
 
 const vuetify = createVuetify({
   components,
@@ -59,4 +60,17 @@ const vuetify = createVuetify({
   },
 })
 
-createApp(App).use(vuetify).use(i18n).mount('#app')
+const app = createApp(App)
+
+// Initialize i18n
+app.use(i18n)
+
+// Initialize Vuetify
+app.use(vuetify)
+
+// Initialize panel manager
+const panelManager = usePanelManager()
+panelManager.initialize()
+
+// Mount the app
+app.mount('#app')
