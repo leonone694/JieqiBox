@@ -587,21 +587,21 @@
 <style lang="scss" scoped>
   .evaluation-chart {
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px; /* Reduced padding to make chart more compact */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     box-sizing: border-box;
     background-color: rgb(var(--v-theme-surface));
   }
   .chart-title {
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0; /* Reduced margin to make chart more compact */
     font-size: 16px;
     font-weight: 600;
   }
   .chart-container {
     position: relative;
     width: 100%;
-    height: 200px;
+    height: 150px; /* Reduced height for desktop to prevent unnecessary scrolling */
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     overflow: hidden;
@@ -675,7 +675,7 @@
     }
   }
   .chart-controls {
-    margin-top: 12px;
+    margin-top: 8px; /* Reduced margin to make chart more compact */
     display: flex;
     gap: 16px;
     .v-switch {

@@ -1402,7 +1402,7 @@
 <style lang="scss">
   .sidebar {
     width: 320px;
-    height: 90vh;
+    height: calc(100vh - 120px); /* Adjusted to account for toolbar and padding */
     padding: 12px;
     display: flex;
     flex-direction: column;

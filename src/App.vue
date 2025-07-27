@@ -131,6 +131,8 @@
     gap: 20px;
     box-sizing: border-box;
     background-color: rgb(var(--v-theme-background));
+    max-height: calc(100vh - 80px); /* Prevent layout from exceeding viewport height */
+    overflow: hidden; /* Prevent scrolling when content fits */
 
     // Mobile responsive layout - switch to vertical on narrow screens
     @media (max-width: 768px) {
@@ -138,6 +140,8 @@
       align-items: center;
       padding: 10px;
       gap: 15px; // Reduced gap for mobile
+      max-height: none; /* Allow natural height on mobile */
+      overflow: visible; /* Allow scrolling on mobile if needed */
     }
   }
 
@@ -146,6 +150,7 @@
     flex-direction: column;
     align-items: center;
     padding-top: 20px;
+    max-height: 100%; /* Ensure it doesn't exceed parent height */
 
     // On desktop, when position chart is shown, make chessboard smaller
     &.with-chart {
@@ -159,6 +164,7 @@
     @media (max-width: 768px) {
       padding-top: 0;
       width: 100%;
+      max-height: none; /* Allow natural height on mobile */
 
       // On mobile, disable the scaling when chart is shown
       &.with-chart {
