@@ -52,7 +52,6 @@
               v-model="editedEngine.name"
               :label="$t('engineManager.engineName')"
               :rules="[rules.required, rules.unique]"
-              :disabled="isEditing"
             ></v-text-field>
             <v-text-field
               v-model="editedEngine.path"
@@ -178,7 +177,16 @@
   const rules = {
     required: (value: string) => !!value || t('common.required'),
     unique: (value: string) => {
-      if (isEditing.value) return true // Don't check uniqueness when editing
+      if (isEditing.value) {
+        // When editing, check uniqueness against other engines (excluding current one)
+        return (
+          !engines.value.some((e: ManagedEngine) => 
+            e.name === value && e.id !== editedEngine.value.id
+          ) ||
+          t('common.nameMustBeUnique')
+        )
+      }
+      // When adding new engine, check against all engines
       return (
         !engines.value.some((e: ManagedEngine) => e.name === value) ||
         t('common.nameMustBeUnique')
@@ -331,13 +339,13 @@
         (e: ManagedEngine) => e.id === editedEngine.value.id
       )
       if (index > -1) {
-        // Check if the engine ID changed (which shouldn't happen in normal editing)
         const oldEngine = engines.value[index]
         engines.value.splice(index, 1, { ...editedEngine.value })
-        // If the engine ID changed, clear the last selected engine ID
-        if (oldEngine.id !== editedEngine.value.id) {
+        
+        // Check if the engine name changed and clear last selected engine ID if needed
+        if (oldEngine.name !== editedEngine.value.name) {
           console.log(
-            `[DEBUG] EngineManager: Engine ID changed from ${oldEngine.id} to ${editedEngine.value.id}, clearing last selected engine ID`
+            `[DEBUG] EngineManager: Engine name changed from "${oldEngine.name}" to "${editedEngine.value.name}", clearing last selected engine ID`
           )
           configManager.clearLastSelectedEngineId()
         }
