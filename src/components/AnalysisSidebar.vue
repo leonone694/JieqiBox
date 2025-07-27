@@ -643,6 +643,10 @@
 
   /* ---------- Core Logic ---------- */
   function toggleRedAi() {
+    // If turning off Red AI and it's currently Red's turn and thinking, stop the analysis
+    if (isRedAi.value && isThinking.value && sideToMove.value === 'red') {
+      stopAnalysis({ playBestMoveOnStop: false })
+    }
     // Disable manual analysis when AI auto-play is enabled
     if (!isRedAi.value && isThinking.value && isManualAnalysis.value) {
       stopAnalysis({ playBestMoveOnStop: false })
@@ -651,6 +655,10 @@
     isRedAi.value = !isRedAi.value
   }
   function toggleBlackAi() {
+    // If turning off Black AI and it's currently Black's turn and thinking, stop the analysis
+    if (isBlackAi.value && isThinking.value && sideToMove.value === 'black') {
+      stopAnalysis({ playBestMoveOnStop: false })
+    }
     // Disable manual analysis when AI auto-play is enabled
     if (!isBlackAi.value && isThinking.value && isManualAnalysis.value) {
       stopAnalysis({ playBestMoveOnStop: false })
