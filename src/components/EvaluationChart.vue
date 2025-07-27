@@ -472,6 +472,10 @@
     }
   }
 
+  const handleMouseLeave = () => {
+    tooltipVisible.value = false
+  }
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!chartCanvas.value || !chartContainer.value) return
 
@@ -564,6 +568,7 @@
       })
       chartCanvas.value.addEventListener('mousedown', handleMouseDown)
       chartCanvas.value.addEventListener('mousemove', handleMouseMove)
+      chartCanvas.value.addEventListener('mouseleave', handleMouseLeave)
       // Listen on container for mouse up/leave to catch events outside canvas
       chartContainer.value.addEventListener('mouseup', handlePanEnd)
       chartContainer.value.addEventListener('mouseleave', handlePanEnd)
@@ -577,6 +582,7 @@
       chartCanvas.value.removeEventListener('wheel', handleWheel)
       chartCanvas.value.removeEventListener('mousedown', handleMouseDown)
       chartCanvas.value.removeEventListener('mousemove', handleMouseMove)
+      chartCanvas.value.removeEventListener('mouseleave', handleMouseLeave)
       chartContainer.value.removeEventListener('mouseup', handlePanEnd)
       chartContainer.value.removeEventListener('mouseleave', handlePanEnd)
     }
