@@ -6,6 +6,7 @@ import {
   INITIAL_PIECE_COUNTS,
 } from '@/utils/constants'
 import { isAndroidPlatform as checkAndroidPlatform } from '../utils/platform'
+import { useInterfaceSettings } from './useInterfaceSettings'
 
 export interface Piece {
   id: number
@@ -46,6 +47,9 @@ export interface GameNotation {
 }
 
 export function useChessGame() {
+  // Get FEN format setting
+  const { useNewFenFormat } = useInterfaceSettings()
+  
   const pieces = ref<Piece[]>([])
   const selectedPieceId = ref<number | null>(null)
   const copySuccessVisible = ref(false)
@@ -197,6 +201,69 @@ export function useChessGame() {
 
   const moveHistory = computed(() => history.value)
 
+  // FEN format conversion functions
+  const detectFenFormat = (fen: string): 'new' | 'old' => {
+    const parts = fen.split(' ')
+    if (parts.length >= 2) {
+      // If second part is 'w' or 'b', it's new format
+      return (parts[1] === 'w' || parts[1] === 'b') ? 'new' : 'old'
+    }
+    return 'old' // Default to old format if uncertain
+  }
+
+  const convertFenFormat = (fen: string, targetFormat: 'new' | 'old'): string => {
+    const parts = fen.split(' ')
+    const currentFormat = detectFenFormat(fen)
+    
+    if (currentFormat === targetFormat) {
+      return fen // No conversion needed
+    }
+
+    let boardPart: string,
+        hiddenPart: string = '-',
+        sidePart: string,
+        halfmove: string = '0',
+        fullmove: string = '1'
+
+    if (currentFormat === 'new') {
+      // Convert from new to old format
+      if (parts.length >= 5) {
+        [boardPart, sidePart, hiddenPart, halfmove, fullmove] = parts
+      } else if (parts.length >= 3) {
+        [boardPart, sidePart, hiddenPart] = parts
+      } else {
+        [boardPart, sidePart] = parts
+      }
+      // Old format: board hiddenPart side castling enpassant halfmove fullmove
+      return `${boardPart} ${hiddenPart} ${sidePart} - - ${halfmove} ${fullmove}`
+    } else {
+      // Convert from old to new format
+      if (parts.length >= 7) {
+        [boardPart, hiddenPart, sidePart, , , halfmove, fullmove] = parts
+      } else if (parts.length >= 3) {
+        [boardPart, hiddenPart, sidePart] = parts
+      } else {
+        [boardPart, sidePart] = parts
+      }
+      // New format: board side hiddenPart halfmove fullmove
+      return `${boardPart} ${sidePart} ${hiddenPart} ${halfmove} ${fullmove}`
+    }
+  }
+
+  // Generate FEN for engine communication (respects format settings)
+  const generateFenForEngine = (baseFen?: string): string => {
+    const targetFormat = useNewFenFormat.value ? 'new' : 'old'
+    
+    if (baseFen) {
+      // Convert baseFen to the target format
+      return convertFenFormat(baseFen, targetFormat)
+    } else {
+      // Generate current position FEN in the target format
+      const currentFen = generateFen()
+      return convertFenFormat(currentFen, targetFormat)
+    }
+  }
+
   const generateFen = (): string => {
     const board: (Piece | null)[][] = Array.from({ length: 10 }, () =>
       Array(9).fill(null)
@@ -239,8 +306,17 @@ export function useChessGame() {
       if (redCount > 0) hiddenStr += char + redCount
       if (blackCount > 0) hiddenStr += char.toLowerCase() + blackCount
     })
-    // Only return FEN, without move history, ensure engine doesn't repeat moves
-    return `${boardFen} ${hiddenStr || '-'} ${sideToMove.value === 'red' ? 'w' : 'b'} - - ${halfmoveClock.value} ${fullmoveNumber.value}`
+    // Generate FEN based on format setting
+    const color = sideToMove.value === 'red' ? 'w' : 'b'
+    const hiddenPart = hiddenStr || '-'
+    
+    if (useNewFenFormat.value) {
+      // New FEN format: board color hiddenPieces halfmove fullmove
+      return `${boardFen} ${color} ${hiddenPart} ${halfmoveClock.value} ${fullmoveNumber.value}`
+    } else {
+      // Old FEN format: board hiddenPieces color castling enpassant halfmove fullmove
+      return `${boardFen} ${hiddenPart} ${color} - - ${halfmoveClock.value} ${fullmoveNumber.value}`
+    }
   }
 
   const loadFen = (fen: string, animate: boolean) => {
@@ -252,30 +328,54 @@ export function useChessGame() {
         sidePart: string,
         halfmove: string,
         fullmove: string
-      if (parts.length === 2) {
-        ;[boardPart, sidePart] = parts
-        halfmove = '0'
-        fullmove = '1'
-      } else if (parts.length === 6) {
-        ;[
-          boardPart,
-          sidePart, // castling and en passant are ignored
-          ,
-          ,
-          halfmove,
-          fullmove,
-        ] = parts
+      
+      // Detect FEN format by checking if second part is color ('w' or 'b')
+      const isNewFormat = parts.length >= 2 && (parts[1] === 'w' || parts[1] === 'b')
+      
+      if (isNewFormat) {
+        // New FEN format parsing
+        if (parts.length >= 5) {
+          // Format: board color hiddenPart halfmove fullmove
+          ;[boardPart, sidePart, hiddenPart, halfmove, fullmove] = parts
+        } else if (parts.length >= 3) {
+          // Format: board color hiddenPart (missing moves)
+          ;[boardPart, sidePart, hiddenPart] = parts
+          halfmove = '0'
+          fullmove = '1'
+        } else {
+          // Format: board color (minimal)
+          ;[boardPart, sidePart] = parts
+          halfmove = '0'
+          fullmove = '1'
+        }
       } else {
-        ;[
-          boardPart,
-          hiddenPart,
-          sidePart, // castling and en passant are ignored
-          ,
-          ,
-          halfmove,
-          fullmove,
-        ] = parts
+        // Old FEN format parsing (existing logic)
+        if (parts.length === 2) {
+          ;[boardPart, sidePart] = parts
+          halfmove = '0'
+          fullmove = '1'
+        } else if (parts.length === 6) {
+          ;[
+            boardPart,
+            sidePart, // castling and en passant are ignored
+            ,
+            ,
+            halfmove,
+            fullmove,
+          ] = parts
+        } else {
+          ;[
+            boardPart,
+            hiddenPart,
+            sidePart, // castling and en passant are ignored
+            ,
+            ,
+            halfmove,
+            fullmove,
+          ] = parts
+        }
       }
+      
       sideToMove.value = sidePart === 'w' ? 'red' : 'black'
       halfmoveClock.value = halfmove ? parseInt(halfmove, 10) : 0
       fullmoveNumber.value = fullmove ? parseInt(fullmove, 10) : 1
@@ -1950,6 +2050,9 @@ export function useChessGame() {
     getPieceSide,
     getRoleByPosition,
     generateFen,
+    generateFenForEngine,
+    detectFenFormat,
+    convertFenFormat,
     copyFenToClipboard,
     inputFenString,
     handleBoardClick,

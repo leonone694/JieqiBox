@@ -20,6 +20,7 @@ interface ConfigData {
     showPositionChart: boolean
     darkMode: boolean
     autosave: boolean
+    useNewFenFormat: boolean
   }
   analysisSettings: {
     movetime: number
@@ -49,6 +50,7 @@ const defaultConfig: ConfigData = {
     showPositionChart: false,
     darkMode: false,
     autosave: true,
+    useNewFenFormat: true,
   },
   analysisSettings: {
     movetime: 1000,

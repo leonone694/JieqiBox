@@ -33,6 +33,11 @@
           :label="$t('interfaceSettings.autosave')"
           color="primary"
         ></v-switch>
+        <v-switch
+          v-model="useNewFenFormat"
+          :label="$t('interfaceSettings.useNewFenFormat')"
+          color="primary"
+        ></v-switch>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -49,7 +54,7 @@
 
   const isDialogVisible = defineModel<boolean>()
 
-  // Get showCoordinates and parseUciInfo from shared state
+  // Get interface settings from shared state
   const {
     showCoordinates,
     parseUciInfo,
@@ -57,6 +62,7 @@
     showPositionChart,
     darkMode,
     autosave,
+    useNewFenFormat,
   } = useInterfaceSettings()
 
   const closeDialog = () => {

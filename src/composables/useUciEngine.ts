@@ -538,7 +538,8 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     // Save current searchmoves for reuse in analysis restarts
     currentSearchMoves.value = [...searchmoves]
 
-    const fenToUse = baseFen ?? generateFen()
+    // Use generateFenForEngine to ensure correct format for engine communication
+    const fenToUse = gameState.generateFenForEngine ? gameState.generateFenForEngine(baseFen) : (baseFen ?? generateFen())
     console.log(
       `[DEBUG] START_ANALYSIS: FEN=${fenToUse}, Moves=${moves.join(' ')}, SearchMoves=${searchmoves.join(' ')}`
     )
@@ -638,6 +639,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   ) => {
     isInfinitePondering.value = false // Reset infinite pondering flag when starting ponder
     if (!isEngineLoaded.value || isPondering.value) return
+    
+    // Convert FEN to the correct format for engine communication
+    const fenForEngine = gameState.generateFenForEngine ? gameState.generateFenForEngine(fen) : fen
 
     const moveToPonder = expectedMove || ponderMove.value
     console.log(
@@ -653,7 +657,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
       // Set position with all moves including the expected ponder move
       const allMoves = [...moves, expectedMove]
-      const pos = `position fen ${fen}${allMoves.length ? ' moves ' + allMoves.join(' ') : ''}`
+      const pos = `position fen ${fenForEngine}${allMoves.length ? ' moves ' + allMoves.join(' ') : ''}`
       send(pos)
 
       // Start pondering with analysis settings (time, depth, nodes limits)
@@ -696,7 +700,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       // If the move is a dark piece move, we need to start pondering with infinite search
       isInfinitePondering.value = true
       isPondering.value = true
-      const pos = `position fen ${fen}${moves.length ? ' moves ' + moves.join(' ') : ''}`
+      const pos = `position fen ${fenForEngine}${moves.length ? ' moves ' + moves.join(' ') : ''}`
       send(pos)
       // Output the reason why we are using infinite ponder
       if (isDarkPieceMove(expectedMove)) {

@@ -294,6 +294,7 @@ export default {
     showPositionChart: 'Show evaluation chart',
     darkMode: 'Dark Mode',
     autosave: 'Auto-save game to Autosave.json',
+    useNewFenFormat: 'Use New FEN Format',
   },
 
   // UCI messages

@@ -289,6 +289,7 @@ export default {
     showPositionChart: '显示局势图',
     darkMode: '暗黑模式',
     autosave: '自动保存棋谱到Autosave.json',
+    useNewFenFormat: '使用新FEN格式',
   },
 
   // UCI消息

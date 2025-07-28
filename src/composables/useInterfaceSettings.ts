@@ -18,6 +18,7 @@ const getInitialSettings = () => {
       showPositionChart: false,
       darkMode: false,
       autosave: true,
+      useNewFenFormat: true,
     }
   }
 
@@ -30,6 +31,7 @@ const getInitialSettings = () => {
       showPositionChart: !!settings.showPositionChart, // Default to false
       darkMode: !!settings.darkMode, // Default to false
       autosave: settings.autosave !== false, // Default to true
+      useNewFenFormat: settings.useNewFenFormat !== false, // Default to true
     }
   } catch (e) {
     console.error('Failed to get interface settings:', e)
@@ -41,6 +43,7 @@ const getInitialSettings = () => {
       showPositionChart: false,
       darkMode: false,
       autosave: true,
+      useNewFenFormat: true,
     }
   }
 }
@@ -53,6 +56,7 @@ const {
   showPositionChart: initialShowPositionChart,
   darkMode: initialDarkMode,
   autosave: initialAutosave,
+  useNewFenFormat: initialUseNewFenFormat,
 } = getInitialSettings()
 
 const showCoordinates = ref<boolean>(initialShowCoordinates)
@@ -61,6 +65,7 @@ const showAnimations = ref<boolean>(initialShowAnimations)
 const showPositionChart = ref<boolean>(initialShowPositionChart)
 const darkMode = ref<boolean>(initialDarkMode)
 const autosave = ref<boolean>(initialAutosave)
+const useNewFenFormat = ref<boolean>(initialUseNewFenFormat)
 
 // Flag to track if config is loaded
 const isConfigLoaded = ref(false)
@@ -74,6 +79,7 @@ watch(
     showPositionChart,
     darkMode,
     autosave,
+    useNewFenFormat,
   ],
   async ([
     newShowCoordinates,
@@ -82,6 +88,7 @@ watch(
     newShowPositionChart,
     newDarkMode,
     newAutosave,
+    newUseNewFenFormat,
   ]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
@@ -93,6 +100,7 @@ watch(
       showPositionChart: newShowPositionChart,
       darkMode: newDarkMode,
       autosave: newAutosave,
+      useNewFenFormat: newUseNewFenFormat,
     }
 
     try {
@@ -118,6 +126,7 @@ export function useInterfaceSettings() {
       showPositionChart.value = !!settings.showPositionChart
       darkMode.value = !!settings.darkMode
       autosave.value = settings.autosave !== false
+      useNewFenFormat.value = settings.useNewFenFormat !== false
 
       isConfigLoaded.value = true
     } catch (error) {
@@ -138,6 +147,7 @@ export function useInterfaceSettings() {
     showPositionChart,
     darkMode,
     autosave,
+    useNewFenFormat,
     loadSettings,
   }
 }

@@ -295,6 +295,7 @@ export default {
     showPositionChart: '形勢グラフを表示',
     darkMode: 'ダークモード',
     autosave: 'ゲームをAutosave.jsonに自動保存',
+    useNewFenFormat: '新しいFEN形式を使用',
   },
 
   // UCIメッセージ

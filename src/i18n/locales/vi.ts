@@ -293,6 +293,7 @@ export default {
     showPositionChart: 'Hiển thị biểu đồ cục diện',
     darkMode: 'Chế độ tối',
     autosave: 'Tự động lưu ván cờ vào Autosave.json',
+    useNewFenFormat: 'Sử dụng định dạng FEN mới',
   },
 
   // Tin nhắn UCI
