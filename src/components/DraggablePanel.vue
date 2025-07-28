@@ -151,6 +151,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: arrow; /* Arrow cursor for docked state */
+  }
+
+  /* Move cursor only for undocked panel header */
+  .undocked-panel-wrapper .panel-header {
     cursor: move;
   }
 
