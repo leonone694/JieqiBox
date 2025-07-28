@@ -384,7 +384,6 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       await uciOkPromise
 
       // If we reach here, engine is valid
-      isEngineLoaded.value = true
       currentEngine.value = engine
       analysis.value = t('uci.engineReady')
 
@@ -394,7 +393,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       // Automatically apply saved configuration after engine loads
       setTimeout(async () => {
         await applySavedSettings()
-      }, 500)
+        // Mark engine as loaded after all setoption commands have been sent
+        isEngineLoaded.value = true
+      }, 100)
     } catch (e: any) {
       console.error(
         `Failed to load or validate engine ${engine.name}:`,

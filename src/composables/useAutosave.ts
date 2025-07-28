@@ -74,10 +74,13 @@ export function useAutosave() {
   // Set up periodic autosave when enabled
   let autosaveTimer: number | null = null
   let currentGameState: any = null
+  let isInitialized = false // Flag to prevent multiple initializations
 
   const startAutosaveTimer = (gameState: any) => {
+    // Clear existing timer first
     if (autosaveTimer) {
       clearInterval(autosaveTimer)
+      autosaveTimer = null
     }
 
     currentGameState = gameState
@@ -117,17 +120,35 @@ export function useAutosave() {
       'Autosave setting changed to:',
       newValue,
       'currentGameState:',
-      !!currentGameState
+      !!currentGameState,
+      'isInitialized:',
+      isInitialized
     )
-    if (newValue && currentGameState) {
+    
+    // Always stop existing timer first
+    if (autosaveTimer) {
+      clearInterval(autosaveTimer)
+      autosaveTimer = null
+    }
+    
+    // Only start timer if we have a game state, autosave is enabled, and we're initialized
+    if (newValue && currentGameState && isInitialized) {
+      console.log('Starting autosave timer due to setting change')
       startAutosaveTimer(currentGameState)
-    } else {
+    } else if (!newValue) {
+      console.log('Stopping autosave timer due to setting change')
       stopAutosaveTimer()
     }
   })
 
   // Initialize autosave when called from App.vue
   const initializeAutosave = async (gameState: any) => {
+    // Prevent multiple initializations
+    if (isInitialized) {
+      console.log('Autosave already initialized, skipping')
+      return
+    }
+
     try {
       console.log('Autosave: Initializing with gameState:', !!gameState)
 
@@ -147,6 +168,8 @@ export function useAutosave() {
       if (isAutosaveEnabled.value) {
         startAutosaveTimer(gameState)
       }
+
+      isInitialized = true
     } catch (error) {
       console.error('Failed to initialize autosave:', error)
     }

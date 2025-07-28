@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { provide, computed, watch, onMounted } from 'vue'
+  import { provide, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { useTheme } from 'vuetify'
   import TopToolbar from './components/TopToolbar.vue'
@@ -92,6 +92,11 @@
     } catch (error) {
       console.error('Failed to load configuration on app startup:', error)
     }
+  })
+
+  // Clean up autosave timer when app unmounts
+  onUnmounted(() => {
+    autosave.stopAutosaveTimer()
   })
 </script>
 
