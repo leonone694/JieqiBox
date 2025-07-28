@@ -249,7 +249,8 @@ export default {
     engineNotLoaded:
       'エンジンが読み込まれていないため、コマンドを送信できません',
     engineSendUnavailable: 'エンジンのsendメソッドが利用できません',
-    darkPiecesMismatch: 'エラー: {darkCount}暗子 > {poolCount}池',
+    redDarkPiecesMismatch: 'エラー: 赤方{darkCount}暗子 > {poolCount}池',
+    blackDarkPiecesMismatch: 'エラー: 黒方{darkCount}暗子 > {poolCount}池',
     pieceCountExceeded: 'エラー: {pieceName} 総数超過!',
     engineUnloadFailed: 'エンジンのアンロードに失敗しました',
     failedToOpenFileSelector:

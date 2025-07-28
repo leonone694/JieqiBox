@@ -173,16 +173,31 @@ export function useChessGame() {
   const getCharFromPieceName = (name: string): string => FEN_MAP[name]
 
   const validationStatus = computed(() => {
-    const darkPiecesOnBoard = pieces.value.filter(p => !p.isKnown).length
-    const piecesInPool = Object.values(unrevealedPieceCounts.value).reduce(
-      (a, b) => a + b,
-      0
-    )
+    // Count dark pieces on board for each side
+    const darkPiecesOnBoard = pieces.value.filter(p => !p.isKnown)
+    const redDarkPiecesOnBoard = darkPiecesOnBoard.filter(p => getPieceSide(p) === 'red').length
+    const blackDarkPiecesOnBoard = darkPiecesOnBoard.filter(p => getPieceSide(p) === 'black').length
 
-    if (piecesInPool < darkPiecesOnBoard) {
-      return `错误: ${darkPiecesOnBoard}暗子 > ${piecesInPool}池`
+    // Count pieces in pool for each side
+    const redPiecesInPool = Object.entries(unrevealedPieceCounts.value)
+      .filter(([char]) => char === char.toUpperCase()) // Red pieces are uppercase
+      .reduce((sum, [, count]) => sum + count, 0)
+    
+    const blackPiecesInPool = Object.entries(unrevealedPieceCounts.value)
+      .filter(([char]) => char === char.toLowerCase()) // Black pieces are lowercase
+      .reduce((sum, [, count]) => sum + count, 0)
+
+    // Check if red side dark pieces exceed pool
+    if (redPiecesInPool < redDarkPiecesOnBoard) {
+      return `错误: 红方${redDarkPiecesOnBoard}暗子 > ${redPiecesInPool}池`
     }
 
+    // Check if black side dark pieces exceed pool
+    if (blackPiecesInPool < blackDarkPiecesOnBoard) {
+      return `错误: 黑方${blackDarkPiecesOnBoard}暗子 > ${blackPiecesInPool}池`
+    }
+
+    // Check piece count limits for each side separately
     for (const char in INITIAL_PIECE_COUNTS) {
       const revealedCount = pieces.value.filter(
         p => p.isKnown && getCharFromPieceName(p.name) === char

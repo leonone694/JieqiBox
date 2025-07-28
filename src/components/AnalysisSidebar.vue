@@ -1199,12 +1199,19 @@
     // Parse error information
     const errorText = validationStatus.value
 
-    // Check if it's dark pieces count mismatch error
-    const darkPiecesMatch = errorText.match(/错误:\s*(\d+)暗子\s*>\s*(\d+)池/)
-    if (darkPiecesMatch) {
-      const darkCount = darkPiecesMatch[1]
-      const poolCount = darkPiecesMatch[2]
-      return t('errors.darkPiecesMismatch', { darkCount, poolCount })
+    // Check if it's dark pieces count mismatch error (new format with side specification)
+    const redDarkPiecesMatch = errorText.match(/错误:\s*红方(\d+)暗子\s*>\s*(\d+)池/)
+    if (redDarkPiecesMatch) {
+      const darkCount = redDarkPiecesMatch[1]
+      const poolCount = redDarkPiecesMatch[2]
+      return t('errors.redDarkPiecesMismatch', { darkCount, poolCount })
+    }
+
+    const blackDarkPiecesMatch = errorText.match(/错误:\s*黑方(\d+)暗子\s*>\s*(\d+)池/)
+    if (blackDarkPiecesMatch) {
+      const darkCount = blackDarkPiecesMatch[1]
+      const poolCount = blackDarkPiecesMatch[2]
+      return t('errors.blackDarkPiecesMismatch', { darkCount, poolCount })
     }
 
     // Check if it's piece count exceeded error
