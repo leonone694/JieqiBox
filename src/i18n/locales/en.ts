@@ -160,14 +160,6 @@ export default {
     version: 'Version',
     description:
       'A modern Jieqi analysis and game desktop application built with Tauri and Vue 3.',
-    features: 'Features',
-    featuresList: [
-      'Jieqi Game Support',
-      'UCI Engine Analysis',
-      'Notation Save and Load',
-      'Position Editor',
-      'FEN String Support',
-    ],
     author: 'Author',
     license: 'License',
     github: 'GitHub',
@@ -237,7 +229,7 @@ export default {
       'Are you sure you want to delete the engine "{name}"? This action cannot be undone.',
     promptEngineName: 'Please enter a unique name for the engine:',
     promptEngineArgs:
-      'Please enter command-line arguments for the engine (optional):',
+      'Please enter command-line arguments for the engine (optional, leave empty if unknown):',
     nameExists: 'This name already exists. Please use a unique name.',
     engineAddedSuccess: 'Engine {name} was added successfully!',
   },

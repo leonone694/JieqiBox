@@ -161,14 +161,6 @@ export default {
     version: 'Phiên bản',
     description:
       'Một ứng dụng desktop phân tích và chơi Cờ úp hiện đại được xây dựng với Tauri và Vue 3.',
-    features: 'Tính năng',
-    featuresList: [
-      'Hỗ trợ ván Cờ úp',
-      'Phân tích động cơ UCI',
-      'Lưu và tải biên bản',
-      'Chỉnh sửa vị trí',
-      'Hỗ trợ chuỗi FEN',
-    ],
     author: 'Tác giả',
     license: 'Giấy phép',
     github: 'GitHub',
@@ -237,7 +229,7 @@ export default {
     confirmDeleteMessage:
       'Bạn có chắc muốn xóa engine "{name}" không? Hành động này không thể hoàn tác.',
     promptEngineName: 'Vui lòng nhập tên duy nhất cho engine:',
-    promptEngineArgs: 'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn):',
+    promptEngineArgs: 'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn, để trống nếu không biết):',
     nameExists: 'Tên này đã tồn tại. Vui lòng sử dụng một tên khác.',
     engineAddedSuccess: 'Đã thêm thành công engine {name}!',
   },

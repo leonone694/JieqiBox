@@ -157,14 +157,6 @@ export default {
     version: '版本',
     description:
       '一个现代化的揭棋分析和对弈桌面应用程序，基于 Tauri 和 Vue 3 构建。',
-    features: '功能特性',
-    featuresList: [
-      '揭棋对局支持',
-      'UCI引擎分析',
-      '棋谱保存和加载',
-      '局面编辑',
-      'FEN字符串支持',
-    ],
     author: '作者',
     license: '许可证',
     github: 'GitHub',
@@ -232,7 +224,7 @@ export default {
     confirmDeleteTitle: '确认删除',
     confirmDeleteMessage: '您确定要删除引擎“{name}”吗？此操作无法撤销。',
     promptEngineName: '请输入引擎的唯一名称:',
-    promptEngineArgs: '请输入引擎的命令行参数 (可选):',
+    promptEngineArgs: '请输入引擎的命令行参数（可选，未知则留空）：',
     nameExists: '该名称已存在，请使用唯一的名称。',
     engineAddedSuccess: '引擎 {name} 添加成功!',
   },
@@ -297,7 +289,7 @@ export default {
   uci: {
     depth: '深度',
     seldepth: '选择深度',
-    multipv: '多PV',
+    multipv: '多主变',
     score: '分数',
     mate: '绝杀',
     wdl: '胜/和/负',

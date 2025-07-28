@@ -159,14 +159,6 @@ export default {
     version: 'バージョン',
     description:
       'TauriとVue 3で構築された現代的な揭棋解析とゲームデスクトップアプリケーション。',
-    features: '機能',
-    featuresList: [
-      '揭棋ゲームサポート',
-      'UCIエンジン解析',
-      '棋譜の保存と読み込み',
-      '局面編集',
-      'FEN文字列サポート',
-    ],
     author: '作者',
     license: 'ライセンス',
     github: 'GitHub',
@@ -236,7 +228,7 @@ export default {
       'エンジン「{name}」を本当に削除しますか？この操作は元に戻せません。',
     promptEngineName: 'エンジンの一意な名前を入力してください：',
     promptEngineArgs:
-      'エンジンのコマンドライン引数を入力してください（任意）：',
+      'エンジンのコマンドライン引数を入力してください（任意、不明な場合は空欄）：',
     nameExists:
       'この名前は既に使用されています。別の一意な名前を使用してください。',
     engineAddedSuccess: 'エンジン{name}が正常に追加されました！',
