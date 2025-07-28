@@ -305,6 +305,7 @@ export default {
     multipv: 'MultiPV',
     score: 'Score',
     mate: 'Mate',
+    wdl: 'W/D/L',
     nodes: 'Nodes',
     nps: 'NPS',
     hashfull: 'HashFull',

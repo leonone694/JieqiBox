@@ -304,6 +304,7 @@ export default {
     multipv: 'MultiPV',
     score: 'Điểm',
     mate: 'Chiếu hết',
+    wdl: 'Thắng/Hòa/Thua',
     nodes: 'Số nút',
     nps: 'NPS',
     hashfull: 'Hash đầy',

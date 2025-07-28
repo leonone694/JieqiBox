@@ -306,6 +306,7 @@ export default {
     multipv: 'マルチPV',
     score: 'スコア',
     mate: '詰み',
+    wdl: '勝/和/負',
     nodes: 'ノード',
     nps: 'NPS',
     hashfull: 'ハッシュ使用率',

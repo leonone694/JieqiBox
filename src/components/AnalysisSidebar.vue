@@ -1237,6 +1237,7 @@
       { key: 'seldepth', re: /seldepth (\d+)/ },
       { key: 'multipv', re: /multipv (\d+)/ },
       { key: 'score', re: /score (cp|mate) ([\-\d]+)/ },
+      { key: 'wdl', re: /wdl (\d+) (\d+) (\d+)/ },
       { key: 'nodes', re: /nodes (\d+)/ },
       { key: 'nps', re: /nps (\d+)/ },
       { key: 'hashfull', re: /hashfull (\d+)/ },
@@ -1251,6 +1252,10 @@
         if (key === 'score') {
           result['scoreType'] = m[1]
           result['scoreValue'] = m[2]
+        } else if (key === 'wdl') {
+          result['wdlWin'] = parseInt(m[1], 10)
+          result['wdlDraw'] = parseInt(m[2], 10)
+          result['wdlLoss'] = parseInt(m[3], 10)
         } else {
           result[key] = m[1] || m[2]
         }
@@ -1292,6 +1297,20 @@
       }
     }
 
+    // Format WDL percentages
+    const formatWdl = () => {
+      if (info.wdlWin !== undefined && info.wdlDraw !== undefined && info.wdlLoss !== undefined) {
+        const total = info.wdlWin + info.wdlDraw + info.wdlLoss
+        if (total > 0) {
+          const winPercent = ((info.wdlWin / total) * 100).toFixed(1)
+          const drawPercent = ((info.wdlDraw / total) * 100).toFixed(1)
+          const lossPercent = ((info.wdlLoss / total) * 100).toFixed(1)
+          return `<span class="wdl-info">${t('uci.wdl')}: ${winPercent}%/${drawPercent}%/${lossPercent}%</span>`
+        }
+      }
+      return null
+    }
+
     // Use i18n for field names
     const fields = [
       info.depth && `${t('uci.depth')}: ${info.depth}`,
@@ -1304,6 +1323,7 @@
             ? `${t('uci.score')}: ${info.scoreValue}`
             : `${t('uci.mate')}: ${info.scoreValue}`
         }</span>`,
+      formatWdl(),
       info.nodes && `${t('uci.nodes')}: ${info.nodes}`,
       info.nps &&
         `${t('uci.nps')}: ${(parseInt(info.nps, 10) / 1000).toFixed(1)}K`,
@@ -1573,6 +1593,11 @@
 
   .pv-line {
     color: #1976d2;
+    font-weight: bold;
+  }
+
+  .wdl-info {
+    color: #9c27b0;
     font-weight: bold;
   }
   .move-item {

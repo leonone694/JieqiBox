@@ -300,6 +300,7 @@ export default {
     multipv: '多PV',
     score: '分數',
     mate: '絕殺',
+    wdl: '勝/和/負',
     nodes: '節點數',
     nps: 'NPS',
     hashfull: 'Hash佔用',
