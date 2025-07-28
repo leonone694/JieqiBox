@@ -540,7 +540,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     currentSearchMoves.value = [...searchmoves]
 
     // Use generateFenForEngine to ensure correct format for engine communication
-    const fenToUse = gameState.generateFenForEngine ? gameState.generateFenForEngine(baseFen) : (baseFen ?? generateFen())
+    const fenToUse = gameState.generateFenForEngine
+      ? gameState.generateFenForEngine(baseFen)
+      : (baseFen ?? generateFen())
     console.log(
       `[DEBUG] START_ANALYSIS: FEN=${fenToUse}, Moves=${moves.join(' ')}, SearchMoves=${searchmoves.join(' ')}`
     )
@@ -640,9 +642,11 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   ) => {
     isInfinitePondering.value = false // Reset infinite pondering flag when starting ponder
     if (!isEngineLoaded.value || isPondering.value) return
-    
+
     // Convert FEN to the correct format for engine communication
-    const fenForEngine = gameState.generateFenForEngine ? gameState.generateFenForEngine(fen) : fen
+    const fenForEngine = gameState.generateFenForEngine
+      ? gameState.generateFenForEngine(fen)
+      : fen
 
     const moveToPonder = expectedMove || ponderMove.value
     console.log(

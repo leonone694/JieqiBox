@@ -16,7 +16,7 @@
       </div>
     </template>
   </div>
-  
+
   <!-- Teleport the draggable component to body when undocked -->
   <Teleport to="body" v-if="!isDocked">
     <Vue3DraggableResizable

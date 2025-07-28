@@ -124,13 +124,13 @@ export function useAutosave() {
       'isInitialized:',
       isInitialized
     )
-    
+
     // Always stop existing timer first
     if (autosaveTimer) {
       clearInterval(autosaveTimer)
       autosaveTimer = null
     }
-    
+
     // Only start timer if we have a game state, autosave is enabled, and we're initialized
     if (newValue && currentGameState && isInitialized) {
       console.log('Starting autosave timer due to setting change')

@@ -229,7 +229,8 @@ export default {
     confirmDeleteMessage:
       'Bạn có chắc muốn xóa engine "{name}" không? Hành động này không thể hoàn tác.',
     promptEngineName: 'Vui lòng nhập tên duy nhất cho engine:',
-    promptEngineArgs: 'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn, để trống nếu không biết):',
+    promptEngineArgs:
+      'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn, để trống nếu không biết):',
     nameExists: 'Tên này đã tồn tại. Vui lòng sử dụng một tên khác.',
     engineAddedSuccess: 'Đã thêm thành công engine {name}!',
   },
@@ -240,8 +241,10 @@ export default {
     openNotationFailed: 'Mở biên bản thất bại',
     engineNotLoaded: 'Chưa tải engine, không thể gửi lệnh',
     engineSendUnavailable: 'Phương thức send của engine không khả dụng',
-    redDarkPiecesMismatch: 'Lỗi: Bên đỏ {darkCount} quân úp > {poolCount} trong kho',
-    blackDarkPiecesMismatch: 'Lỗi: Bên đen {darkCount} quân úp > {poolCount} trong kho',
+    redDarkPiecesMismatch:
+      'Lỗi: Bên đỏ {darkCount} quân úp > {poolCount} trong kho',
+    blackDarkPiecesMismatch:
+      'Lỗi: Bên đen {darkCount} quân úp > {poolCount} trong kho',
     pieceCountExceeded: 'Lỗi: Tổng số {pieceName} vượt giới hạn!',
     engineLoadFailed: 'Không thể tải engine {name}: {error}',
     engineUnloadFailed: 'Gỡ bỏ engine thất bại',

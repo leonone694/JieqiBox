@@ -1200,14 +1200,18 @@
     const errorText = validationStatus.value
 
     // Check if it's dark pieces count mismatch error (new format with side specification)
-    const redDarkPiecesMatch = errorText.match(/错误:\s*红方(\d+)暗子\s*>\s*(\d+)池/)
+    const redDarkPiecesMatch = errorText.match(
+      /错误:\s*红方(\d+)暗子\s*>\s*(\d+)池/
+    )
     if (redDarkPiecesMatch) {
       const darkCount = redDarkPiecesMatch[1]
       const poolCount = redDarkPiecesMatch[2]
       return t('errors.redDarkPiecesMismatch', { darkCount, poolCount })
     }
 
-    const blackDarkPiecesMatch = errorText.match(/错误:\s*黑方(\d+)暗子\s*>\s*(\d+)池/)
+    const blackDarkPiecesMatch = errorText.match(
+      /错误:\s*黑方(\d+)暗子\s*>\s*(\d+)池/
+    )
     if (blackDarkPiecesMatch) {
       const darkCount = blackDarkPiecesMatch[1]
       const poolCount = blackDarkPiecesMatch[2]
@@ -1299,7 +1303,11 @@
 
     // Format WDL percentages
     const formatWdl = () => {
-      if (info.wdlWin !== undefined && info.wdlDraw !== undefined && info.wdlLoss !== undefined) {
+      if (
+        info.wdlWin !== undefined &&
+        info.wdlDraw !== undefined &&
+        info.wdlLoss !== undefined
+      ) {
         const total = info.wdlWin + info.wdlDraw + info.wdlLoss
         if (total > 0) {
           const winPercent = ((info.wdlWin / total) * 100).toFixed(1)

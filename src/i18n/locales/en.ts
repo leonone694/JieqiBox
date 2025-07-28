@@ -240,8 +240,10 @@ export default {
     openNotationFailed: 'Failed to open notation',
     engineNotLoaded: 'Engine not loaded, cannot send command',
     engineSendUnavailable: 'Engine send method unavailable',
-    redDarkPiecesMismatch: 'Error: Red side {darkCount} dark pieces > {poolCount} pool',
-    blackDarkPiecesMismatch: 'Error: Black side {darkCount} dark pieces > {poolCount} pool',
+    redDarkPiecesMismatch:
+      'Error: Red side {darkCount} dark pieces > {poolCount} pool',
+    blackDarkPiecesMismatch:
+      'Error: Black side {darkCount} dark pieces > {poolCount} pool',
     pieceCountExceeded: 'Error: {pieceName} total count exceeded!',
     engineLoadFailed: 'Failed to load engine {name}: {error}',
     engineUnloadFailed: 'Failed to unload engine',

@@ -49,7 +49,7 @@ export interface GameNotation {
 export function useChessGame() {
   // Get FEN format setting
   const { useNewFenFormat } = useInterfaceSettings()
-  
+
   const pieces = ref<Piece[]>([])
   const selectedPieceId = ref<number | null>(null)
   const copySuccessVisible = ref(false)
@@ -175,14 +175,18 @@ export function useChessGame() {
   const validationStatus = computed(() => {
     // Count dark pieces on board for each side
     const darkPiecesOnBoard = pieces.value.filter(p => !p.isKnown)
-    const redDarkPiecesOnBoard = darkPiecesOnBoard.filter(p => getPieceSide(p) === 'red').length
-    const blackDarkPiecesOnBoard = darkPiecesOnBoard.filter(p => getPieceSide(p) === 'black').length
+    const redDarkPiecesOnBoard = darkPiecesOnBoard.filter(
+      p => getPieceSide(p) === 'red'
+    ).length
+    const blackDarkPiecesOnBoard = darkPiecesOnBoard.filter(
+      p => getPieceSide(p) === 'black'
+    ).length
 
     // Count pieces in pool for each side
     const redPiecesInPool = Object.entries(unrevealedPieceCounts.value)
       .filter(([char]) => char === char.toUpperCase()) // Red pieces are uppercase
       .reduce((sum, [, count]) => sum + count, 0)
-    
+
     const blackPiecesInPool = Object.entries(unrevealedPieceCounts.value)
       .filter(([char]) => char === char.toLowerCase()) // Black pieces are lowercase
       .reduce((sum, [, count]) => sum + count, 0)
@@ -221,44 +225,47 @@ export function useChessGame() {
     const parts = fen.split(' ')
     if (parts.length >= 2) {
       // If second part is 'w' or 'b', it's new format
-      return (parts[1] === 'w' || parts[1] === 'b') ? 'new' : 'old'
+      return parts[1] === 'w' || parts[1] === 'b' ? 'new' : 'old'
     }
     return 'old' // Default to old format if uncertain
   }
 
-  const convertFenFormat = (fen: string, targetFormat: 'new' | 'old'): string => {
+  const convertFenFormat = (
+    fen: string,
+    targetFormat: 'new' | 'old'
+  ): string => {
     const parts = fen.split(' ')
     const currentFormat = detectFenFormat(fen)
-    
+
     if (currentFormat === targetFormat) {
       return fen // No conversion needed
     }
 
     let boardPart: string,
-        hiddenPart: string = '-',
-        sidePart: string,
-        halfmove: string = '0',
-        fullmove: string = '1'
+      hiddenPart: string = '-',
+      sidePart: string,
+      halfmove: string = '0',
+      fullmove: string = '1'
 
     if (currentFormat === 'new') {
       // Convert from new to old format
       if (parts.length >= 5) {
-        [boardPart, sidePart, hiddenPart, halfmove, fullmove] = parts
+        ;[boardPart, sidePart, hiddenPart, halfmove, fullmove] = parts
       } else if (parts.length >= 3) {
-        [boardPart, sidePart, hiddenPart] = parts
+        ;[boardPart, sidePart, hiddenPart] = parts
       } else {
-        [boardPart, sidePart] = parts
+        ;[boardPart, sidePart] = parts
       }
       // Old format: board hiddenPart side castling enpassant halfmove fullmove
       return `${boardPart} ${hiddenPart} ${sidePart} - - ${halfmove} ${fullmove}`
     } else {
       // Convert from old to new format
       if (parts.length >= 7) {
-        [boardPart, hiddenPart, sidePart, , , halfmove, fullmove] = parts
+        ;[boardPart, hiddenPart, sidePart, , , halfmove, fullmove] = parts
       } else if (parts.length >= 3) {
-        [boardPart, hiddenPart, sidePart] = parts
+        ;[boardPart, hiddenPart, sidePart] = parts
       } else {
-        [boardPart, sidePart] = parts
+        ;[boardPart, sidePart] = parts
       }
       // New format: board side hiddenPart halfmove fullmove
       return `${boardPart} ${sidePart} ${hiddenPart} ${halfmove} ${fullmove}`
@@ -268,7 +275,7 @@ export function useChessGame() {
   // Generate FEN for engine communication (respects format settings)
   const generateFenForEngine = (baseFen?: string): string => {
     const targetFormat = useNewFenFormat.value ? 'new' : 'old'
-    
+
     if (baseFen) {
       // Convert baseFen to the target format
       return convertFenFormat(baseFen, targetFormat)
@@ -324,7 +331,7 @@ export function useChessGame() {
     // Generate FEN based on format setting
     const color = sideToMove.value === 'red' ? 'w' : 'b'
     const hiddenPart = hiddenStr || '-'
-    
+
     if (useNewFenFormat.value) {
       // New FEN format: board color hiddenPieces halfmove fullmove
       return `${boardFen} ${color} ${hiddenPart} ${halfmoveClock.value} ${fullmoveNumber.value}`
@@ -343,10 +350,11 @@ export function useChessGame() {
         sidePart: string,
         halfmove: string,
         fullmove: string
-      
+
       // Detect FEN format by checking if second part is color ('w' or 'b')
-      const isNewFormat = parts.length >= 2 && (parts[1] === 'w' || parts[1] === 'b')
-      
+      const isNewFormat =
+        parts.length >= 2 && (parts[1] === 'w' || parts[1] === 'b')
+
       if (isNewFormat) {
         // New FEN format parsing
         if (parts.length >= 5) {
@@ -390,7 +398,7 @@ export function useChessGame() {
           ] = parts
         }
       }
-      
+
       sideToMove.value = sidePart === 'w' ? 'red' : 'black'
       halfmoveClock.value = halfmove ? parseInt(halfmove, 10) : 0
       fullmoveNumber.value = fullmove ? parseInt(fullmove, 10) : 1
