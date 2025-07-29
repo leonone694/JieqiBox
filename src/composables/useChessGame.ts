@@ -1472,11 +1472,22 @@ export function useChessGame() {
     // Handle flip information if present (characters after the 4th position)
     if (hasExplicitFlip) {
       const flipInfo = trimmedUci.substring(4)
+      
+      // Get the side that made this move (opposite of current side to move since move was just made)
+      const moveSide = sideToMove.value === 'red' ? 'black' : 'red'
 
-      // Process flip information: uppercase for revealed pieces, lowercase for captured pieces
+      // Process flip information based on the side that made the move
+      // For red side: uppercase = revealed piece, lowercase = captured piece
+      // For black side: lowercase = revealed piece, uppercase = captured piece
       for (const char of flipInfo) {
-        if (char === char.toUpperCase() && char !== char.toLowerCase()) {
-          // Uppercase letter - revealed piece
+        const isUppercase = char === char.toUpperCase() && char !== char.toLowerCase()
+        const isLowercase = char === char.toLowerCase() && char !== char.toUpperCase()
+        
+        // Determine if this character represents a revealed piece based on the side
+        const isRevealedPiece = (moveSide === 'red' && isUppercase) || (moveSide === 'black' && isLowercase)
+        
+        if (isRevealedPiece) {
+          // This is a revealed piece - find and reveal the moved piece
           const pieceName = getPieceNameFromChar(char)
           if (pieceName) {
             // Find the moved piece and reveal it
@@ -1490,8 +1501,8 @@ export function useChessGame() {
               adjustUnrevealedCount(char, -1)
             }
           }
-        } else if (char === char.toLowerCase() && char !== char.toUpperCase()) {
-          // Lowercase letter - captured piece
+        } else if (isUppercase || isLowercase) {
+          // This is a captured piece - just adjust the unrevealed count
           const pieceName = getPieceNameFromChar(char)
           if (pieceName) {
             // Adjust unrevealed count for captured piece
