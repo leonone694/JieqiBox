@@ -38,6 +38,17 @@
           :label="$t('interfaceSettings.useNewFenFormat')"
           color="primary"
         ></v-switch>
+        <v-text-field
+          v-model.number="engineLogLineLimit"
+          :label="$t('interfaceSettings.engineLogLineLimit')"
+          type="number"
+          min="50"
+          max="1000"
+          step="50"
+          color="primary"
+          variant="outlined"
+          density="compact"
+        ></v-text-field>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -63,6 +74,7 @@
     darkMode,
     autosave,
     useNewFenFormat,
+    engineLogLineLimit,
   } = useInterfaceSettings()
 
   const closeDialog = () => {

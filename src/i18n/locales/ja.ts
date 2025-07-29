@@ -289,6 +289,7 @@ export default {
     darkMode: 'ダークモード',
     autosave: 'ゲームをAutosave.jsonに自動保存',
     useNewFenFormat: '新しいFEN形式を使用',
+    engineLogLineLimit: 'エンジンログ行数制限',
   },
 
   // UCIメッセージ

@@ -395,7 +395,7 @@
   const { restoreDefaultLayout } = usePanelManager()
 
   // Get interface settings
-  const { parseUciInfo } = useInterfaceSettings()
+  const { parseUciInfo, engineLogLineLimit } = useInterfaceSettings()
 
   /* ---------- Injected State ---------- */
   const gameState = inject('game-state') as any
@@ -1174,6 +1174,15 @@
       }
     }
   })
+
+  // Watch engine output and clear log when it reaches the limit
+  watch(engineOutput, (newOutput) => {
+    if (newOutput.length > engineLogLineLimit.value) {
+      console.log(`[DEBUG] ENGINE_LOG_LIMIT: Clearing log at ${newOutput.length} lines (limit: ${engineLogLineLimit.value})`)
+      // Clear the engine output array
+      engineOutput.value = []
+    }
+  }, { deep: true })
 
   const validationStatusKey = computed(() => {
     if (!validationStatus.value) return 'error'

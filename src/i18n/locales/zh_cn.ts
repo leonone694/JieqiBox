@@ -276,13 +276,14 @@ export default {
   // 界面设置
   interfaceSettings: {
     title: '界面设置',
-    showCoordinates: '显示行列序号',
+    showCoordinates: '显示行列坐标',
     parseUciInfo: '解析UCI信息',
     showAnimations: '开启走子动画',
     showPositionChart: '显示局势图',
     darkMode: '暗黑模式',
     autosave: '自动保存棋谱到Autosave.json',
     useNewFenFormat: '使用新FEN格式',
+    engineLogLineLimit: '引擎日志行数限制',
   },
 
   // UCI消息

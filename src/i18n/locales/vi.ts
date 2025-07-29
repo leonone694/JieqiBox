@@ -281,6 +281,7 @@ export default {
     ja: '日本語',
   },
 
+  // Hộp thoại cài đặt giao diện
   interfaceSettings: {
     title: 'Cài đặt giao diện',
     showCoordinates: 'Hiển thị số hàng và cột',
@@ -290,6 +291,7 @@ export default {
     darkMode: 'Chế độ tối',
     autosave: 'Tự động lưu ván cờ vào Autosave.json',
     useNewFenFormat: 'Sử dụng định dạng FEN mới',
+    engineLogLineLimit: 'Giới hạn dòng nhật ký động cơ',
   },
 
   // Tin nhắn UCI

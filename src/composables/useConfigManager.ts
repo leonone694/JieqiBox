@@ -21,6 +21,7 @@ interface ConfigData {
     darkMode: boolean
     autosave: boolean
     useNewFenFormat: boolean
+    engineLogLineLimit: number
   }
   analysisSettings: {
     movetime: number
@@ -51,6 +52,7 @@ const defaultConfig: ConfigData = {
     darkMode: false,
     autosave: true,
     useNewFenFormat: true,
+    engineLogLineLimit: 256,
   },
   analysisSettings: {
     movetime: 1000,

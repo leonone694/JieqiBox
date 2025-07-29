@@ -290,6 +290,7 @@ export default {
     darkMode: 'Dark Mode',
     autosave: 'Auto-save game to Autosave.json',
     useNewFenFormat: 'Use New FEN Format',
+    engineLogLineLimit: 'Engine Log Line Limit',
   },
 
   // UCI messages

@@ -19,6 +19,7 @@ const getInitialSettings = () => {
       darkMode: false,
       autosave: true,
       useNewFenFormat: true,
+      engineLogLineLimit: 256,
     }
   }
 
@@ -32,6 +33,7 @@ const getInitialSettings = () => {
       darkMode: !!settings.darkMode, // Default to false
       autosave: settings.autosave !== false, // Default to true
       useNewFenFormat: settings.useNewFenFormat !== false, // Default to true
+      engineLogLineLimit: settings.engineLogLineLimit || 256, // Default to 256
     }
   } catch (e) {
     console.error('Failed to get interface settings:', e)
@@ -44,6 +46,7 @@ const getInitialSettings = () => {
       darkMode: false,
       autosave: true,
       useNewFenFormat: true,
+      engineLogLineLimit: 256,
     }
   }
 }
@@ -57,6 +60,7 @@ const {
   darkMode: initialDarkMode,
   autosave: initialAutosave,
   useNewFenFormat: initialUseNewFenFormat,
+  engineLogLineLimit: initialEngineLogLineLimit,
 } = getInitialSettings()
 
 const showCoordinates = ref<boolean>(initialShowCoordinates)
@@ -66,6 +70,7 @@ const showPositionChart = ref<boolean>(initialShowPositionChart)
 const darkMode = ref<boolean>(initialDarkMode)
 const autosave = ref<boolean>(initialAutosave)
 const useNewFenFormat = ref<boolean>(initialUseNewFenFormat)
+const engineLogLineLimit = ref<number>(initialEngineLogLineLimit)
 
 // Flag to track if config is loaded
 const isConfigLoaded = ref(false)
@@ -80,6 +85,7 @@ watch(
     darkMode,
     autosave,
     useNewFenFormat,
+    engineLogLineLimit,
   ],
   async ([
     newShowCoordinates,
@@ -89,6 +95,7 @@ watch(
     newDarkMode,
     newAutosave,
     newUseNewFenFormat,
+    newEngineLogLineLimit,
   ]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
@@ -101,6 +108,7 @@ watch(
       darkMode: newDarkMode,
       autosave: newAutosave,
       useNewFenFormat: newUseNewFenFormat,
+      engineLogLineLimit: newEngineLogLineLimit,
     }
 
     try {
@@ -127,6 +135,7 @@ export function useInterfaceSettings() {
       darkMode.value = !!settings.darkMode
       autosave.value = settings.autosave !== false
       useNewFenFormat.value = settings.useNewFenFormat !== false
+      engineLogLineLimit.value = settings.engineLogLineLimit || 256
 
       isConfigLoaded.value = true
     } catch (error) {
@@ -148,6 +157,7 @@ export function useInterfaceSettings() {
     darkMode,
     autosave,
     useNewFenFormat,
+    engineLogLineLimit,
     loadSettings,
   }
 }
