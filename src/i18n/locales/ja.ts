@@ -229,6 +229,8 @@ export default {
     promptEngineName: 'エンジンの一意な名前を入力してください：',
     promptEngineArgs:
       'エンジンのコマンドライン引数を入力してください（任意、不明な場合は空欄）：',
+    promptHasNnue: 'このエンジンはNNUEファイルを使用しますか？(y/n):',
+    promptNnueFile: 'エンジンのNNUEファイルを選択してください：',
     nameExists:
       'この名前は既に使用されています。別の一意な名前を使用してください。',
     engineAddedSuccess: 'エンジン{name}が正常に追加されました！',

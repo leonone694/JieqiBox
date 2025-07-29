@@ -141,6 +141,7 @@
     args: '',
   }
   let unlistenAndroidAdd: Promise<UnlistenFn> | null = null
+  let unlistenNnueRequest: Promise<UnlistenFn> | null = null
 
   // --- NEW State for Deletion Flow ---
   const confirmDeleteDialog = ref(false)
@@ -233,8 +234,11 @@
 
     const args = prompt(t('engineManager.promptEngineArgs'), '') ?? ''
 
+    // Ask if the engine uses NNUE files
+    const hasNnue = prompt(t('engineManager.promptHasNnue'), 'n')?.toLowerCase() === 'y'
+
     // Store the engine data for when the file is selected
-    const engineData = { name, args }
+    const engineData = { name, args, hasNnue }
 
     // Use the JavaScript interface approach that the Android MainActivity expects
     if (typeof window !== 'undefined' && (window as any).SafFileInterface) {
@@ -259,6 +263,7 @@
             filename: filename,
             name: engineData.name,
             args: engineData.args,
+            hasNnue: engineData.hasNnue,
           })
 
           invoke('handle_saf_file_result', {
@@ -266,6 +271,7 @@
             filename: filename,
             name: engineData.name,
             args: engineData.args,
+            hasNnue: engineData.hasNnue,
           }).catch(err => {
             console.error('Failed to handle SAF file result:', err)
             alert(t('errors.failedToProcessEngine') + ': ' + err)
@@ -282,7 +288,7 @@
       window.addEventListener('saf-file-result', handleSafResult)
     } else {
       // Fallback to the Tauri invoke approach
-      invoke('request_saf_file_selection', { name, args }).catch(err => {
+      invoke('request_saf_file_selection', { name, args, hasNnue }).catch(err => {
         console.error('SAF request failed:', err)
         alert(t('errors.failedToOpenFileSelector'))
       })
@@ -395,12 +401,107 @@
         saveEnginesToConfig()
         alert(t('engineManager.engineAddedSuccess', { name: payload.name }))
       })
+
+      // Listen for NNUE file requests
+      unlistenNnueRequest = listen('request-nnue-file', event => {
+        const payload = event.payload as any
+        console.log('[DEBUG] Received NNUE file request:', payload)
+        
+        // Show prompt for NNUE file selection
+        if (confirm(t('engineManager.promptNnueFile'))) {
+          // Use the JavaScript interface approach for NNUE file selection
+          if (typeof window !== 'undefined' && (window as any).SafFileInterface) {
+            // Call the JavaScript interface directly
+            ;(window as any).SafFileInterface.startFileSelection()
+
+            // Listen for the NNUE file result
+            const handleNnueSafResult = (event: Event) => {
+              const customEvent = event as CustomEvent
+              const { filename, result } = customEvent.detail
+
+              if (
+                result &&
+                result !== 'File selection cancelled' &&
+                result !== 'No URI returned' &&
+                result !== 'No data returned'
+              ) {
+                // Success - the NNUE file was copied to internal storage
+                console.log('[DEBUG] Calling handle_nnue_file_result with:', {
+                  tempFilePath: result,
+                  filename: filename,
+                  engineName: payload.engine_name,
+                  enginePath: payload.engine_path,
+                  args: payload.args,
+                  engineInstanceId: payload.engine_instance_id,
+                })
+
+                invoke('handle_nnue_file_result', {
+                  tempFilePath: result,
+                  filename: filename,
+                  engineName: payload.engine_name,
+                  enginePath: payload.engine_path,
+                  args: payload.args,
+                  engineInstanceId: payload.engine_instance_id,
+                }).catch(err => {
+                  console.error('Failed to handle NNUE SAF file result:', err)
+                  alert(t('errors.failedToProcessEngine') + ': ' + err)
+                })
+              } else {
+                // User cancelled or there was an error
+                console.log('NNUE SAF file selection cancelled or failed:', result)
+                // Still add the engine without NNUE file
+                const newEngineData = {
+                  id: `engine_${Date.now()}`,
+                  name: payload.engine_name,
+                  path: payload.engine_path,
+                  args: payload.args,
+                }
+                engines.value.push(newEngineData)
+                saveEnginesToConfig()
+                alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+              }
+
+              // Remove the event listener
+              window.removeEventListener('saf-file-result', handleNnueSafResult)
+            }
+
+            window.addEventListener('saf-file-result', handleNnueSafResult)
+          } else {
+            // Fallback - add engine without NNUE file
+            const newEngineData = {
+              id: `engine_${Date.now()}`,
+              name: payload.engine_name,
+              path: payload.engine_path,
+              args: payload.args,
+            }
+            engines.value.push(newEngineData)
+            saveEnginesToConfig()
+            alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+          }
+        } else {
+          // User cancelled NNUE file selection, add engine without NNUE
+          const newEngineData = {
+            id: `engine_${Date.now()}`,
+            name: payload.engine_name,
+            path: payload.engine_path,
+            args: payload.args,
+          }
+          engines.value.push(newEngineData)
+          saveEnginesToConfig()
+          alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+        }
+      })
+
     }
   })
 
   onUnmounted(async () => {
     if (unlistenAndroidAdd) {
       const unlisten = await unlistenAndroidAdd
+      unlisten()
+    }
+    if (unlistenNnueRequest) {
+      const unlisten = await unlistenNnueRequest
       unlisten()
     }
   })

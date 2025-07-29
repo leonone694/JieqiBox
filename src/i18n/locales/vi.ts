@@ -231,6 +231,8 @@ export default {
     promptEngineName: 'Vui lòng nhập tên duy nhất cho engine:',
     promptEngineArgs:
       'Vui lòng nhập tham số dòng lệnh cho engine (tùy chọn, để trống nếu không biết):',
+    promptHasNnue: 'Engine này có sử dụng file NNUE không? (y/n):',
+    promptNnueFile: 'Vui lòng chọn file NNUE cho engine:',
     nameExists: 'Tên này đã tồn tại. Vui lòng sử dụng một tên khác.',
     engineAddedSuccess: 'Đã thêm thành công engine {name}!',
   },

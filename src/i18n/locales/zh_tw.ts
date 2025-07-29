@@ -225,6 +225,8 @@ export default {
     confirmDeleteMessage: '您確定要刪除引擎「{name}」嗎？此操作無法復原。',
     promptEngineName: '請輸入引擎的唯一名稱：',
     promptEngineArgs: '請輸入引擎的命令列參數（可選，未知則留空）：',
+    promptHasNnue: '此引擎是否使用NNUE檔案？(y/n):',
+    promptNnueFile: '請選擇引擎的NNUE檔案：',
     nameExists: '該名稱已存在，請使用唯一的名稱。',
     engineAddedSuccess: '引擎 {name} 新增成功！',
   },

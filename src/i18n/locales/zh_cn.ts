@@ -225,6 +225,8 @@ export default {
     confirmDeleteMessage: '您确定要删除引擎“{name}”吗？此操作无法撤销。',
     promptEngineName: '请输入引擎的唯一名称:',
     promptEngineArgs: '请输入引擎的命令行参数（可选，未知则留空）：',
+    promptHasNnue: '此引擎是否使用NNUE文件？(y/n):',
+    promptNnueFile: '请选择引擎的NNUE文件：',
     nameExists: '该名称已存在，请使用唯一的名称。',
     engineAddedSuccess: '引擎 {name} 添加成功!',
   },

@@ -230,6 +230,8 @@ export default {
     promptEngineName: 'Please enter a unique name for the engine:',
     promptEngineArgs:
       'Please enter command-line arguments for the engine (optional, leave empty if unknown):',
+    promptHasNnue: 'Does this engine use NNUE files? (y/n):',
+    promptNnueFile: 'Please select the NNUE file for the engine:',
     nameExists: 'This name already exists. Please use a unique name.',
     engineAddedSuccess: 'Engine {name} was added successfully!',
   },

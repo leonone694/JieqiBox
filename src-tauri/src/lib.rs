@@ -449,11 +449,12 @@ async fn scan_android_engines(app: AppHandle) -> Result<Vec<String>, String> {
 /// Emits an event to the Android native side to request a file via SAF.
 #[cfg(target_os = "android")]
 #[tauri::command]
-async fn request_saf_file_selection(name: String, args: String, app: AppHandle) -> Result<(), String> {
+async fn request_saf_file_selection(name: String, args: String, has_nnue: bool, app: AppHandle) -> Result<(), String> {
     // This command's only job is to forward the request to the native layer
     let _ = app.emit("request-saf-file-selection", serde_json::json!({
         "name": name,
-        "args": args
+        "args": args,
+        "has_nnue": has_nnue
     }));
     Ok(())
 }
@@ -467,6 +468,7 @@ async fn handle_saf_file_result(
     filename: String,
     name: String,
     args: String,
+    has_nnue: bool,
     app: AppHandle,
 ) -> Result<(), String> {
     let _ = app.emit("engine-output", format!("[DEBUG] SAF result for engine '{}': TempPath={}, Filename={}", name, temp_file_path, filename));
@@ -515,11 +517,84 @@ async fn handle_saf_file_result(
     perms.set_mode(0o755);
     fs::set_permissions(final_path, perms).map_err(|e| e.to_string())?;
 
+    // Handle NNUE file if requested
+    if has_nnue {
+        let _ = app.emit("engine-output", "[DEBUG] Engine requires NNUE file, requesting file selection...");
+        
+        // Request NNUE file selection from the frontend
+        let nnue_request_data = serde_json::json!({
+            "engine_name": name,
+            "engine_path": final_path_str,
+            "args": args,
+            "engine_instance_id": engine_instance_id
+        });
+        
+        // Store the engine data temporarily and request NNUE file
+        app.emit("request-nnue-file", nnue_request_data).map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
     // Create the ManagedEngine object to send back to the frontend
     let new_engine_data = serde_json::json!({
         "id": format!("engine_{}", chrono::Utc::now().timestamp_millis()),
         "name": name,
         "path": final_path_str,
+        "args": args
+    });
+
+    // Notify the frontend that the engine has been successfully added
+    app.emit("android-engine-added", new_engine_data).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+/// Handle NNUE file result from SAF file selection
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn handle_nnue_file_result(
+    temp_file_path: String,
+    filename: String,
+    engine_name: String,
+    engine_path: String,
+    args: String,
+    engine_instance_id: String,
+    app: AppHandle,
+) -> Result<(), String> {
+    let _ = app.emit("engine-output", format!("[DEBUG] NNUE file result for engine '{}': TempPath={}, Filename={}", engine_name, temp_file_path, filename));
+
+    if temp_file_path.is_empty() {
+        return Err("NNUE file processing failed: temporary path is empty.".to_string());
+    }
+
+    // Get the engine directory path
+    let bundle_identifier = &app.config().identifier;
+    let engine_base_dir = format!("/data/data/{}/files/engines/{}", bundle_identifier, &engine_instance_id);
+
+    // Define the final path for the NNUE file in the same directory as the engine
+    let final_nnue_path_str = format!("{}/{}", engine_base_dir, &filename);
+
+    // Move the NNUE file from the temporary location to the final destination
+    if let Err(e) = fs::rename(&temp_file_path, &final_nnue_path_str) {
+        let error_msg = format!("Failed to move NNUE file from temp to final destination: {}", e);
+        let _ = app.emit("engine-output", format!("[DEBUG] {}", error_msg));
+        // Fallback to copy if rename fails (e.g., cross-device link)
+        if let Err(copy_err) = fs::copy(&temp_file_path, &final_nnue_path_str) {
+             let copy_error_msg = format!("Fallback copy also failed: {}", copy_err);
+             let _ = app.emit("engine-output", format!("[DEBUG] {}", copy_error_msg));
+             return Err(copy_error_msg);
+        } else {
+            // Copy succeeded, remove the original temp file
+            let _ = fs::remove_file(&temp_file_path);
+        }
+    }
+
+    let _ = app.emit("engine-output", format!("[DEBUG] NNUE file successfully copied to: {}", final_nnue_path_str));
+
+    // Create the ManagedEngine object to send back to the frontend
+    let new_engine_data = serde_json::json!({
+        "id": format!("engine_{}", chrono::Utc::now().timestamp_millis()),
+        "name": engine_name,
+        "path": engine_path,
         "args": args
     });
 
@@ -581,7 +656,9 @@ pub fn run() {
             #[cfg(target_os = "android")]
             request_saf_file_selection,
             #[cfg(target_os = "android")]
-            handle_saf_file_result
+            handle_saf_file_result,
+            #[cfg(target_os = "android")]
+            handle_nnue_file_result
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
