@@ -862,8 +862,9 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
 
   /* ---------- Apply Saved Settings ---------- */
   const applySavedSettings = async () => {
-    // The check now uses currentEngine.value
-    if (!isEngineLoaded.value || !currentEngine.value) return
+    // Only check currentEngine.value, not isEngineLoaded.value
+    // During engine loading, isEngineLoaded is false but engine is ready for commands
+    if (!currentEngine.value) return
 
     try {
       const configManager = useConfigManager()
@@ -873,6 +874,8 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       const savedUciOptions = configManager.getUciOptions(
         currentEngine.value.id
       )
+
+      if (Object.keys(savedUciOptions).length === 0) return
 
       Object.entries(savedUciOptions).forEach(([name, value]) => {
         const command = `setoption name ${name} value ${value}`
