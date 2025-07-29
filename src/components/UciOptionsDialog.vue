@@ -73,16 +73,6 @@
                     class="number-input"
                     @update:model-value="updateOption(option.name, $event)"
                   ></v-text-field>
-                  <v-slider
-                    v-model="option.currentValue as number"
-                    :min="option.min"
-                    :max="option.max"
-                    :step="1"
-                    thumb-label
-                    track-color="grey-lighten-1"
-                    class="option-slider"
-                    @update:model-value="updateOption(option.name, $event)"
-                  ></v-slider>
                 </div>
               </div>
 
@@ -746,11 +736,6 @@
   .number-input {
     max-width: 120px;
     align-self: flex-start;
-  }
-
-  .option-slider {
-    width: 100%;
-    margin: 0;
   }
 
   .option-switch {
