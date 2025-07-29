@@ -475,9 +475,14 @@ async fn handle_saf_file_result(
         return Err("SAF file processing failed: temporary path is empty.".to_string());
     }
 
-    // Define the final destination directory for the engine
+    // Generate a unique identifier for this specific engine instance to be used as the directory name.
+    // This prevents conflicts if an engine file and a desired directory have the same name,
+    // and also allows adding the same engine multiple times.
+    let engine_instance_id = format!("{}_{}", name, chrono::Utc::now().timestamp_millis());
+
+    // Define the final destination directory for the engine using the unique ID.
     let bundle_identifier = &app.config().identifier;
-    let engine_base_dir = format!("/data/data/{}/files/engines/{}", bundle_identifier, name);
+    let engine_base_dir = format!("/data/data/{}/files/engines/{}", bundle_identifier, &engine_instance_id);
 
     // Create the engine-specific directory
     if let Err(e) = fs::create_dir_all(&engine_base_dir) {
