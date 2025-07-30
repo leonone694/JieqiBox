@@ -265,6 +265,8 @@ export default {
   evaluationChart: {
     title: '形勢グラフ',
     showMoveLabels: '手のラベルを表示',
+    linearYAxis: '線形Y軸',
+    showOnlyLines: '線のみ表示',
     opening: '開始局面',
     noData: '分析データがありません',
     newGame: '新しいゲーム',

@@ -40,6 +40,20 @@
         hide-details
         density="compact"
       />
+      <v-switch
+        v-model="useLinearYAxis"
+        :label="$t('evaluationChart.linearYAxis')"
+        color="primary"
+        hide-details
+        density="compact"
+      />
+      <v-switch
+        v-model="showOnlyLines"
+        :label="$t('evaluationChart.showOnlyLines')"
+        color="primary"
+        hide-details
+        density="compact"
+      />
     </div>
   </div>
 </template>
@@ -48,6 +62,7 @@
   import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
   import { useI18n } from 'vue-i18n'
   import type { HistoryEntry } from '@/composables/useChessGame'
+  import { useEvaluationChartSettings } from '@/composables/useEvaluationChartSettings'
 
   const { t } = useI18n()
 
@@ -64,7 +79,8 @@
   const chartContext = ref<CanvasRenderingContext2D | null>(null)
 
   /* ---------- Display State ---------- */
-  const showMoveLabels = ref(true)
+  // Get persistent settings from the composable
+  const { showMoveLabels, useLinearYAxis, showOnlyLines } = useEvaluationChartSettings()
   const tooltipVisible = ref(false)
   const tooltipStyle = ref({ left: '0px', top: '0px' })
   const tooltipData = ref({
@@ -238,20 +254,44 @@
       return
     }
 
-    const transScores = scores.map(transform)
-    const minT = Math.min(...transScores)
-    const maxT = Math.max(...transScores)
-    const pad = Math.max(0.5, (maxT - minT) * 0.1)
-    const displayMinT = minT - pad
-    const displayMaxT = maxT + pad
-    const rangeT = displayMaxT - displayMinT || 1
+    // Apply transformation based on linear Y-axis setting
+    let transScores: number[]
+    let minT: number
+    let maxT: number
+    let displayMinT: number
+    let displayMaxT: number
+    let rangeT: number
+
+    if (useLinearYAxis.value) {
+      // Linear scaling: use scores directly
+      transScores = scores
+      minT = Math.min(...transScores)
+      maxT = Math.max(...transScores)
+      const pad = Math.max(50, (maxT - minT) * 0.1) // Add padding for linear scale
+      displayMinT = minT - pad
+      displayMaxT = maxT + pad
+      rangeT = displayMaxT - displayMinT || 1
+    } else {
+      // Non-linear scaling: use asinh transformation
+      transScores = scores.map(transform)
+      minT = Math.min(...transScores)
+      maxT = Math.max(...transScores)
+      const pad = Math.max(0.5, (maxT - minT) * 0.1)
+      displayMinT = minT - pad
+      displayMaxT = maxT + pad
+      rangeT = displayMaxT - displayMinT || 1
+    }
 
     /* ------- Draw grid / axes / line / points ------- */
     drawGrid(ctx, area, visibleMoves)
     drawScoreAxis(ctx, area, displayMinT, displayMaxT)
     drawMoveAxis(ctx, area, points, visibleMoves)
     drawScoreLine(ctx, area, points, displayMinT, rangeT, visibleMoves)
-    drawDataPoints(ctx, area, points, displayMinT, rangeT, visibleMoves)
+    
+    // Only draw data points if showOnlyLines is false
+    if (!showOnlyLines.value) {
+      drawDataPoints(ctx, area, points, displayMinT, rangeT, visibleMoves)
+    }
   }
 
   /* ---------- Drawing Helpers ---------- */
@@ -311,7 +351,14 @@
     for (let i = 0; i <= rows; i++) {
       const tVal = minT + (i / rows) * rangeT
       const y = area.y + area.height - ((tVal - minT) / rangeT) * area.height
-      const dispScore = inverseTransform(tVal)
+      let dispScore: number
+      if (useLinearYAxis.value) {
+        // For linear scale, use the value directly
+        dispScore = tVal
+      } else {
+        // For non-linear scale, apply inverse transformation
+        dispScore = inverseTransform(tVal)
+      }
       ctx.fillText(formatScore(dispScore), area.x - 10, y)
     }
   }
@@ -361,7 +408,14 @@
       const p = points[i]
       if (p.score !== null && p.score !== undefined) {
         const x = getX(i, area.width, visibleMoves)
-        const t = transform(p.score)
+        let t: number
+        if (useLinearYAxis.value) {
+          // For linear scale, use score directly
+          t = p.score
+        } else {
+          // For non-linear scale, apply transformation
+          t = transform(p.score)
+        }
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
         first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
         first = false
@@ -388,7 +442,14 @@
         const x = getX(i, area.width, visibleMoves)
         if (x < area.x || x > area.x + area.width) continue
 
-        const t = transform(p.score)
+        let t: number
+        if (useLinearYAxis.value) {
+          // For linear scale, use score directly
+          t = p.score
+        } else {
+          // For non-linear scale, apply transformation
+          t = transform(p.score)
+        }
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
 
         let color = '#666'
@@ -557,7 +618,8 @@
     },
     { deep: true }
   )
-  watch([showMoveLabels], () => nextTick(drawChart))
+  // Watch for settings changes to redraw chart
+  watch([showMoveLabels, useLinearYAxis, showOnlyLines], () => nextTick(drawChart))
 
   /* ---------- Lifecycle Hooks ---------- */
   onMounted(() => {

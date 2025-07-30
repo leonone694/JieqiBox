@@ -23,6 +23,11 @@ interface ConfigData {
     useNewFenFormat: boolean
     engineLogLineLimit: number
   }
+  evaluationChartSettings: {
+    showMoveLabels: boolean
+    useLinearYAxis: boolean
+    showOnlyLines: boolean
+  }
   analysisSettings: {
     movetime: number
     maxThinkTime: number
@@ -53,6 +58,11 @@ const defaultConfig: ConfigData = {
     autosave: true,
     useNewFenFormat: true,
     engineLogLineLimit: 256,
+  },
+  evaluationChartSettings: {
+    showMoveLabels: true,
+    useLinearYAxis: false,
+    showOnlyLines: false,
   },
   analysisSettings: {
     movetime: 1000,
@@ -87,6 +97,10 @@ export function useConfigManager() {
             ...defaultConfig.interfaceSettings,
             ...parsedConfig.interfaceSettings,
           },
+          evaluationChartSettings: {
+            ...defaultConfig.evaluationChartSettings,
+            ...parsedConfig.evaluationChartSettings,
+          },
           analysisSettings: {
             ...defaultConfig.analysisSettings,
             ...parsedConfig.analysisSettings,
@@ -120,6 +134,20 @@ export function useConfigManager() {
   ): Promise<void> => {
     configData.value.interfaceSettings = {
       ...configData.value.interfaceSettings,
+      ...settings,
+    }
+    await saveConfig()
+  }
+
+  // Get evaluation chart settings
+  const getEvaluationChartSettings = () => configData.value.evaluationChartSettings
+
+  // Update evaluation chart settings
+  const updateEvaluationChartSettings = async (
+    settings: Partial<ConfigData['evaluationChartSettings']>
+  ): Promise<void> => {
+    configData.value.evaluationChartSettings = {
+      ...configData.value.evaluationChartSettings,
       ...settings,
     }
     await saveConfig()
@@ -254,6 +282,8 @@ export function useConfigManager() {
     saveConfig,
     getInterfaceSettings,
     updateInterfaceSettings,
+    getEvaluationChartSettings,
+    updateEvaluationChartSettings,
     getAnalysisSettings,
     updateAnalysisSettings,
     getEngines,

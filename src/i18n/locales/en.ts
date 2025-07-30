@@ -266,6 +266,8 @@ export default {
   evaluationChart: {
     title: 'Evaluation Chart',
     showMoveLabels: 'Show Move Labels',
+    linearYAxis: 'Linear Y-Axis',
+    showOnlyLines: 'Show Only Lines',
     opening: 'Opening',
     noData: 'No analysis data available',
     newGame: 'New Game',

@@ -259,6 +259,8 @@ export default {
   evaluationChart: {
     title: '局势图',
     showMoveLabels: '显示着法标签',
+    linearYAxis: '线性Y轴',
+    showOnlyLines: '仅显示线条',
     opening: '开局',
     noData: '暂无分析数据',
     newGame: '新对局',

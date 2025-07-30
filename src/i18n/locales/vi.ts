@@ -267,6 +267,8 @@ export default {
   evaluationChart: {
     title: 'Biểu đồ cục diện',
     showMoveLabels: 'Hiển thị nhãn nước đi',
+    linearYAxis: 'Trục Y tuyến tính',
+    showOnlyLines: 'Chỉ hiển thị đường',
     opening: 'Khai cuộc',
     noData: 'Không có dữ liệu phân tích',
     newGame: 'Ván mới',
