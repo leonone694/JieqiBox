@@ -387,6 +387,15 @@
     }
   }
 
+  // Helper function to get color based on score
+  const getScoreColor = (score: number): string => {
+    if (score > 100) return '#c62828' // Strong red for Red advantage
+    if (score < -100) return '#2e7d32' // Strong green for Black advantage
+    if (score > 50) return '#ef5350' // Light red for slight Red advantage
+    if (score < -50) return '#66bb6a' // Light green for slight Black advantage
+    return '#666666' // Neutral gray
+  }
+
   const drawScoreLine = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -395,13 +404,57 @@
     rangeT: number,
     visibleMoves: number
   ) => {
-    ctx.strokeStyle = '#1976d2'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-
-    let first = true
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
+
+    if (showOnlyLines.value) {
+      // Draw gradient line when showing only lines
+      drawGradientLine(ctx, area, points, minT, rangeT, visibleMoves, startIndex, endIndex)
+    } else {
+      // Draw solid line when showing data points
+      ctx.strokeStyle = '#1976d2'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+
+      let first = true
+      for (let i = Math.max(0, startIndex); i <= endIndex + 1; i++) {
+        if (i >= points.length) break
+        const p = points[i]
+        if (p.score !== null && p.score !== undefined) {
+          const x = getX(i, area.width, visibleMoves)
+          let t: number
+          if (useLinearYAxis.value) {
+            // For linear scale, use score directly
+            t = p.score
+          } else {
+            // For non-linear scale, apply transformation
+            t = transform(p.score)
+          }
+          const y = area.y + area.height - ((t - minT) / rangeT) * area.height
+          first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          first = false
+        }
+      }
+      ctx.stroke()
+    }
+  }
+
+  // MODIFIED: This function now draws a gradient for each line segment
+  const drawGradientLine = (
+    ctx: CanvasRenderingContext2D,
+    area: any,
+    points: any[],
+    minT: number,
+    rangeT: number,
+    visibleMoves: number,
+    startIndex: number,
+    endIndex: number
+  ) => {
+    // Create gradient line segments with different colors based on evaluation
+    let lastX = 0
+    let lastY = 0
+    let lastScore = 0
+    let firstPoint = true
 
     for (let i = Math.max(0, startIndex); i <= endIndex + 1; i++) {
       if (i >= points.length) break
@@ -417,11 +470,32 @@
           t = transform(p.score)
         }
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
-        first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-        first = false
+
+        if (!firstPoint) {
+          // Create linear gradient for current line segment
+          const gradient = ctx.createLinearGradient(lastX, lastY, x, y);
+
+          const startColor = getScoreColor(lastScore);
+          const endColor = getScoreColor(p.score);
+
+          gradient.addColorStop(0, startColor);
+          gradient.addColorStop(1, endColor);
+
+          // Use gradient as stroke style
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 3; // Thicker for better visibility
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+
+        lastX = x
+        lastY = y
+        lastScore = p.score
+        firstPoint = false
       }
     }
-    ctx.stroke()
   }
 
   const drawDataPoints = (
@@ -452,11 +526,7 @@
         }
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
 
-        let color = '#666'
-        if (p.score > 100) color = '#c62828'
-        else if (p.score < -100) color = '#2e7d32'
-        else if (p.score > 50) color = '#ef5350'
-        else if (p.score < -50) color = '#66bb6a'
+        const color = getScoreColor(p.score)
 
         ctx.fillStyle = color
         ctx.beginPath()
