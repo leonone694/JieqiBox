@@ -1472,7 +1472,7 @@ export function useChessGame() {
     // Handle flip information if present (characters after the 4th position)
     if (hasExplicitFlip) {
       const flipInfo = trimmedUci.substring(4)
-      
+
       // Get the side that made this move (opposite of current side to move since move was just made)
       const moveSide = sideToMove.value === 'red' ? 'black' : 'red'
 
@@ -1480,12 +1480,16 @@ export function useChessGame() {
       // For red side: uppercase = revealed piece, lowercase = captured piece
       // For black side: lowercase = revealed piece, uppercase = captured piece
       for (const char of flipInfo) {
-        const isUppercase = char === char.toUpperCase() && char !== char.toLowerCase()
-        const isLowercase = char === char.toLowerCase() && char !== char.toUpperCase()
-        
+        const isUppercase =
+          char === char.toUpperCase() && char !== char.toLowerCase()
+        const isLowercase =
+          char === char.toLowerCase() && char !== char.toUpperCase()
+
         // Determine if this character represents a revealed piece based on the side
-        const isRevealedPiece = (moveSide === 'red' && isUppercase) || (moveSide === 'black' && isLowercase)
-        
+        const isRevealedPiece =
+          (moveSide === 'red' && isUppercase) ||
+          (moveSide === 'black' && isLowercase)
+
         if (isRevealedPiece) {
           // This is a revealed piece - find and reveal the moved piece
           const pieceName = getPieceNameFromChar(char)

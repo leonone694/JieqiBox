@@ -235,7 +235,8 @@
     const args = prompt(t('engineManager.promptEngineArgs'), '') ?? ''
 
     // Ask if the engine uses NNUE files
-    const hasNnue = prompt(t('engineManager.promptHasNnue'), 'n')?.toLowerCase() === 'y'
+    const hasNnue =
+      prompt(t('engineManager.promptHasNnue'), 'n')?.toLowerCase() === 'y'
 
     // Store the engine data for when the file is selected
     const engineData = { name, args, hasNnue }
@@ -288,10 +289,12 @@
       window.addEventListener('saf-file-result', handleSafResult)
     } else {
       // Fallback to the Tauri invoke approach
-      invoke('request_saf_file_selection', { name, args, hasNnue }).catch(err => {
-        console.error('SAF request failed:', err)
-        alert(t('errors.failedToOpenFileSelector'))
-      })
+      invoke('request_saf_file_selection', { name, args, hasNnue }).catch(
+        err => {
+          console.error('SAF request failed:', err)
+          alert(t('errors.failedToOpenFileSelector'))
+        }
+      )
     }
   }
 
@@ -406,11 +409,14 @@
       unlistenNnueRequest = listen('request-nnue-file', event => {
         const payload = event.payload as any
         console.log('[DEBUG] Received NNUE file request:', payload)
-        
+
         // Show prompt for NNUE file selection
         if (confirm(t('engineManager.promptNnueFile'))) {
           // Use the JavaScript interface approach for NNUE file selection
-          if (typeof window !== 'undefined' && (window as any).SafFileInterface) {
+          if (
+            typeof window !== 'undefined' &&
+            (window as any).SafFileInterface
+          ) {
             // Call the JavaScript interface directly
             ;(window as any).SafFileInterface.startFileSelection()
 
@@ -448,7 +454,10 @@
                 })
               } else {
                 // User cancelled or there was an error
-                console.log('NNUE SAF file selection cancelled or failed:', result)
+                console.log(
+                  'NNUE SAF file selection cancelled or failed:',
+                  result
+                )
                 // Still add the engine without NNUE file
                 const newEngineData = {
                   id: `engine_${Date.now()}`,
@@ -458,7 +467,11 @@
                 }
                 engines.value.push(newEngineData)
                 saveEnginesToConfig()
-                alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+                alert(
+                  t('engineManager.engineAddedSuccess', {
+                    name: payload.engine_name,
+                  })
+                )
               }
 
               // Remove the event listener
@@ -476,7 +489,11 @@
             }
             engines.value.push(newEngineData)
             saveEnginesToConfig()
-            alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+            alert(
+              t('engineManager.engineAddedSuccess', {
+                name: payload.engine_name,
+              })
+            )
           }
         } else {
           // User cancelled NNUE file selection, add engine without NNUE
@@ -488,10 +505,11 @@
           }
           engines.value.push(newEngineData)
           saveEnginesToConfig()
-          alert(t('engineManager.engineAddedSuccess', { name: payload.engine_name }))
+          alert(
+            t('engineManager.engineAddedSuccess', { name: payload.engine_name })
+          )
         }
       })
-
     }
   })
 

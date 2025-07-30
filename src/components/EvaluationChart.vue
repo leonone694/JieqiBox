@@ -80,7 +80,8 @@
 
   /* ---------- Display State ---------- */
   // Get persistent settings from the composable
-  const { showMoveLabels, useLinearYAxis, showOnlyLines } = useEvaluationChartSettings()
+  const { showMoveLabels, useLinearYAxis, showOnlyLines } =
+    useEvaluationChartSettings()
   const tooltipVisible = ref(false)
   const tooltipStyle = ref({ left: '0px', top: '0px' })
   const tooltipData = ref({
@@ -287,7 +288,7 @@
     drawScoreAxis(ctx, area, displayMinT, displayMaxT)
     drawMoveAxis(ctx, area, points, visibleMoves)
     drawScoreLine(ctx, area, points, displayMinT, rangeT, visibleMoves)
-    
+
     // Only draw data points if showOnlyLines is false
     if (!showOnlyLines.value) {
       drawDataPoints(ctx, area, points, displayMinT, rangeT, visibleMoves)
@@ -409,7 +410,16 @@
 
     if (showOnlyLines.value) {
       // Draw gradient line when showing only lines
-      drawGradientLine(ctx, area, points, minT, rangeT, visibleMoves, startIndex, endIndex)
+      drawGradientLine(
+        ctx,
+        area,
+        points,
+        minT,
+        rangeT,
+        visibleMoves,
+        startIndex,
+        endIndex
+      )
     } else {
       // Draw solid line when showing data points
       ctx.strokeStyle = '#1976d2'
@@ -473,21 +483,21 @@
 
         if (!firstPoint) {
           // Create linear gradient for current line segment
-          const gradient = ctx.createLinearGradient(lastX, lastY, x, y);
+          const gradient = ctx.createLinearGradient(lastX, lastY, x, y)
 
-          const startColor = getScoreColor(lastScore);
-          const endColor = getScoreColor(p.score);
+          const startColor = getScoreColor(lastScore)
+          const endColor = getScoreColor(p.score)
 
-          gradient.addColorStop(0, startColor);
-          gradient.addColorStop(1, endColor);
+          gradient.addColorStop(0, startColor)
+          gradient.addColorStop(1, endColor)
 
           // Use gradient as stroke style
-          ctx.strokeStyle = gradient;
-          ctx.lineWidth = 3; // Thicker for better visibility
-          ctx.beginPath();
-          ctx.moveTo(lastX, lastY);
-          ctx.lineTo(x, y);
-          ctx.stroke();
+          ctx.strokeStyle = gradient
+          ctx.lineWidth = 3 // Thicker for better visibility
+          ctx.beginPath()
+          ctx.moveTo(lastX, lastY)
+          ctx.lineTo(x, y)
+          ctx.stroke()
         }
 
         lastX = x
@@ -689,7 +699,9 @@
     { deep: true }
   )
   // Watch for settings changes to redraw chart
-  watch([showMoveLabels, useLinearYAxis, showOnlyLines], () => nextTick(drawChart))
+  watch([showMoveLabels, useLinearYAxis, showOnlyLines], () =>
+    nextTick(drawChart)
+  )
 
   /* ---------- Lifecycle Hooks ---------- */
   onMounted(() => {

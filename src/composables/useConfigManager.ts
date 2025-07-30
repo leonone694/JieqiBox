@@ -140,7 +140,8 @@ export function useConfigManager() {
   }
 
   // Get evaluation chart settings
-  const getEvaluationChartSettings = () => configData.value.evaluationChartSettings
+  const getEvaluationChartSettings = () =>
+    configData.value.evaluationChartSettings
 
   // Update evaluation chart settings
   const updateEvaluationChartSettings = async (

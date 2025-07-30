@@ -102,4 +102,4 @@ export function useEvaluationChartSettings() {
     showOnlyLines,
     loadSettings,
   }
-} 
+}
