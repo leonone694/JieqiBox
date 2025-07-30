@@ -1344,7 +1344,7 @@
       info.nodes && `${t('uci.nodes')}: ${info.nodes}`,
       info.nps &&
         `${t('uci.nps')}: ${(parseInt(info.nps, 10) / 1000).toFixed(1)}K`,
-      info.hashfull && `${t('uci.hashfull')}: ${info.hashfull}`,
+      info.hashfull && `${t('uci.hashfull')}: ${info.hashfull}‰`,
       info.tbhits && `${t('uci.tbhits')}: ${info.tbhits}`,
       info.time &&
         `${t('uci.time')}: ${(parseInt(info.time, 10) / 1000).toFixed(2)}s`,
