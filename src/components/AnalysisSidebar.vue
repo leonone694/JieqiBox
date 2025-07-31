@@ -1108,6 +1108,11 @@
         return // Early return to avoid turning off AI states
       }
 
+      // For undo and replay operations, preserve manual analysis state
+      // so that analysis can be restarted for the new position
+      const preserveManualAnalysis = event.detail?.reason === 'undo-move' || event.detail?.reason === 'replay-move'
+      const wasManualAnalysis = isManualAnalysis.value
+
       // For all other reasons (new game, replay, fen input etc.), perform a full stop.
       // The engine's state (isThinking) will be reset when it acknowledges the stop.
       if (isThinking.value) {
@@ -1118,7 +1123,14 @@
       // Reset AI toggles immediately.
       isRedAi.value = false
       isBlackAi.value = false
-      isManualAnalysis.value = false
+      
+      // Preserve manual analysis state for undo/replay operations
+      if (preserveManualAnalysis && wasManualAnalysis) {
+        console.log('[DEBUG] FORCE_STOP_AI: Preserving manual analysis state for undo/replay')
+        // Keep isManualAnalysis.value = true so it will be restarted when engine is ready
+      } else {
+        isManualAnalysis.value = false
+      }
 
       // Stop any ongoing ponder
       if (isPondering.value) {
@@ -1213,8 +1225,12 @@
 
   // This watcher ensures that if a manual move is made while in "manual analysis" mode,
   // a new analysis is automatically started for the resulting position.
+  // However, we need to be careful not to restart analysis immediately after undo/replay
+  // as the engine might not be ready yet. The onEngineReady handler will take care of that.
   watch(currentMoveIndex, () => {
-    if (isManualAnalysis.value && !isThinking.value) {
+    // Only restart manual analysis if the engine is loaded and not currently stopping
+    if (isManualAnalysis.value && !isThinking.value && isEngineLoaded.value && !isStopping.value) {
+      console.log('[DEBUG] CURRENT_MOVE_INDEX_WATCHER: Restarting manual analysis for new position')
       manualStartAnalysis()
     }
   })
