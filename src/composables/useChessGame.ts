@@ -7,6 +7,7 @@ import {
 } from '@/utils/constants'
 import { isAndroidPlatform as checkAndroidPlatform } from '../utils/platform'
 import { useInterfaceSettings } from './useInterfaceSettings'
+import { useGameSettings } from './useGameSettings'
 
 export interface Piece {
   id: number
@@ -49,6 +50,9 @@ export interface GameNotation {
 export function useChessGame() {
   // Get FEN format setting
   const { useNewFenFormat } = useInterfaceSettings()
+  
+  // Get persistent game settings
+  const { flipMode } = useGameSettings()
 
   const pieces = ref<Piece[]>([])
   const selectedPieceId = ref<number | null>(null)
@@ -59,7 +63,6 @@ export function useChessGame() {
 
   const history = ref<HistoryEntry[]>([])
   const currentMoveIndex = ref<number>(0)
-  const flipMode = ref<'random' | 'free'>('random')
   const unrevealedPieceCounts = ref<{ [key: string]: number }>({})
   const isBoardFlipped = ref(false) // board flip state
 

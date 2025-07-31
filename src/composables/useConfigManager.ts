@@ -36,6 +36,10 @@ interface ConfigData {
     maxNodes: number
     analysisMode: string
   }
+  gameSettings: {
+    flipMode: 'random' | 'free'
+    enablePonder: boolean
+  }
   uciOptions: Record<string, Record<string, string | number | boolean>>
   locale: string
   // New properties for engine management
@@ -73,6 +77,10 @@ const defaultConfig: ConfigData = {
     maxNodes: 1000000,
     analysisMode: 'movetime',
   },
+  gameSettings: {
+    flipMode: 'random',
+    enablePonder: false,
+  },
   uciOptions: {},
   locale: 'zh_cn',
 }
@@ -106,6 +114,10 @@ export function useConfigManager() {
           analysisSettings: {
             ...defaultConfig.analysisSettings,
             ...parsedConfig.analysisSettings,
+          },
+          gameSettings: {
+            ...defaultConfig.gameSettings,
+            ...parsedConfig.gameSettings,
           },
           uciOptions: parsedConfig.uciOptions || {},
         }
@@ -165,6 +177,20 @@ export function useConfigManager() {
   ): Promise<void> => {
     configData.value.analysisSettings = {
       ...configData.value.analysisSettings,
+      ...settings,
+    }
+    await saveConfig()
+  }
+
+  // Get game settings
+  const getGameSettings = () => configData.value.gameSettings
+
+  // Update game settings
+  const updateGameSettings = async (
+    settings: Partial<ConfigData['gameSettings']>
+  ): Promise<void> => {
+    configData.value.gameSettings = {
+      ...configData.value.gameSettings,
       ...settings,
     }
     await saveConfig()
@@ -289,6 +315,8 @@ export function useConfigManager() {
     updateEvaluationChartSettings,
     getAnalysisSettings,
     updateAnalysisSettings,
+    getGameSettings,
+    updateGameSettings,
     getEngines,
     saveEngines,
     getLastSelectedEngineId,

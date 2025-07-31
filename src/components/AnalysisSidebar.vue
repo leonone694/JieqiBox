@@ -428,6 +428,7 @@
   import { useI18n } from 'vue-i18n'
   import type { HistoryEntry } from '@/composables/useChessGame'
   import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
+  import { useGameSettings } from '@/composables/useGameSettings'
   import AboutDialog from './AboutDialog.vue'
   // Import Engine Manager components and types
   import EngineManagerDialog from './EngineManagerDialog.vue'
@@ -444,6 +445,9 @@
 
   // Get interface settings
   const { parseUciInfo, engineLogLineLimit } = useInterfaceSettings()
+  
+  // Get persistent game settings
+  const { enablePonder } = useGameSettings()
 
   /* ---------- Injected State ---------- */
   const gameState = inject('game-state') as any
@@ -501,9 +505,6 @@
   const isRedAi = ref(false)
   const isBlackAi = ref(false)
   const isManualAnalysis = ref(false) // Track if current analysis is manual or AI auto-play
-
-  /* ---------- Ponder Settings ---------- */
-  const enablePonder = ref(false) // Enable/disable ponder mode
 
   // Computed property: ponder is only available when exactly one AI is enabled
   const isPonderAvailable = computed(() => {
