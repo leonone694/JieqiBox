@@ -211,6 +211,13 @@ export default {
     manageEngines: '管理',
     unloadEngine: 'エンジンをアンロード',
     noEngineLoaded: '現在、エンジンは読み込まれていません。',
+    // ナビゲーションボタン
+    goToFirst: '最初の手に移動',
+    goToPrevious: '前の手に移動',
+    goToNext: '次の手に移動',
+    goToLast: '最後の手に移動',
+    play: '再生',
+    pause: '一時停止',
   },
 
   // エンジンマネージャー

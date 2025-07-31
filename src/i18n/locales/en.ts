@@ -212,6 +212,13 @@ export default {
     manageEngines: 'Manage',
     unloadEngine: 'Unload Engine',
     noEngineLoaded: 'No engine is currently loaded.',
+    // Navigation buttons
+    goToFirst: 'Go to First Move',
+    goToPrevious: 'Go to Previous Move',
+    goToNext: 'Go to Next Move',
+    goToLast: 'Go to Last Move',
+    play: 'Play',
+    pause: 'Pause',
   },
 
   // Engine Manager

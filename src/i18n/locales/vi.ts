@@ -213,6 +213,13 @@ export default {
     manageEngines: 'Quản lý',
     unloadEngine: 'Gỡ bỏ engine',
     noEngineLoaded: 'Hiện tại chưa có engine nào được tải.',
+    // Nút điều hướng
+    goToFirst: 'Đi đến nước đầu tiên',
+    goToPrevious: 'Đi đến nước trước',
+    goToNext: 'Đi đến nước tiếp theo',
+    goToLast: 'Đi đến nước cuối cùng',
+    play: 'Phát',
+    pause: 'Tạm dừng',
   },
 
   // Trình quản lý Engine

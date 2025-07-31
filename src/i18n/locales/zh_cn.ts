@@ -209,6 +209,13 @@ export default {
     manageEngines: '管理',
     unloadEngine: '卸载引擎',
     noEngineLoaded: '当前没有加载引擎。',
+    // 导航按钮
+    goToFirst: '回到第一步',
+    goToPrevious: '上一步',
+    goToNext: '下一步',
+    goToLast: '到最后一步',
+    play: '播放',
+    pause: '暂停',
   },
 
   // 引擎管理器

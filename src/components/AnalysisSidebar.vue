@@ -202,7 +202,55 @@
 
     <DraggablePanel panel-id="notation">
       <template #header>
-        <h3>{{ $t('analysis.notation') }}</h3>
+        <div class="notation-header">
+          <h3>{{ $t('analysis.notation') }}</h3>
+          <div class="notation-controls">
+            <v-btn
+              @click="goToFirstMove"
+              :disabled="currentMoveIndex <= 0"
+              icon="mdi-skip-backward"
+              size="x-small"
+              color="primary"
+              variant="text"
+              :title="$t('analysis.goToFirst')"
+            />
+            <v-btn
+              @click="goToPreviousMove"
+              :disabled="currentMoveIndex <= 0"
+              icon="mdi-step-backward"
+              size="x-small"
+              color="primary"
+              variant="text"
+              :title="$t('analysis.goToPrevious')"
+            />
+            <v-btn
+              @click="togglePlayPause"
+              :color="isPlaying ? 'warning' : 'success'"
+              :icon="isPlaying ? 'mdi-pause' : 'mdi-play'"
+              size="x-small"
+              variant="text"
+              :title="isPlaying ? $t('analysis.pause') : $t('analysis.play')"
+            />
+            <v-btn
+              @click="goToNextMove"
+              :disabled="currentMoveIndex >= history.length"
+              icon="mdi-step-forward"
+              size="x-small"
+              color="primary"
+              variant="text"
+              :title="$t('analysis.goToNext')"
+            />
+            <v-btn
+              @click="goToLastMove"
+              :disabled="currentMoveIndex >= history.length"
+              icon="mdi-skip-forward"
+              size="x-small"
+              color="primary"
+              variant="text"
+              :title="$t('analysis.goToLast')"
+            />
+          </div>
+        </div>
       </template>
       <div class="move-list" ref="moveListElement">
         <div
@@ -484,6 +532,11 @@
   const editingCommentText = ref<string>('')
   const commentsListElement = ref<HTMLElement | null>(null)
 
+  /* ---------- Notation Navigation State ---------- */
+  const isPlaying = ref(false)
+  const playInterval = ref<number | null>(null)
+  const playSpeed = ref(1000) // Play speed in milliseconds
+
   // Analysis settings
   const analysisSettings = ref({
     movetime: 1000,
@@ -743,6 +796,73 @@
   function handleMoveClick(moveIndex: number) {
     replayToMove(moveIndex)
   }
+
+  /* ---------- Notation Navigation Functions ---------- */
+  
+  // Navigate to the first move (opening position)
+  function goToFirstMove() {
+    if (currentMoveIndex.value > 0) {
+      replayToMove(0)
+      stopPlayback()
+    }
+  }
+
+  // Navigate to the previous move
+  function goToPreviousMove() {
+    if (currentMoveIndex.value > 0) {
+      replayToMove(currentMoveIndex.value - 1)
+      stopPlayback()
+    }
+  }
+
+  // Navigate to the next move
+  function goToNextMove() {
+    if (currentMoveIndex.value < history.value.length) {
+      replayToMove(currentMoveIndex.value + 1)
+      stopPlayback()
+    }
+  }
+
+  // Navigate to the last move
+  function goToLastMove() {
+    if (currentMoveIndex.value < history.value.length) {
+      replayToMove(history.value.length)
+      stopPlayback()
+    }
+  }
+
+  // Toggle play/pause functionality
+  function togglePlayPause() {
+    if (isPlaying.value) {
+      stopPlayback()
+    } else {
+      startPlayback()
+    }
+  }
+
+  // Start automatic playback
+  function startPlayback() {
+    if (isPlaying.value) return
+    
+    isPlaying.value = true
+    playInterval.value = setInterval(() => {
+      if (currentMoveIndex.value < history.value.length) {
+        replayToMove(currentMoveIndex.value + 1)
+      } else {
+        stopPlayback()
+      }
+    }, playSpeed.value)
+  }
+
+  // Stop automatic playback
+  function stopPlayback() {
+    if (playInterval.value) {
+      clearInterval(playInterval.value)
+      playInterval.value = null
+    }
+    isPlaying.value = false
+  }
+
   // Handle analysis button click - start analysis or stop analysis based on current state
   function handleAnalysisButtonClick() {
     if (isThinking.value || isPondering.value) {
@@ -1053,6 +1173,12 @@
       )
       window.removeEventListener('engine-stopped-and-ready', onEngineReady)
       cleanupConfigWatch()
+      
+      // Clean up play interval
+      if (playInterval.value) {
+        clearInterval(playInterval.value)
+        playInterval.value = null
+      }
     })
   })
 
@@ -1871,5 +1997,29 @@
     padding-left: 8px;
     font-size: 0.9rem;
     flex-grow: 1;
+  }
+
+  /* ---------- Notation Navigation Styles ---------- */
+  .notation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .notation-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .notation-controls {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+
+  .notation-controls .v-btn {
+    min-width: 28px;
+    height: 28px;
   }
 </style>
