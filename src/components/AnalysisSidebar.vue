@@ -16,7 +16,7 @@
       <v-btn
         @click="loadSelectedEngine"
         :loading="isEngineLoading"
-        :disabled="isEngineLoading || !selectedEngineId"
+        :disabled="isEngineLoading || !selectedEngineId || isEngineLoaded"
         :color="isEngineLoaded ? 'success' : 'teal'"
         size="x-small"
         class="action-btn"

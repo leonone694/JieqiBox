@@ -328,6 +328,7 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     isEngineLoaded.value = false
     currentEngine.value = null
     engineOutput.value = [] // Clear log
+    uciOptionsText.value = '' // Clear UCI options text to prevent duplication
 
     // Teardown previous engine if any
     if (isThinking.value) stopAnalysis({ playBestMoveOnStop: false })
