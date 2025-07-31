@@ -268,13 +268,14 @@ export default {
     copied: '✓ コピーしました',
   },
 
-  // 形勢グラフ
+  // 評価チャート
   evaluationChart: {
-    title: '形勢グラフ',
+    title: '評価チャート',
     showMoveLabels: '手のラベルを表示',
     linearYAxis: '線形Y軸',
     showOnlyLines: '線のみ表示',
-    opening: '開始局面',
+    blackPerspective: '黒側視点',
+    opening: '序盤',
     noData: '分析データがありません',
     newGame: '新しいゲーム',
     copied: '✓ コピーしました',

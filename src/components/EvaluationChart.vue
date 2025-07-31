@@ -54,6 +54,13 @@
         hide-details
         density="compact"
       />
+      <v-switch
+        v-model="blackPerspective"
+        :label="$t('evaluationChart.blackPerspective')"
+        color="primary"
+        hide-details
+        density="compact"
+      />
     </div>
   </div>
 </template>
@@ -80,7 +87,7 @@
 
   /* ---------- Display State ---------- */
   // Get persistent settings from the composable
-  const { showMoveLabels, useLinearYAxis, showOnlyLines } =
+  const { showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective } =
     useEvaluationChartSettings()
   const tooltipVisible = ref(false)
   const tooltipStyle = ref({ left: '0px', top: '0px' })
@@ -142,6 +149,11 @@
         // Convert engine score to Red's perspective
         let converted = entry.engineScore
         if (converted !== null && converted !== undefined && !isRedMove) {
+          converted = -converted
+        }
+
+        // Flip evaluation if flipEvaluation setting is enabled
+        if (converted !== null && converted !== undefined && blackPerspective.value) {
           converted = -converted
         }
 
@@ -360,6 +372,12 @@
         // For non-linear scale, apply inverse transformation
         dispScore = inverseTransform(tVal)
       }
+      
+      // Flip evaluation for display if flipEvaluation is enabled
+      if (blackPerspective.value) {
+        dispScore = -dispScore
+      }
+      
       ctx.fillText(formatScore(dispScore), area.x - 10, y)
     }
   }
@@ -390,10 +408,16 @@
 
   // Helper function to get color based on score
   const getScoreColor = (score: number): string => {
-    if (score > 100) return '#c62828' // Strong red for Red advantage
-    if (score < -100) return '#2e7d32' // Strong green for Black advantage
-    if (score > 50) return '#ef5350' // Light red for slight Red advantage
-    if (score < -50) return '#66bb6a' // Light green for slight Black advantage
+    // Apply flip evaluation for color determination
+    let displayScore = score
+    if (blackPerspective.value) {
+      displayScore = -displayScore
+    }
+    
+    if (displayScore > 100) return '#c62828' // Strong red for Red advantage
+    if (displayScore < -100) return '#2e7d32' // Strong green for Black advantage
+    if (displayScore > 50) return '#ef5350' // Light red for slight Red advantage
+    if (displayScore < -50) return '#66bb6a' // Light green for slight Black advantage
     return '#666666' // Neutral gray
   }
 
@@ -562,10 +586,16 @@
   }
 
   const getScoreClass = (s: number): string => {
-    if (s > 100) return 'score-positive'
-    if (s < -100) return 'score-negative'
-    if (s > 50) return 'score-slight-positive'
-    if (s < -50) return 'score-slight-negative'
+    // Apply flip evaluation for class determination
+    let displayScore = s
+    if (blackPerspective.value) {
+      displayScore = -displayScore
+    }
+    
+    if (displayScore > 100) return 'score-positive'
+    if (displayScore < -100) return 'score-negative'
+    if (displayScore > 50) return 'score-slight-positive'
+    if (displayScore < -50) return 'score-slight-negative'
     return 'score-neutral'
   }
   const formatTime = (ms: number) =>
@@ -659,10 +689,17 @@
 
     if (closestPoint && closestPoint.score !== null && distance < threshold) {
       tooltipVisible.value = true
+      
+      // Apply flip evaluation for tooltip display
+      let displayScore = closestPoint.score
+      if (blackPerspective.value) {
+        displayScore = -displayScore
+      }
+      
       tooltipData.value = {
         move: closestPoint.moveText,
-        score: formatScore(closestPoint.score!),
-        scoreClass: getScoreClass(closestPoint.score!),
+        score: formatScore(displayScore),
+        scoreClass: getScoreClass(displayScore),
         time: closestPoint.time ? formatTime(closestPoint.time) : '',
       }
       tooltipStyle.value = {
@@ -699,7 +736,7 @@
     { deep: true }
   )
   // Watch for settings changes to redraw chart
-  watch([showMoveLabels, useLinearYAxis, showOnlyLines], () =>
+  watch([showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective], () =>
     nextTick(drawChart)
   )
 

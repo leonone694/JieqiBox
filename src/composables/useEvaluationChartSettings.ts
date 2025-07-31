@@ -15,6 +15,7 @@ const getInitialSettings = () => {
       showMoveLabels: true,
       useLinearYAxis: false,
       showOnlyLines: false,
+      blackPerspective: false,
     }
   }
 
@@ -24,6 +25,7 @@ const getInitialSettings = () => {
       showMoveLabels: settings.showMoveLabels !== false, // Default to true
       useLinearYAxis: !!settings.useLinearYAxis, // Default to false
       showOnlyLines: !!settings.showOnlyLines, // Default to false
+      blackPerspective: !!settings.blackPerspective, // Default to false
     }
   } catch (e) {
     console.error('Failed to get evaluation chart settings:', e)
@@ -32,6 +34,7 @@ const getInitialSettings = () => {
       showMoveLabels: true,
       useLinearYAxis: false,
       showOnlyLines: false,
+      blackPerspective: false,
     }
   }
 }
@@ -41,19 +44,21 @@ const {
   showMoveLabels: initialShowMoveLabels,
   useLinearYAxis: initialUseLinearYAxis,
   showOnlyLines: initialShowOnlyLines,
+  blackPerspective: initialBlackPerspective,
 } = getInitialSettings()
 
 const showMoveLabels = ref<boolean>(initialShowMoveLabels)
 const useLinearYAxis = ref<boolean>(initialUseLinearYAxis)
 const showOnlyLines = ref<boolean>(initialShowOnlyLines)
+const blackPerspective = ref<boolean>(initialBlackPerspective)
 
 // Flag to track if config is loaded
 const isConfigLoaded = ref(false)
 
 // Watch for changes and persist to config file
 watch(
-  [showMoveLabels, useLinearYAxis, showOnlyLines],
-  async ([newShowMoveLabels, newUseLinearYAxis, newShowOnlyLines]) => {
+  [showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective],
+  async ([newShowMoveLabels, newUseLinearYAxis, newShowOnlyLines, newBlackPerspective]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
 
@@ -61,6 +66,7 @@ watch(
       showMoveLabels: newShowMoveLabels,
       useLinearYAxis: newUseLinearYAxis,
       showOnlyLines: newShowOnlyLines,
+      blackPerspective: newBlackPerspective,
     }
 
     try {
@@ -83,6 +89,7 @@ export function useEvaluationChartSettings() {
       showMoveLabels.value = settings.showMoveLabels !== false
       useLinearYAxis.value = !!settings.useLinearYAxis
       showOnlyLines.value = !!settings.showOnlyLines
+      blackPerspective.value = !!settings.blackPerspective
 
       isConfigLoaded.value = true
     } catch (error) {
@@ -100,6 +107,7 @@ export function useEvaluationChartSettings() {
     showMoveLabels,
     useLinearYAxis,
     showOnlyLines,
+    blackPerspective,
     loadSettings,
   }
 }

@@ -270,12 +270,13 @@ export default {
     copied: '✓ Đã sao chép',
   },
 
-  // Biểu đồ vị trí
+  // Biểu đồ đánh giá
   evaluationChart: {
-    title: 'Biểu đồ cục diện',
+    title: 'Biểu đồ đánh giá',
     showMoveLabels: 'Hiển thị nhãn nước đi',
     linearYAxis: 'Trục Y tuyến tính',
     showOnlyLines: 'Chỉ hiển thị đường',
+    blackPerspective: 'Góc nhìn Đen',
     opening: 'Khai cuộc',
     noData: 'Không có dữ liệu phân tích',
     newGame: 'Ván mới',

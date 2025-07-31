@@ -275,6 +275,7 @@ export default {
     showMoveLabels: 'Show Move Labels',
     linearYAxis: 'Linear Y-Axis',
     showOnlyLines: 'Show Only Lines',
+    blackPerspective: 'Black Perspective',
     opening: 'Opening',
     noData: 'No analysis data available',
     newGame: 'New Game',

@@ -268,6 +268,7 @@ export default {
     showMoveLabels: '顯示著法標籤',
     linearYAxis: '線性Y軸',
     showOnlyLines: '僅顯示線條',
+    blackPerspective: '黑方視角',
     opening: '開局',
     noData: '暫無分析數據',
     newGame: '新對局',

@@ -27,6 +27,7 @@ interface ConfigData {
     showMoveLabels: boolean
     useLinearYAxis: boolean
     showOnlyLines: boolean
+    blackPerspective: boolean
   }
   analysisSettings: {
     movetime: number
@@ -63,6 +64,7 @@ const defaultConfig: ConfigData = {
     showMoveLabels: true,
     useLinearYAxis: false,
     showOnlyLines: false,
+    blackPerspective: false,
   },
   analysisSettings: {
     movetime: 1000,
