@@ -676,6 +676,11 @@ export function useChessGame() {
         const movePositions = calculateMovePositions(data)
         lastMovePositions.value = movePositions
       }
+      
+      // Update z-index for all pieces after move completion
+      // Reset zIndex for all pieces and update based on new positions
+      pieces.value.forEach(p => (p.zIndex = undefined))
+      updateAllPieceZIndexes()
     }
     selectedPieceId.value = null
   }
