@@ -74,7 +74,7 @@
         {{ $t('analysis.undoMove') }}
       </v-btn>
       <v-btn
-        @click="toggleBoardFlip"
+        @click="toggleBoardFlip(false)"
         color="cyan"
         class="grouped-btn"
         size="small"
@@ -445,7 +445,7 @@
 
   // Get interface settings
   const { parseUciInfo, engineLogLineLimit } = useInterfaceSettings()
-  
+
   // Get persistent game settings
   const { enablePonder } = useGameSettings()
 
@@ -799,7 +799,7 @@
   }
 
   /* ---------- Notation Navigation Functions ---------- */
-  
+
   // Navigate to the first move (opening position)
   function goToFirstMove() {
     if (currentMoveIndex.value > 0) {
@@ -844,7 +844,7 @@
   // Start automatic playback
   function startPlayback() {
     if (isPlaying.value) return
-    
+
     isPlaying.value = true
     playInterval.value = setInterval(() => {
       if (currentMoveIndex.value < history.value.length) {
@@ -1111,7 +1111,9 @@
 
       // For undo and replay operations, preserve manual analysis state
       // so that analysis can be restarted for the new position
-      const preserveManualAnalysis = event.detail?.reason === 'undo-move' || event.detail?.reason === 'replay-move'
+      const preserveManualAnalysis =
+        event.detail?.reason === 'undo-move' ||
+        event.detail?.reason === 'replay-move'
       const wasManualAnalysis = isManualAnalysis.value
 
       // For all other reasons (new game, replay, fen input etc.), perform a full stop.
@@ -1124,10 +1126,12 @@
       // Reset AI toggles immediately.
       isRedAi.value = false
       isBlackAi.value = false
-      
+
       // Preserve manual analysis state for undo/replay operations
       if (preserveManualAnalysis && wasManualAnalysis) {
-        console.log('[DEBUG] FORCE_STOP_AI: Preserving manual analysis state for undo/replay')
+        console.log(
+          '[DEBUG] FORCE_STOP_AI: Preserving manual analysis state for undo/replay'
+        )
         // Keep isManualAnalysis.value = true so it will be restarted when engine is ready
       } else {
         isManualAnalysis.value = false
@@ -1186,7 +1190,7 @@
       )
       window.removeEventListener('engine-stopped-and-ready', onEngineReady)
       cleanupConfigWatch()
-      
+
       // Clean up play interval
       if (playInterval.value) {
         clearInterval(playInterval.value)
@@ -1230,8 +1234,15 @@
   // as the engine might not be ready yet. The onEngineReady handler will take care of that.
   watch(currentMoveIndex, () => {
     // Only restart manual analysis if the engine is loaded and not currently stopping
-    if (isManualAnalysis.value && !isThinking.value && isEngineLoaded.value && !isStopping.value) {
-      console.log('[DEBUG] CURRENT_MOVE_INDEX_WATCHER: Restarting manual analysis for new position')
+    if (
+      isManualAnalysis.value &&
+      !isThinking.value &&
+      isEngineLoaded.value &&
+      !isStopping.value
+    ) {
+      console.log(
+        '[DEBUG] CURRENT_MOVE_INDEX_WATCHER: Restarting manual analysis for new position'
+      )
       manualStartAnalysis()
     }
   })

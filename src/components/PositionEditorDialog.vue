@@ -38,7 +38,11 @@
                   variant="outlined"
                   size="small"
                 >
-                  {{ isInitialPosition ? $t('positionEditor.clearPosition') : $t('positionEditor.resetPosition') }}
+                  {{
+                    isInitialPosition
+                      ? $t('positionEditor.clearPosition')
+                      : $t('positionEditor.resetPosition')
+                  }}
                 </v-btn>
               </div>
             </v-col>
@@ -53,8 +57,12 @@
                 size="small"
                 class="side-indicator"
               >
-                {{ $t('positionEditor.currentSide') }}: 
-                {{ editingSideToMove === 'red' ? $t('positionEditor.redToMove') : $t('positionEditor.blackToMove') }}
+                {{ $t('positionEditor.currentSide') }}:
+                {{
+                  editingSideToMove === 'red'
+                    ? $t('positionEditor.redToMove')
+                    : $t('positionEditor.blackToMove')
+                }}
               </v-chip>
             </v-col>
           </v-row>
@@ -65,7 +73,7 @@
             <v-col cols="12" :md="selectedPiece ? 7 : 8" class="pa-1 board-col">
               <div class="position-editor-board">
                 <img src="@/assets/xiangqi.png" class="board-bg" alt="board" />
-                
+
                 <!-- Pieces -->
                 <div class="pieces">
                   <img
@@ -87,7 +95,11 @@
             </v-col>
 
             <!-- Piece selector panel -->
-            <v-col cols="12" :md="selectedPiece ? 5 : 4" class="pa-1 selector-col">
+            <v-col
+              cols="12"
+              :md="selectedPiece ? 5 : 4"
+              class="pa-1 selector-col"
+            >
               <div class="piece-selector">
                 <!-- Selected Piece Info -->
                 <div v-if="selectedPiece" class="selected-piece-info mb-3">
@@ -98,9 +110,13 @@
                       :alt="selectedPiece.name"
                       class="piece-img-large"
                     />
-                    <span class="piece-name">{{ getPieceDisplayName(selectedPiece.name) }}</span>
+                    <span class="piece-name">{{
+                      getPieceDisplayName(selectedPiece.name)
+                    }}</span>
                   </div>
-                  <p class="hint-text">{{ $t('positionEditor.clickToPlace') }}</p>
+                  <p class="hint-text">
+                    {{ $t('positionEditor.clickToPlace') }}
+                  </p>
                   <v-btn
                     @click="removePieceById(selectedPiece.id)"
                     color="error"
@@ -112,11 +128,15 @@
                   </v-btn>
                 </div>
 
-                <h5 class="mb-2 desktop-only">{{ $t('positionEditor.addPieces') }}</h5>
+                <h5 class="mb-2 desktop-only">
+                  {{ $t('positionEditor.addPieces') }}
+                </h5>
 
                 <!-- Known Piece Selection -->
                 <div class="piece-category">
-                  <h6 class="mb-1 desktop-only">{{ $t('positionEditor.brightPieces') }}</h6>
+                  <h6 class="mb-1 desktop-only">
+                    {{ $t('positionEditor.brightPieces') }}
+                  </h6>
                   <div class="piece-grid">
                     <div
                       v-for="piece in knownPieces"
@@ -136,7 +156,9 @@
 
                 <!-- Unknown Piece Selection -->
                 <div class="piece-category">
-                  <h6 class="mb-1 desktop-only">{{ $t('positionEditor.darkPieces') }}</h6>
+                  <h6 class="mb-1 desktop-only">
+                    {{ $t('positionEditor.darkPieces') }}
+                  </h6>
                   <div class="piece-grid">
                     <div
                       v-for="piece in unknownPieces"
@@ -296,14 +318,16 @@
   // Check if current position is the initial position
   const isInitialPosition = computed(() => {
     if (editingPieces.value.length !== 32) return false
-    
+
     // Compare with initial FEN layout
-    const initialBoard = Array(10).fill(null).map(() => Array(9).fill(null))
-    
+    const initialBoard = Array(10)
+      .fill(null)
+      .map(() => Array(9).fill(null))
+
     // Parse START_FEN to get initial piece positions
     const fenParts = START_FEN.split(' ')
     const boardPart = fenParts[0]
-    
+
     boardPart.split('/').forEach((rowStr, rowIndex) => {
       let colIndex = 0
       for (const char of rowStr) {
@@ -313,10 +337,16 @@
           const isRed = char.toUpperCase() === char
           if (char.toLowerCase() === 'x') {
             const tempName = isRed ? 'red_unknown' : 'black_unknown'
-            initialBoard[rowIndex][colIndex] = { name: tempName, isKnown: false }
+            initialBoard[rowIndex][colIndex] = {
+              name: tempName,
+              isKnown: false,
+            }
           } else {
             const pieceName = getPieceNameFromChar(char)
-            initialBoard[rowIndex][colIndex] = { name: pieceName, isKnown: true }
+            initialBoard[rowIndex][colIndex] = {
+              name: pieceName,
+              isKnown: true,
+            }
           }
           colIndex++
         }
@@ -328,14 +358,14 @@
       for (let col = 0; col < 9; col++) {
         const currentPiece = getPieceAt(row, col)
         const initialPiece = initialBoard[row][col]
-        
+
         if (!currentPiece && !initialPiece) continue
         if (!currentPiece || !initialPiece) return false
         if (currentPiece.name !== initialPiece.name) return false
         if (currentPiece.isKnown !== initialPiece.isKnown) return false
       }
     }
-    
+
     return editingSideToMove.value === 'red'
   })
 
@@ -367,13 +397,13 @@
     const isRed = char === char.toUpperCase()
     const pieceType = char.toLowerCase()
     const typeMap: { [key: string]: string } = {
-      'r': 'chariot',
-      'n': 'horse', 
-      'b': 'elephant',
-      'a': 'advisor',
-      'k': 'king',
-      'c': 'cannon',
-      'p': 'pawn'
+      r: 'chariot',
+      n: 'horse',
+      b: 'elephant',
+      a: 'advisor',
+      k: 'king',
+      c: 'cannon',
+      p: 'pawn',
     }
     return `${isRed ? 'red' : 'black'}_${typeMap[pieceType]}`
   }
@@ -411,22 +441,22 @@
     const rect = boardElement.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
-    
+
     // Convert pixel coordinates to board coordinates
     const boardWidth = rect.width
     const boardHeight = rect.height
-    
+
     // Calculate percentage positions
     const percentX = (x / boardWidth) * 100
     const percentY = (y / boardHeight) * 100
-    
+
     // Convert percentage to row/col coordinates
     const col = Math.round(((percentX - OX) / GX) * (COLS - 1))
     const row = Math.round(((percentY - OY) / GY) * (ROWS - 1))
-    
+
     // Validate coordinates
     if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return
-    
+
     placePiece(row, col)
   }
 
@@ -446,9 +476,7 @@
       let finalPieceName = selectedPiece.value.name
       if (selectedPiece.value.name === 'unknown') {
         // Determine red/black based on position
-        const isRedSide = gameState.isBoardFlipped
-          ? row >= 5
-          : row < 5
+        const isRedSide = gameState.isBoardFlipped ? row >= 5 : row < 5
         finalPieceName = isRedSide ? 'red_unknown' : 'black_unknown'
       }
 
@@ -488,7 +516,7 @@
     }))
 
     if (gameState.toggleBoardFlip) {
-      gameState.toggleBoardFlip()
+      gameState.toggleBoardFlip(false)
     }
   }
 
@@ -508,7 +536,7 @@
       // Reset to initial position
       if (gameState.loadFen) {
         gameState.loadFen(START_FEN, false)
-        
+
         setTimeout(() => {
           const originalPieces = gameState.pieces.value.map((piece: any) => ({
             ...piece,
@@ -536,39 +564,64 @@
       const positions = editingPieces.value.map(p => `${p.row},${p.col}`)
       const uniquePositions = new Set(positions)
       if (positions.length !== uniquePositions.size) {
-        return { type: 'error', message: t('positionEditor.validationStatus.duplicatePosition') }
+        return {
+          type: 'error',
+          message: t('positionEditor.validationStatus.duplicatePosition'),
+        }
       }
 
       // Check for kings
-      const redKings = editingPieces.value.filter(p => p.isKnown && p.name === 'red_king')
-      const blackKings = editingPieces.value.filter(p => p.isKnown && p.name === 'black_king')
+      const redKings = editingPieces.value.filter(
+        p => p.isKnown && p.name === 'red_king'
+      )
+      const blackKings = editingPieces.value.filter(
+        p => p.isKnown && p.name === 'black_king'
+      )
 
       if (redKings.length === 0) {
-        return { type: 'error', message: t('positionEditor.validationStatus.noRedKing') }
+        return {
+          type: 'error',
+          message: t('positionEditor.validationStatus.noRedKing'),
+        }
       }
       if (blackKings.length === 0) {
-        return { type: 'error', message: t('positionEditor.validationStatus.noBlackKing') }
+        return {
+          type: 'error',
+          message: t('positionEditor.validationStatus.noBlackKing'),
+        }
       }
       if (redKings.length > 1 || blackKings.length > 1) {
-        return { type: 'error', message: t('positionEditor.validationStatus.tooManyPieces') }
+        return {
+          type: 'error',
+          message: t('positionEditor.validationStatus.tooManyPieces'),
+        }
       }
 
       const redKing = redKings[0]
       const blackKing = blackKings[0]
 
       // Check if kings are in palace
-      const isInRedPalace = (row: number, col: number) => row >= 7 && row <= 9 && col >= 3 && col <= 5
-      const isInBlackPalace = (row: number, col: number) => row >= 0 && row <= 2 && col >= 3 && col <= 5
+      const isInRedPalace = (row: number, col: number) =>
+        row >= 7 && row <= 9 && col >= 3 && col <= 5
+      const isInBlackPalace = (row: number, col: number) =>
+        row >= 0 && row <= 2 && col >= 3 && col <= 5
 
       // Check if kings are in wrong palace (will be auto-flipped)
-      const redKingInWrongPalace = !isInRedPalace(redKing.row, redKing.col) && isInBlackPalace(redKing.row, redKing.col)
-      const blackKingInWrongPalace = !isInBlackPalace(blackKing.row, blackKing.col) && isInRedPalace(blackKing.row, blackKing.col)
+      const redKingInWrongPalace =
+        !isInRedPalace(redKing.row, redKing.col) &&
+        isInBlackPalace(redKing.row, redKing.col)
+      const blackKingInWrongPalace =
+        !isInBlackPalace(blackKing.row, blackKing.col) &&
+        isInRedPalace(blackKing.row, blackKing.col)
 
       if (!isInRedPalace(redKing.row, redKing.col)) {
         if (redKingInWrongPalace) {
           // Red king in black palace - will auto-flip, so this is valid
         } else {
-          return { type: 'error', message: t('positionEditor.validationStatus.kingOutOfPalace') }
+          return {
+            type: 'error',
+            message: t('positionEditor.validationStatus.kingOutOfPalace'),
+          }
         }
       }
 
@@ -576,7 +629,10 @@
         if (blackKingInWrongPalace) {
           // Black king in red palace - will auto-flip, so this is valid
         } else {
-          return { type: 'error', message: t('positionEditor.validationStatus.kingOutOfPalace') }
+          return {
+            type: 'error',
+            message: t('positionEditor.validationStatus.kingOutOfPalace'),
+          }
         }
       }
 
@@ -584,13 +640,14 @@
       if (redKing.col === blackKing.col) {
         const minRow = Math.min(redKing.row, blackKing.row)
         const maxRow = Math.max(redKing.row, blackKing.row)
-        const piecesBetweenKings = editingPieces.value.filter(p => 
-          p.col === redKing.col && 
-          p.row > minRow && 
-          p.row < maxRow
+        const piecesBetweenKings = editingPieces.value.filter(
+          p => p.col === redKing.col && p.row > minRow && p.row < maxRow
         )
         if (piecesBetweenKings.length === 0) {
-          return { type: 'error', message: t('positionEditor.validationStatus.kingFacing') }
+          return {
+            type: 'error',
+            message: t('positionEditor.validationStatus.kingFacing'),
+          }
         }
       }
 
@@ -606,28 +663,39 @@
       })
 
       for (const [char, count] of Object.entries(pieceCounts)) {
-        const maxCount = INITIAL_PIECE_COUNTS[char as keyof typeof INITIAL_PIECE_COUNTS]
+        const maxCount =
+          INITIAL_PIECE_COUNTS[char as keyof typeof INITIAL_PIECE_COUNTS]
         if (count > maxCount) {
-          return { type: 'error', message: t('positionEditor.validationStatus.tooManyPieces') }
+          return {
+            type: 'error',
+            message: t('positionEditor.validationStatus.tooManyPieces'),
+          }
         }
       }
 
       // Check total piece count for each side
-      const redPieces = editingPieces.value.filter(p => p.name.startsWith('red'))
-      const blackPieces = editingPieces.value.filter(p => p.name.startsWith('black'))
+      const redPieces = editingPieces.value.filter(p =>
+        p.name.startsWith('red')
+      )
+      const blackPieces = editingPieces.value.filter(p =>
+        p.name.startsWith('black')
+      )
 
       if (redPieces.length > 16 || blackPieces.length > 16) {
-        return { type: 'error', message: t('positionEditor.validationStatus.tooManyTotalPieces') }
+        return {
+          type: 'error',
+          message: t('positionEditor.validationStatus.tooManyTotalPieces'),
+        }
       }
 
       // Check dark piece positions (they should be in valid starting positions)
       const darkPieces = editingPieces.value.filter(p => !p.isKnown)
       const isBoardFlipped = gameState.isBoardFlipped?.value || false
-      
+
       for (const piece of darkPieces) {
         const isRedPiece = piece.name.startsWith('red')
         let validRows: number[]
-        
+
         if (isRedPiece) {
           // Red pieces should be on the bottom side (rows 6-9 when not flipped, rows 0-3 when flipped)
           validRows = isBoardFlipped ? [0, 1, 2, 3] : [6, 7, 8, 9]
@@ -635,9 +703,14 @@
           // Black pieces should be on the top side (rows 0-3 when not flipped, rows 6-9 when flipped)
           validRows = isBoardFlipped ? [6, 7, 8, 9] : [0, 1, 2, 3]
         }
-        
+
         if (!validRows.includes(piece.row)) {
-          return { type: 'error', message: t('positionEditor.validationStatus.darkPieceInvalidPosition') }
+          return {
+            type: 'error',
+            message: t(
+              'positionEditor.validationStatus.darkPieceInvalidPosition'
+            ),
+          }
         }
       }
 
@@ -647,20 +720,32 @@
       try {
         // Temporarily set the pieces to the editing state
         gameState.pieces.value = editingPieces.value
-        
+
         // Now check if the current side is in check
-        const currentKing = editingSideToMove.value === 'red' ? 'black' : 'red';
-        if (gameState.isCurrentPositionInCheck && gameState.isCurrentPositionInCheck(currentKing)) {
-          return { type: 'error', message: t('positionEditor.validationStatus.inCheck') }
+        const currentKing = editingSideToMove.value === 'red' ? 'black' : 'red'
+        if (
+          gameState.isCurrentPositionInCheck &&
+          gameState.isCurrentPositionInCheck(currentKing)
+        ) {
+          return {
+            type: 'error',
+            message: t('positionEditor.validationStatus.inCheck'),
+          }
         }
       } finally {
         // Always restore the original pieces
         gameState.pieces.value = originalPieces
       }
 
-      return { type: 'success', message: t('positionEditor.validationStatus.normal') }
+      return {
+        type: 'success',
+        message: t('positionEditor.validationStatus.normal'),
+      }
     } catch (error) {
-      return { type: 'error', message: t('positionEditor.validationStatus.error') }
+      return {
+        type: 'error',
+        message: t('positionEditor.validationStatus.error'),
+      }
     }
   })
 
@@ -700,17 +785,27 @@
     if (validationStatus.value.type !== 'success') return
 
     // Check if auto-flip is needed based on king positions
-    const isInRedPalace = (row: number, col: number) => row >= 7 && row <= 9 && col >= 3 && col <= 5
-    const isInBlackPalace = (row: number, col: number) => row >= 0 && row <= 2 && col >= 3 && col <= 5
+    const isInRedPalace = (row: number, col: number) =>
+      row >= 7 && row <= 9 && col >= 3 && col <= 5
+    const isInBlackPalace = (row: number, col: number) =>
+      row >= 0 && row <= 2 && col >= 3 && col <= 5
 
-    const redKing = editingPieces.value.find(p => p.isKnown && p.name === 'red_king')
-    const blackKing = editingPieces.value.find(p => p.isKnown && p.name === 'black_king')
+    const redKing = editingPieces.value.find(
+      p => p.isKnown && p.name === 'red_king'
+    )
+    const blackKing = editingPieces.value.find(
+      p => p.isKnown && p.name === 'black_king'
+    )
 
     let needsAutoFlip = false
     if (redKing && blackKing) {
-      const redKingInWrongPalace = !isInRedPalace(redKing.row, redKing.col) && isInBlackPalace(redKing.row, redKing.col)
-      const blackKingInWrongPalace = !isInBlackPalace(blackKing.row, blackKing.col) && isInRedPalace(blackKing.row, blackKing.col)
-      
+      const redKingInWrongPalace =
+        !isInRedPalace(redKing.row, redKing.col) &&
+        isInBlackPalace(redKing.row, redKing.col)
+      const blackKingInWrongPalace =
+        !isInBlackPalace(blackKing.row, blackKing.col) &&
+        isInRedPalace(blackKing.row, blackKing.col)
+
       if (redKingInWrongPalace || blackKingInWrongPalace) {
         needsAutoFlip = true
       }
@@ -1007,7 +1102,7 @@
   .action-buttons {
     @media (max-width: 768px) {
       gap: 2px !important;
-      
+
       .v-btn {
         font-size: 11px;
         padding: 4px 8px;
@@ -1105,7 +1200,7 @@
 
     .action-buttons {
       gap: 1px !important;
-      
+
       .v-btn {
         font-size: 10px;
         padding: 2px 6px;

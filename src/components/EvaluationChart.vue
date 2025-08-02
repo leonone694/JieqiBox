@@ -153,7 +153,11 @@
         }
 
         // Flip evaluation if flipEvaluation setting is enabled
-        if (converted !== null && converted !== undefined && blackPerspective.value) {
+        if (
+          converted !== null &&
+          converted !== undefined &&
+          blackPerspective.value
+        ) {
           converted = -converted
         }
 
@@ -372,12 +376,12 @@
         // For non-linear scale, apply inverse transformation
         dispScore = inverseTransform(tVal)
       }
-      
+
       // Flip evaluation for display if flipEvaluation is enabled
       if (blackPerspective.value) {
         dispScore = -dispScore
       }
-      
+
       ctx.fillText(formatScore(dispScore), area.x - 10, y)
     }
   }
@@ -413,7 +417,7 @@
     if (blackPerspective.value) {
       displayScore = -displayScore
     }
-    
+
     if (displayScore > 100) return '#c62828' // Strong red for Red advantage
     if (displayScore < -100) return '#2e7d32' // Strong green for Black advantage
     if (displayScore > 50) return '#ef5350' // Light red for slight Red advantage
@@ -591,7 +595,7 @@
     if (blackPerspective.value) {
       displayScore = -displayScore
     }
-    
+
     if (displayScore > 100) return 'score-positive'
     if (displayScore < -100) return 'score-negative'
     if (displayScore > 50) return 'score-slight-positive'
@@ -689,13 +693,13 @@
 
     if (closestPoint && closestPoint.score !== null && distance < threshold) {
       tooltipVisible.value = true
-      
+
       // Apply flip evaluation for tooltip display
       let displayScore = closestPoint.score
       if (blackPerspective.value) {
         displayScore = -displayScore
       }
-      
+
       tooltipData.value = {
         move: closestPoint.moveText,
         score: formatScore(displayScore),

@@ -50,7 +50,7 @@ export interface GameNotation {
 export function useChessGame() {
   // Get FEN format setting
   const { useNewFenFormat } = useInterfaceSettings()
-  
+
   // Get persistent game settings
   const { flipMode } = useGameSettings()
 
@@ -676,7 +676,7 @@ export function useChessGame() {
         const movePositions = calculateMovePositions(data)
         lastMovePositions.value = movePositions
       }
-      
+
       // Update z-index for all pieces after move completion
       // Reset zIndex for all pieces and update based on new positions
       pieces.value.forEach(p => (p.zIndex = undefined))
@@ -1851,7 +1851,7 @@ export function useChessGame() {
 
     // If the board was flipped before detection, flip it back
     if (isBoardFlippedBeforeDetection) {
-      toggleBoardFlip()
+      toggleBoardFlip(false)
     }
   }
 

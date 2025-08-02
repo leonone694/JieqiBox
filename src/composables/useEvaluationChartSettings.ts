@@ -58,7 +58,12 @@ const isConfigLoaded = ref(false)
 // Watch for changes and persist to config file
 watch(
   [showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective],
-  async ([newShowMoveLabels, newUseLinearYAxis, newShowOnlyLines, newBlackPerspective]) => {
+  async ([
+    newShowMoveLabels,
+    newUseLinearYAxis,
+    newShowOnlyLines,
+    newBlackPerspective,
+  ]) => {
     // Only save if config is already loaded to avoid overwriting during initialization
     if (!isConfigLoaded.value) return
 
