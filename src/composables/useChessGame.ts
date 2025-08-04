@@ -2121,7 +2121,15 @@ export function useChessGame() {
     fen: string
   ): { [key: string]: number } => {
     const parts = fen.split(' ')
-    const hiddenPart = parts.length >= 2 ? parts[1] : '-'
+    
+    // Detect FEN format by checking if second part is color ('w' or 'b')
+    const isNewFormat = parts.length >= 2 && (parts[1] === 'w' || parts[1] === 'b')
+    
+    // In new format: board color hiddenPart halfmove fullmove
+    // In old format: board hiddenPart color castling enpassant halfmove fullmove
+    const hiddenPart = isNewFormat 
+      ? (parts.length >= 3 ? parts[2] : '-')
+      : (parts.length >= 2 ? parts[1] : '-')
 
     const newCounts: { [key: string]: number } = {}
     'RNBAKCP rnbakcp'
