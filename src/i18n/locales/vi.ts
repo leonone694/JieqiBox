@@ -228,6 +228,23 @@ export default {
     manageEngines: 'Quản lý',
     unloadEngine: 'Gỡ bỏ engine',
     noEngineLoaded: 'Hiện tại chưa có engine nào được tải.',
+    // Chế độ trận đấu
+    enterMatchMode: 'Chế độ trận đấu',
+    exitMatchMode: 'Thoát chế độ trận đấu',
+    startMatch: 'Bắt đầu trận đấu',
+    stopMatch: 'Dừng trận đấu',
+    jaiSettings: 'Tùy chọn engine trận đấu',
+    matchInfo: 'Thông tin trận đấu',
+    matchStatus: 'Trạng thái',
+    gameProgress: 'Tiến độ',
+    engineInfo: 'Engine',
+    lastResult: 'Kết quả',
+    matchWld: 'Thắng-Thua-Hòa',
+    matchEngines: 'Engine',
+    running: 'Đang chạy',
+    stopped: 'Đã dừng',
+    noMatchEngine: 'Chưa tải engine trận đấu',
+    noAnalysis: 'Không có dữ liệu phân tích',
     // Nút điều hướng
     goToFirst: 'Đi đến nước đầu tiên',
     goToPrevious: 'Đi đến nước trước',
@@ -339,6 +356,42 @@ export default {
     bestMove: 'Nước đi tốt nhất: {move}',
     noMoves: 'Không có nước đi nào',
     engineReady: 'Engine đã sẵn sàng',
+  },
+
+  // Hộp thoại tùy chọn JAI
+  jaiOptions: {
+    title: 'Tùy chọn engine trận đấu JAI',
+    loadingText: 'Đang tải tùy chọn engine...',
+    noEngineLoaded: 'Hiện tại chưa có engine trận đấu nào được tải.',
+    pleaseLoadEngineFirst: 'Vui lòng tải engine trận đấu trước để cấu hình các tùy chọn của nó.',
+    loadEngine: 'Tải engine',
+    noOptionsAvailable: 'Không có tùy chọn JAI nào cho engine này.',
+    refreshOptions: 'Làm mới tùy chọn',
+    range: 'Phạm vi',
+    execute: 'Thực hiện',
+    resetToDefaults: 'Đặt lại mặc định',
+    clearSettings: 'Xóa cài đặt',
+    confirmClearSettings:
+      'Bạn có chắc chắn muốn xóa tất cả cấu hình tùy chọn JAI cho engine hiện tại không? Hành động này không thể hoàn tác.',
+    settingsCleared: 'Đã xóa cấu hình tùy chọn JAI',
+    // Mô tả tùy chọn JAI
+    optionDescriptions: {
+      Engine1Path: 'Đường dẫn engine đầu tiên cho trận đấu.',
+      Engine2Path: 'Đường dẫn engine thứ hai cho trận đấu.',
+      TotalRounds: 'Tổng số ván trong trận đấu.',
+      TimeControl: 'Cài đặt kiểm soát thời gian cho mỗi engine.',
+      BookFile: 'Tệp thư viện khai cuộc sử dụng trong trận đấu.',
+      AdjudicationRule: 'Quy tắc phân xử hòa hoặc vị thế quyết định.',
+    },
+  },
+
+  // Tin nhắn JAI
+  jai: {
+    engineReady: 'Engine trận đấu đã sẵn sàng',
+    matchStarted: 'Trận đấu đã bắt đầu',
+    matchStopped: 'Trận đấu đã dừng',
+    gameProgress: 'Ván {current} / {total}',
+    matchResult: 'Kết quả trận đấu: {result}',
   },
 
   // Xác nhận thao tác trò chơi

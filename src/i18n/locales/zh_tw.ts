@@ -224,6 +224,23 @@ export default {
     manageEngines: '管理',
     unloadEngine: '卸載引擎',
     noEngineLoaded: '目前沒有載入任何引擎。',
+    // 比賽模式相關
+    enterMatchMode: '比賽模式',
+    exitMatchMode: '退出比賽模式',
+    startMatch: '開始比賽',
+    stopMatch: '停止比賽',
+    jaiSettings: '比賽引擎選項',
+    matchInfo: '比賽資訊',
+    matchStatus: '狀態',
+    gameProgress: '進度',
+    engineInfo: '引擎',
+    lastResult: '結果',
+    matchWld: '勝負和',
+    matchEngines: '引擎',
+    running: '執行中',
+    stopped: '已停止',
+    noMatchEngine: '未載入比賽引擎',
+    noAnalysis: '無分析資料',
     // 導航按鈕
     goToFirst: '回到第一步',
     goToPrevious: '上一步',
@@ -331,6 +348,42 @@ export default {
     bestMove: '最佳著法: {move}',
     noMoves: '無著可走',
     engineReady: '引擎已就緒',
+  },
+
+  // JAI選項對話框
+  jaiOptions: {
+    title: 'JAI比賽引擎選項',
+    loadingText: '正在載入引擎選項...',
+    noEngineLoaded: '目前未載入任何比賽引擎。',
+    pleaseLoadEngineFirst: '請先載入比賽引擎以配置其選項。',
+    loadEngine: '載入引擎',
+    noOptionsAvailable: '該引擎無可用JAI選項。',
+    refreshOptions: '重新整理選項',
+    range: '範圍',
+    execute: '執行',
+    resetToDefaults: '恢復預設',
+    clearSettings: '清除設定',
+    confirmClearSettings:
+      '確定要清除當前引擎的所有JAI選項配置嗎？此操作不可恢復。',
+    settingsCleared: '已清除JAI選項配置',
+    // JAI選項說明
+    optionDescriptions: {
+      Engine1Path: '比賽對戰的第一個引擎路徑。',
+      Engine2Path: '比賽對戰的第二個引擎路徑。',
+      TotalRounds: '比賽中要進行的總輪數。',
+      TimeControl: '每個引擎的時間控制設定。',
+      BookFile: '比賽使用的開局庫檔案。',
+      AdjudicationRule: '裁決和棋或決定性局面的規則。',
+    },
+  },
+
+  // JAI訊息
+  jai: {
+    engineReady: '比賽引擎已就緒',
+    matchStarted: '比賽已開始',
+    matchStopped: '比賽已停止',
+    gameProgress: '第 {current} 局，共 {total} 局',
+    matchResult: '比賽結果: {result}',
   },
 
   // 遊戲操作確認

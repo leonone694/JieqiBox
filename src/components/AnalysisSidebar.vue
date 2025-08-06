@@ -15,9 +15,19 @@
       ></v-select>
       <v-btn
         @click="loadSelectedEngine"
-        :loading="isEngineLoading"
-        :disabled="isEngineLoading || !selectedEngineId || isEngineLoaded"
-        :color="isEngineLoaded ? 'success' : 'teal'"
+        :loading="
+          isMatchMode ? jaiEngine?.isEngineLoading?.value : isEngineLoading
+        "
+        :disabled="
+          (isMatchMode ? jaiEngine?.isEngineLoading?.value : isEngineLoading) ||
+          !selectedEngineId ||
+          (isMatchMode ? jaiEngine?.isEngineLoaded?.value : isEngineLoaded)
+        "
+        :color="
+          (isMatchMode ? jaiEngine?.isEngineLoaded?.value : isEngineLoaded)
+            ? 'success'
+            : 'teal'
+        "
         size="x-small"
         class="action-btn"
         icon="mdi-play-circle"
@@ -26,7 +36,9 @@
       </v-btn>
       <v-btn
         @click="handleUnloadEngine"
-        :disabled="!isEngineLoaded"
+        :disabled="
+          !(isMatchMode ? jaiEngine?.isEngineLoaded?.value : isEngineLoaded)
+        "
         color="error"
         size="x-small"
         class="action-btn"
@@ -59,6 +71,50 @@
             ? $t('analysis.stopAnalysis')
             : $t('analysis.startAnalysis')
         }}
+      </v-btn>
+    </div>
+
+    <!-- Match mode button group -->
+    <div class="button-group">
+      <v-btn
+        @click="toggleMatchMode"
+        :color="isMatchMode ? 'success' : 'amber'"
+        class="grouped-btn"
+        size="small"
+      >
+        {{
+          isMatchMode
+            ? $t('analysis.exitMatchMode')
+            : $t('analysis.enterMatchMode')
+        }}
+      </v-btn>
+
+      <v-btn
+        v-if="isMatchMode"
+        @click="handleMatchButtonClick"
+        :disabled="!jaiEngine?.isEngineLoaded?.value"
+        :color="jaiEngine?.isMatchRunning?.value ? 'warning' : 'green'"
+        class="grouped-btn"
+        size="small"
+      >
+        {{
+          jaiEngine?.isMatchRunning?.value
+            ? $t('analysis.stopMatch')
+            : $t('analysis.startMatch')
+        }}
+      </v-btn>
+
+      <v-btn
+        v-if="isMatchMode"
+        @click="showJaiOptionsDialog = true"
+        :disabled="!jaiEngine?.isEngineLoaded?.value"
+        color="purple"
+        size="x-small"
+        class="grouped-btn"
+        icon="mdi-cogs"
+        :title="$t('analysis.jaiSettings')"
+        rounded
+      >
       </v-btn>
     </div>
 
@@ -189,9 +245,84 @@
 
     <DraggablePanel panel-id="engine-analysis">
       <template #header>
-        <h3>{{ $t('analysis.engineAnalysis') }}</h3>
+        <h3>
+          {{
+            isMatchMode
+              ? $t('analysis.matchInfo')
+              : $t('analysis.engineAnalysis')
+          }}
+        </h3>
       </template>
-      <div class="analysis-output">
+
+      <!-- Match Mode Display -->
+      <div v-if="isMatchMode" class="match-output">
+        <div v-if="jaiEngine?.isEngineLoaded?.value" class="match-info">
+          <div class="match-status">
+            <div class="status-line">
+              <span class="label">{{ $t('analysis.matchStatus') }}:</span>
+              <span class="value">{{
+                jaiEngine?.isMatchRunning?.value
+                  ? $t('analysis.running')
+                  : $t('analysis.stopped')
+              }}</span>
+            </div>
+            <div v-if="jaiEngine?.currentGame?.value > 0" class="status-line">
+              <span class="label">{{ $t('analysis.gameProgress') }}:</span>
+              <span class="value"
+                >{{ jaiEngine.currentGame.value }} /
+                {{ jaiEngine.totalGames.value }}</span
+              >
+            </div>
+            <div v-if="jaiEngine?.matchEngineInfo?.value" class="status-line">
+              <span class="label">{{ $t('analysis.engineInfo') }}:</span>
+              <span class="value">{{ jaiEngine.matchEngineInfo.value }}</span>
+            </div>
+            <div v-if="jaiEngine?.matchResult?.value" class="status-line">
+              <span class="label">{{ $t('analysis.lastResult') }}:</span>
+              <span class="value">{{ jaiEngine.matchResult.value }}</span>
+            </div>
+            <div
+              v-if="
+                jaiEngine?.matchWins?.value > 0 ||
+                jaiEngine?.matchLosses?.value > 0 ||
+                jaiEngine?.matchDraws?.value > 0
+              "
+              class="status-line"
+            >
+              <span class="label">{{ $t('analysis.matchWld') }}:</span>
+              <span class="value"
+                >{{ jaiEngine.matchWins.value }}-{{
+                  jaiEngine.matchLosses.value
+                }}-{{ jaiEngine.matchDraws.value }}</span
+              >
+            </div>
+            <div
+              v-if="
+                jaiEngine?.redEngine?.value || jaiEngine?.blackEngine?.value
+              "
+              class="status-line"
+            >
+              <span class="label">{{ $t('analysis.matchEngines') }}:</span>
+              <span class="value"
+                >{{ jaiEngine.redEngine.value || '?' }} vs
+                {{ jaiEngine.blackEngine.value || '?' }}</span
+              >
+            </div>
+          </div>
+
+          <!-- Show analysis info from UCI engine transparently passed through -->
+          <div v-if="jaiEngine?.analysisInfo?.value" class="analysis-info">
+            <div class="info-header">{{ $t('analysis.engineAnalysis') }}</div>
+            <div class="analysis-line" v-html="parseJaiAnalysisInfo(jaiEngine.analysisInfo.value)"></div>
+          </div>
+        </div>
+        <div v-else class="no-match-info">
+          {{ $t('analysis.noMatchEngine') }}
+        </div>
+      </div>
+
+      <!-- Regular UCI Analysis Mode Display -->
+      <div v-else class="analysis-output">
         <div
           v-for="(ln, idx) in parsedAnalysisLines"
           :key="`an-${idx}`"
@@ -388,7 +519,7 @@
       </template>
       <div class="engine-log" ref="engineLogElement">
         <div
-          v-for="(ln, Idx) in engineOutput"
+          v-for="(ln, Idx) in currentEngineOutput"
           :key="Idx"
           :class="ln.kind === 'sent' ? 'line-sent' : 'line-recv'"
         >
@@ -412,6 +543,11 @@
 
     <AboutDialog ref="aboutDialogRef" />
     <EngineManagerDialog v-model="showEngineManager" />
+    <JaiOptionsDialog
+      v-if="isMatchMode"
+      v-model="showJaiOptionsDialog"
+      :engine-id="currentJaiEngineId"
+    />
   </div>
 </template>
 
@@ -432,6 +568,7 @@
   import AboutDialog from './AboutDialog.vue'
   // Import Engine Manager components and types
   import EngineManagerDialog from './EngineManagerDialog.vue'
+  import JaiOptionsDialog from './JaiOptionsDialog.vue'
   import {
     useConfigManager,
     type ManagedEngine,
@@ -495,11 +632,26 @@
     isDarkPieceMove,
   } = engineState
 
+  // Inject JAI engine state
+  const jaiEngine = inject('jai-engine-state') as any
+
   /* ---------- Engine Management State ---------- */
   const configManager = useConfigManager()
   const showEngineManager = ref(false)
   const managedEngines = ref<ManagedEngine[]>([])
   const selectedEngineId = ref<string | null>(null)
+
+  /* ---------- JAI Match Mode State ---------- */
+  const isMatchMode = ref(false)
+  const showJaiOptionsDialog = ref(false)
+
+  // JAI engine state properties - use reactive references from JAI engine
+  const isMatchRunning = computed(
+    () => jaiEngine?.isMatchRunning?.value || false
+  )
+  const currentJaiEngineId = computed(
+    () => jaiEngine?.currentEngine?.value?.id || ''
+  )
 
   /* ---------- Auto Play ---------- */
   const isRedAi = ref(false)
@@ -552,6 +704,14 @@
     return analysis.value
       ? analysis.value.split('\n').filter((l: string) => l.trim().length > 0)
       : []
+  })
+
+  // Computed: use appropriate engine output based on current mode
+  const currentEngineOutput = computed(() => {
+    if (isMatchMode.value && jaiEngine?.engineOutput?.value) {
+      return jaiEngine.engineOutput.value
+    }
+    return engineOutput.value
   })
 
   // Load analysis settings from config file
@@ -985,7 +1145,15 @@
       e => e.id === selectedEngineId.value
     )
     if (engineToLoad) {
-      loadEngine(engineToLoad) // This now calls the powerful loadEngine from useUciEngine
+      if (isMatchMode.value) {
+        // In match mode, use JAI engine
+        console.log('[DEBUG] AnalysisSidebar: Loading engine in JAI mode')
+        jaiEngine.loadEngine(engineToLoad)
+      } else {
+        // In normal mode, use UCI engine
+        console.log('[DEBUG] AnalysisSidebar: Loading engine in UCI mode')
+        loadEngine(engineToLoad)
+      }
     } else {
       console.log(
         `[DEBUG] AnalysisSidebar: Selected engine (${selectedEngineId.value}) not found in engine list`
@@ -1000,23 +1168,135 @@
 
   // Function to unload the current engine
   const handleUnloadEngine = async () => {
-    if (!isEngineLoaded.value) {
-      alert(t('analysis.noEngineLoaded'))
-      return
-    }
+    if (isMatchMode.value) {
+      // In match mode, check JAI engine state
+      if (!jaiEngine?.isEngineLoaded?.value) {
+        alert(t('analysis.noEngineLoaded'))
+        return
+      }
 
-    try {
-      await unloadEngine()
-      console.log('[DEBUG] AnalysisSidebar: Engine unloaded successfully')
-    } catch (error) {
-      console.error('[DEBUG] AnalysisSidebar: Failed to unload engine:', error)
-      alert(t('errors.engineUnloadFailed'))
+      try {
+        await jaiEngine.unloadEngine()
+        console.log('[DEBUG] AnalysisSidebar: JAI engine unloaded successfully')
+      } catch (error) {
+        console.error(
+          '[DEBUG] AnalysisSidebar: Failed to unload JAI engine:',
+          error
+        )
+        alert(t('errors.engineUnloadFailed'))
+      }
+    } else {
+      // In normal mode, check UCI engine state
+      if (!isEngineLoaded.value) {
+        alert(t('analysis.noEngineLoaded'))
+        return
+      }
+
+      try {
+        await unloadEngine()
+        console.log('[DEBUG] AnalysisSidebar: UCI engine unloaded successfully')
+      } catch (error) {
+        console.error(
+          '[DEBUG] AnalysisSidebar: Failed to unload UCI engine:',
+          error
+        )
+        alert(t('errors.engineUnloadFailed'))
+      }
     }
   }
 
   // Open the about dialog
   function openAboutDialog() {
     aboutDialogRef.value?.openDialog()
+  }
+
+  /* ---------- JAI Match Mode Functions ---------- */
+  const toggleMatchMode = async () => {
+    isMatchMode.value = !isMatchMode.value
+
+    // Save match mode state to configuration
+    try {
+      await configManager.updateMatchSettings({
+        isMatchMode: isMatchMode.value,
+      })
+      console.log(
+        '[DEBUG] AnalysisSidebar: Saved match mode state:',
+        isMatchMode.value
+      )
+    } catch (error) {
+      console.error('Failed to save match mode settings:', error)
+    }
+
+    // Set global match mode state for useChessGame to access
+    ;(window as any).__MATCH_MODE__ = isMatchMode.value
+
+    // Trigger custom event for engine state management
+    window.dispatchEvent(
+      new CustomEvent('match-mode-changed', {
+        detail: { isMatchMode: isMatchMode.value },
+      })
+    )
+
+    if (isMatchMode.value) {
+      // Initialize JAI engine when entering match mode
+      // Use the same engine manager but different protocol
+      initializeJaiEngine()
+
+      // Auto-load JAI engine when entering match mode
+      if (jaiEngine?.autoLoadLastEngine) {
+        console.log(
+          '[DEBUG] AnalysisSidebar: Auto-loading JAI engine when entering match mode'
+        )
+        await jaiEngine.autoLoadLastEngine()
+      }
+    } else {
+      // Clean up JAI engine when exiting match mode
+      cleanupJaiEngine()
+
+      // Auto-load UCI engine when exiting match mode
+      console.log(
+        '[DEBUG] AnalysisSidebar: Auto-loading UCI engine when exiting match mode'
+      )
+      // Note: UCI engine auto-loading is handled in useUciEngine.onMounted
+      // We just need to trigger a re-evaluation of the match mode state
+      ;(window as any).__MATCH_MODE__ = false
+    }
+  }
+
+  const initializeJaiEngine = () => {
+    // For now, use the same engine but with JAI protocol
+    // This can be expanded to support dedicated JAI engines
+    console.log('[DEBUG] Initializing JAI engine mode')
+    // JAI engine state is managed by the JAI engine composable
+  }
+
+  const cleanupJaiEngine = () => {
+    console.log('[DEBUG] Cleaning up JAI engine mode')
+    // Unload JAI engine if loaded
+    if (jaiEngine?.isEngineLoaded?.value) {
+      jaiEngine.unloadEngine()
+    }
+    showJaiOptionsDialog.value = false
+  }
+
+  const handleMatchButtonClick = () => {
+    if (isMatchRunning.value) {
+      stopMatch()
+    } else {
+      startMatch()
+    }
+  }
+
+  const startMatch = () => {
+    if (!jaiEngine?.isEngineLoaded?.value) return
+    console.log('[DEBUG] Starting JAI match')
+    jaiEngine.startMatch()
+  }
+
+  const stopMatch = () => {
+    if (!jaiEngine?.isMatchRunning?.value) return
+    console.log('[DEBUG] Stopping JAI match')
+    jaiEngine.stopMatch()
   }
 
   /* ---------- Comment Management Functions ---------- */
@@ -1066,7 +1346,7 @@
   }
 
   // Load settings when the component is mounted
-  onMounted(() => {
+  onMounted(async () => {
     // Load managed engines for the dropdown
     refreshManagedEngines()
 
@@ -1080,6 +1360,29 @@
 
     loadAnalysisSettings()
     watchConfigChanges()
+
+    // Load match mode state from configuration
+    try {
+      await configManager.loadConfig()
+      const matchSettings = configManager.getMatchSettings()
+      isMatchMode.value = matchSettings.isMatchMode || false
+      console.log(
+        '[DEBUG] AnalysisSidebar: Loaded match mode state:',
+        isMatchMode.value
+      )
+
+      // Set global match mode state for useChessGame to access
+      ;(window as any).__MATCH_MODE__ = isMatchMode.value
+
+      // Trigger custom event for engine state management on startup
+      window.dispatchEvent(
+        new CustomEvent('match-mode-changed', {
+          detail: { isMatchMode: isMatchMode.value },
+        })
+      )
+    } catch (error) {
+      console.error('Failed to load match mode settings:', error)
+    }
 
     // Debug: Check history entries on mount
     debugHistoryEntries()
@@ -1303,8 +1606,9 @@
     { deep: true }
   )
 
+  // Watch current engine output for scrolling
   watch(
-    engineOutput,
+    currentEngineOutput,
     () => {
       nextTick(() => {
         if (engineLogElement.value) {
@@ -1331,14 +1635,18 @@
 
   // Watch engine output and clear log when it reaches the limit
   watch(
-    engineOutput,
+    currentEngineOutput,
     newOutput => {
       if (newOutput.length > engineLogLineLimit.value) {
         console.log(
           `[DEBUG] ENGINE_LOG_LIMIT: Clearing log at ${newOutput.length} lines (limit: ${engineLogLineLimit.value})`
         )
-        // Clear the engine output array
-        engineOutput.value = []
+        // Clear the appropriate engine output array based on current mode
+        if (isMatchMode.value && jaiEngine?.engineOutput?.value) {
+          jaiEngine.engineOutput.value = []
+        } else {
+          engineOutput.value = []
+        }
       }
     },
     { deep: true }
@@ -1528,6 +1836,27 @@
       return line // Non-info lines are returned as is
     })
   })
+
+  // Parse JAI analysis info similar to UCI engine output
+  function parseJaiAnalysisInfo(analysisInfo: string): string {
+    if (!analysisInfo) return ''
+    
+    // Split by lines and process each line
+    const lines = analysisInfo.split('\n').filter(line => line.trim().length > 0)
+    
+    return lines.map(line => {
+      if (line.startsWith('info ')) {
+        // Decide whether to parse UCI info based on parseUciInfo setting
+        if (parseUciInfo.value) {
+          const info = parseUciInfoLine(line)
+          if (info) return formatUciInfo(info)
+        }
+        // If not parsing, return original line
+        return line
+      }
+      return line // Non-info lines are returned as is
+    }).join('<br>')
+  }
 
   // Helper functions for engine analysis display
   function getScoreClass(score: number): string {
@@ -2025,6 +2354,73 @@
     padding-left: 8px;
     font-size: 0.9rem;
     flex-grow: 1;
+  }
+
+  /* ---------- Match Mode Styles ---------- */
+  .match-output {
+    padding: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .match-info {
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+
+  .match-status {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .status-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .status-line .label {
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    opacity: 0.8;
+  }
+
+  .status-line .value {
+    font-weight: 500;
+    color: rgb(var(--v-theme-primary));
+  }
+
+  .no-match-info {
+    padding: 20px;
+    text-align: center;
+    color: rgb(var(--v-theme-on-surface));
+    opacity: 0.6;
+    font-style: italic;
+  }
+
+  .analysis-info {
+    margin-top: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: rgba(var(--v-theme-surface), 0.8);
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+
+  .info-header {
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: rgb(var(--v-theme-primary));
+  }
+
+  .analysis-line {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: pre-line;
   }
 
   /* ---------- Notation Navigation Styles ---------- */

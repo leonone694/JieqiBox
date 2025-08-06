@@ -143,6 +143,14 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     pendingOutputLines.forEach(raw_ln => {
       engineOutput.value.push({ text: raw_ln, kind: 'recv' })
 
+      // Aggressive cleanup: limit engine output to prevent memory issues
+      if (engineOutput.value.length > 1000) {
+        console.log(
+          '[DEBUG] UCI_ENGINE: Clearing engine output to prevent memory issues'
+        )
+        engineOutput.value = engineOutput.value.slice(-500) // Keep last 500 lines
+      }
+
       const ln = raw_ln.trim()
       if (!ln) return // Ignore empty lines after trimming
 
@@ -421,6 +429,15 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
   }
 
   const autoLoadLastEngine = async () => {
+    // Check if we're in match mode - if so, don't auto-load UCI engine
+    const matchMode = (window as any).__MATCH_MODE__
+    if (matchMode) {
+      console.log(
+        '[DEBUG] UCI Auto-loading: Skipping because match mode is enabled'
+      )
+      return
+    }
+
     const configManager = useConfigManager()
     await configManager.loadConfig()
     const lastEngineId = configManager.getLastSelectedEngineId()
@@ -907,8 +924,39 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       await configManager.clearLastSelectedEngineId()
     }
 
-    // Auto-load engine on startup
-    autoLoadLastEngine()
+    // Auto-load engine on startup only if not in match mode
+    // In match mode, JAI engine should be loaded instead
+    const isMatchMode = (window as any).__MATCH_MODE__ || false
+    if (!isMatchMode) {
+      autoLoadLastEngine()
+    } else {
+      console.log('[DEBUG] useUciEngine: Skipping auto-load in match mode')
+    }
+
+    // Listen for match mode changes
+    window.addEventListener('match-mode-changed', (event: Event) => {
+      const customEvent = event as CustomEvent
+      const newMatchMode = customEvent.detail?.isMatchMode || false
+      console.log('[DEBUG] useUciEngine: Match mode changed to:', newMatchMode)
+
+      if (newMatchMode) {
+        // Entering match mode - unload UCI engine
+        if (isEngineLoaded.value) {
+          console.log(
+            '[DEBUG] useUciEngine: Unloading UCI engine for match mode'
+          )
+          unloadEngine()
+        }
+      } else {
+        // Exiting match mode - auto-load UCI engine
+        if (!isEngineLoaded.value) {
+          console.log(
+            '[DEBUG] useUciEngine: Auto-loading UCI engine after exiting match mode'
+          )
+          autoLoadLastEngine()
+        }
+      }
+    })
   })
   onUnmounted(() => {
     unlisten?.()

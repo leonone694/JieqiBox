@@ -10,6 +10,7 @@
 
   import { useChessGame } from './composables/useChessGame'
   import { useUciEngine } from './composables/useUciEngine'
+  import { useJaiEngine } from './composables/useJaiEngine'
   import { useInterfaceSettings } from './composables/useInterfaceSettings'
   import { useConfigManager } from './composables/useConfigManager'
   import { useAutosave } from './composables/useAutosave'
@@ -51,16 +52,19 @@
 
   // Pass generateFen and gameState to ensure engine receives correct FEN format and can access game state
   const engine = useUciEngine(game.generateFen, game)
+  const jaiEngine = useJaiEngine(game.generateFen, game)
 
   // Provide global state
   provide('game-state', game)
   provide('engine-state', engine)
+  provide('jai-engine-state', jaiEngine)
 
   // Provide the FEN input dialog state from game state
   provide('fen-input-dialog-visible', game.isFenInputDialogVisible)
 
   // Set global engine state for useChessGame to access
   ;(window as any).__ENGINE_STATE__ = engine
+  ;(window as any).__JAI_ENGINE__ = jaiEngine
 
   // Initialize autosave functionality after providing game state
   const autosave = useAutosave()
