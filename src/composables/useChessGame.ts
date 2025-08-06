@@ -554,16 +554,49 @@ export function useChessGame() {
         // Try to extract score from the last valid engine output line that contains score
         const engineOutput = engineState.engineOutput?.value || []
         let lastValidScoreLine = ''
-        for (let i = engineOutput.length - 1; i >= 0; i--) {
-          const line = engineOutput[i]
-          if (
-            line.kind === 'recv' &&
-            line.text.includes('score') &&
-            !line.text.includes('lowerbound') &&
-            !line.text.includes('upperbound')
-          ) {
-            lastValidScoreLine = line.text
-            break
+        
+        // In match mode, we need to find the score from the info depth line that comes before the info move line
+        const isMatchMode = (window as any).__MATCH_MODE__ || false
+        if (isMatchMode) {
+          // Find the last info move line first
+          let lastMoveIndex = -1
+          for (let i = engineOutput.length - 1; i >= 0; i--) {
+            const line = engineOutput[i]
+            if (line.kind === 'recv' && line.text.startsWith('info move ')) {
+              lastMoveIndex = i
+              break
+            }
+          }
+          
+          // If we found an info move line, look for the preceding info depth line
+          if (lastMoveIndex >= 0) {
+            for (let i = lastMoveIndex - 1; i >= 0; i--) {
+              const line = engineOutput[i]
+              if (
+                line.kind === 'recv' &&
+                line.text.includes('score') &&
+                line.text.startsWith('info depth') &&
+                !line.text.includes('lowerbound') &&
+                !line.text.includes('upperbound')
+              ) {
+                lastValidScoreLine = line.text
+                break
+              }
+            }
+          }
+        } else {
+          // Normal UCI mode: find the last valid score line
+          for (let i = engineOutput.length - 1; i >= 0; i--) {
+            const line = engineOutput[i]
+            if (
+              line.kind === 'recv' &&
+              line.text.includes('score') &&
+              !line.text.includes('lowerbound') &&
+              !line.text.includes('upperbound')
+            ) {
+              lastValidScoreLine = line.text
+              break
+            }
           }
         }
 
