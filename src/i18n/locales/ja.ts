@@ -303,10 +303,13 @@ export default {
   // 評価チャート
   evaluationChart: {
     title: '評価チャート',
+    rightClickHint: '右クリックでオプション',
     showMoveLabels: '手のラベルを表示',
     linearYAxis: '線形Y軸',
     showOnlyLines: '線のみ表示',
     blackPerspective: '黒側視点',
+    clampYAxis: 'Y軸範囲を制限',
+    clampValue: '制限値',
     opening: '序盤',
     noData: '分析データがありません',
     newGame: '新しいゲーム',
@@ -361,7 +364,8 @@ export default {
     title: 'JAIマッチエンジンオプション',
     loadingText: 'エンジンオプションを読み込み中...',
     noEngineLoaded: '現在、マッチエンジンが読み込まれていません。',
-    pleaseLoadEngineFirst: 'マッチエンジンのオプションを設定するには、まずエンジンを読み込んでください。',
+    pleaseLoadEngineFirst:
+      'マッチエンジンのオプションを設定するには、まずエンジンを読み込んでください。',
     loadEngine: 'エンジンを読み込む',
     noOptionsAvailable: 'このエンジンには利用可能なJAIオプションがありません。',
     refreshOptions: 'オプションを更新',

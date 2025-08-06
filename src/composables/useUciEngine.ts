@@ -938,7 +938,12 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
       const customEvent = event as CustomEvent
       const newMatchMode = customEvent.detail?.isMatchMode || false
       const isStartup = customEvent.detail?.isStartup || false
-      console.log('[DEBUG] useUciEngine: Match mode changed to:', newMatchMode, 'isStartup:', isStartup)
+      console.log(
+        '[DEBUG] useUciEngine: Match mode changed to:',
+        newMatchMode,
+        'isStartup:',
+        isStartup
+      )
 
       if (newMatchMode) {
         // Entering match mode

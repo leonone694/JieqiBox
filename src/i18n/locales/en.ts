@@ -342,10 +342,13 @@ export default {
   // Evaluation Chart
   evaluationChart: {
     title: 'Evaluation Chart',
+    rightClickHint: 'Right-click for options',
     showMoveLabels: 'Show Move Labels',
     linearYAxis: 'Linear Y-Axis',
     showOnlyLines: 'Show Only Lines',
     blackPerspective: 'Black Perspective',
+    clampYAxis: 'Clamp Y-Axis',
+    clampValue: 'Clamp Value',
     opening: 'Opening',
     noData: 'No analysis data available',
     newGame: 'New Game',

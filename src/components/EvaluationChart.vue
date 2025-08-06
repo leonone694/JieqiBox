@@ -1,6 +1,11 @@
 <template>
   <div class="evaluation-chart">
-    <h3 class="chart-title">{{ $t('evaluationChart.title') }}</h3>
+    <h3 class="chart-title">
+      {{ $t('evaluationChart.title') }}
+      <span class="chart-hint"
+        >({{ $t('evaluationChart.rightClickHint') }})</span
+      >
+    </h3>
 
     <!-- Chart container -->
     <div class="chart-container" ref="chartContainer">
@@ -30,38 +35,81 @@
         </div>
       </div>
     </div>
-
-    <!-- Chart controls -->
-    <div class="chart-controls">
-      <v-switch
-        v-model="showMoveLabels"
-        :label="$t('evaluationChart.showMoveLabels')"
-        color="primary"
-        hide-details
-        density="compact"
-      />
-      <v-switch
-        v-model="useLinearYAxis"
-        :label="$t('evaluationChart.linearYAxis')"
-        color="primary"
-        hide-details
-        density="compact"
-      />
-      <v-switch
-        v-model="showOnlyLines"
-        :label="$t('evaluationChart.showOnlyLines')"
-        color="primary"
-        hide-details
-        density="compact"
-      />
-      <v-switch
-        v-model="blackPerspective"
-        :label="$t('evaluationChart.blackPerspective')"
-        color="primary"
-        hide-details
-        density="compact"
-      />
-    </div>
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        ref="contextMenu"
+        class="context-menu"
+        :style="contextMenuStyle"
+      >
+        <div class="context-menu-item" @click="toggleShowMoveLabels">
+          <v-switch
+            v-model="showMoveLabels"
+            :label="$t('evaluationChart.showMoveLabels')"
+            color="primary"
+            hide-details
+            density="compact"
+            @click.stop
+          />
+        </div>
+        <div class="context-menu-item" @click="toggleUseLinearYAxis">
+          <v-switch
+            v-model="useLinearYAxis"
+            :label="$t('evaluationChart.linearYAxis')"
+            color="primary"
+            hide-details
+            density="compact"
+            @click.stop
+          />
+        </div>
+        <div class="context-menu-item" @click="toggleShowOnlyLines">
+          <v-switch
+            v-model="showOnlyLines"
+            :label="$t('evaluationChart.showOnlyLines')"
+            color="primary"
+            hide-details
+            density="compact"
+            @click.stop
+          />
+        </div>
+        <div class="context-menu-item" @click="toggleBlackPerspective">
+          <v-switch
+            v-model="blackPerspective"
+            :label="$t('evaluationChart.blackPerspective')"
+            color="primary"
+            hide-details
+            density="compact"
+            @click.stop
+          />
+        </div>
+        <!-- Clamp Y-Axis Controls -->
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" @click="toggleEnableYAxisClamp">
+          <v-switch
+            v-model="enableYAxisClamp"
+            :label="$t('evaluationChart.clampYAxis')"
+            color="primary"
+            hide-details
+            density="compact"
+            @click.stop
+          />
+        </div>
+        <div class="context-menu-item" @click.stop>
+          <v-text-field
+            v-model.number="yAxisClampValue"
+            :label="$t('evaluationChart.clampValue')"
+            :disabled="!enableYAxisClamp"
+            type="number"
+            min="1"
+            step="50"
+            variant="underlined"
+            density="compact"
+            hide-details
+            class="clamp-input"
+          ></v-text-field>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -87,8 +135,9 @@
 
   /* ---------- Display State ---------- */
   // Get persistent settings from the composable
-  const { showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective } =
+  const { showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective, enableYAxisClamp, yAxisClampValue } =
     useEvaluationChartSettings()
+
   const tooltipVisible = ref(false)
   const tooltipStyle = ref({ left: '0px', top: '0px' })
   const tooltipData = ref({
@@ -106,6 +155,68 @@
   const isPanning = ref(false)
   const lastPanX = ref(0)
 
+  /* ---------- Context Menu State ---------- */
+  const contextMenuVisible = ref(false)
+  const contextMenuStyle = ref<{ left: string; top: string; visibility?: 'visible' | 'hidden' }>({ left: '0px', top: '0px' })
+  const contextMenu = ref<HTMLElement | null>(null) // Ref for the context menu element itself
+
+  // Context menu toggle functions
+  const toggleShowMoveLabels = () => {
+    showMoveLabels.value = !showMoveLabels.value
+  }
+  const toggleUseLinearYAxis = () => {
+    useLinearYAxis.value = !useLinearYAxis.value
+  }
+  const toggleShowOnlyLines = () => {
+    showOnlyLines.value = !showOnlyLines.value
+  }
+  const toggleBlackPerspective = () => {
+    blackPerspective.value = !blackPerspective.value
+  }
+  const toggleEnableYAxisClamp = () => {
+    enableYAxisClamp.value = !enableYAxisClamp.value
+  }
+
+  // Context menu event handlers
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault()
+    contextMenuVisible.value = true
+    contextMenuStyle.value = {
+      left: `${e.clientX}px`,
+      top: `${e.clientY}px`,
+      visibility: 'hidden',
+    }
+    nextTick(() => {
+      if (contextMenu.value) {
+        const menuHeight = contextMenu.value.offsetHeight
+        const menuWidth = contextMenu.value.offsetWidth
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        let top = e.clientY - menuHeight
+        let left = e.clientX
+        if (top < 0) top = 0
+        if (left + menuWidth > viewportWidth) left = viewportWidth - menuWidth
+        // Check if menu would go below viewport
+        if (top + menuHeight > viewportHeight) top = viewportHeight - menuHeight
+        contextMenuStyle.value = {
+          left: `${left}px`,
+          top: `${top}px`,
+          visibility: 'visible',
+        }
+      }
+    })
+  }
+
+  const handleContextMenuClickOutside = (e: MouseEvent) => {
+    const isClickInsideChart =
+      chartContainer.value?.contains(e.target as Node) ?? false
+    const isClickInsideMenu =
+      contextMenu.value?.contains(e.target as Node) ?? false
+    if (!isClickInsideChart && !isClickInsideMenu && contextMenuVisible.value) {
+      contextMenuVisible.value = false
+    }
+  }
+
   /* ---------- Dimensions ---------- */
   const chartWidth = ref(0)
   const chartHeight = ref(0)
@@ -113,8 +224,8 @@
 
   /* ---------- Parameter: asinh Scaling Factor ---------- */
   const scaleFactor = 100 // <- Key parameter
-  const transform = (s: number) => Math.asinh(s / scaleFactor) // Original -> Compressed
-  const inverseTransform = (v: number) => Math.sinh(v) * scaleFactor // Compressed -> Original
+  const transform = (s: number) => Math.asinh(s / scaleFactor)
+  const inverseTransform = (v: number) => Math.sinh(v) * scaleFactor
 
   /* ---------- Data Preprocessing ---------- */
   const chartData = computed(() => {
@@ -126,8 +237,6 @@
       time: number | null
       isRedMove: boolean
     }> = []
-
-    // Initial position
     data.push({
       moveIndex: 0,
       moveNumber: 0,
@@ -136,8 +245,6 @@
       time: null,
       isRedMove: false,
     })
-
-    // Moves
     let moveCount = 0
     props.history.forEach((entry, index) => {
       if (entry.type === 'move') {
@@ -145,14 +252,10 @@
         const moveNumber = Math.floor((moveCount - 1) / 2) + 1
         const isRedMove = (moveCount - 1) % 2 === 0
         const moveText = `${moveNumber}${isRedMove ? '.' : '...'} ${entry.data}`
-
-        // Convert engine score to Red's perspective
         let converted = entry.engineScore
         if (converted !== null && converted !== undefined && !isRedMove) {
           converted = -converted
         }
-
-        // Flip evaluation if flipEvaluation setting is enabled
         if (
           converted !== null &&
           converted !== undefined &&
@@ -160,7 +263,6 @@
         ) {
           converted = -converted
         }
-
         data.push({
           moveIndex: index + 1,
           moveNumber,
@@ -182,23 +284,18 @@
       !chartContainer.value
     )
       return []
-
     const labels: Array<{
       text: string
       style: { left: string; top: string }
       isCurrentMove: boolean
     }> = []
-
     const points = chartData.value
     const totalMoves = Math.max(1, points.length - 1)
     const visibleMoves = totalMoves / zoomLevel.value
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
     const areaWidth = chartWidth.value - padding.left - padding.right
-
-    // Determine label density to avoid clutter when zoomed out
-    const labelStep = Math.max(1, Math.floor(visibleMoves / (areaWidth / 70))) // Show a label roughly every 70px
-
+    const labelStep = Math.max(1, Math.floor(visibleMoves / (areaWidth / 70)))
     for (let i = startIndex; i <= endIndex; i += 1) {
       if (i >= points.length) break
       const p = points[i]
@@ -227,29 +324,22 @@
     if (!chartCanvas.value || !chartContext.value) return
     const ctx = chartContext.value
     ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height)
-
     const points = chartData.value
     if (points.length < 2) return
-
     const area = {
       x: padding.left,
       y: padding.top,
       width: chartWidth.value - padding.left - padding.right,
       height: chartHeight.value - padding.top - padding.bottom,
     }
-
-    // Determine visible range based on zoom and pan
     const totalMoves = points.length - 1
     const visibleMoves = totalMoves / zoomLevel.value
-    // Clamp panOffset to ensure the chart stays within bounds
     panOffset.value = Math.max(
       0,
       Math.min(panOffset.value, totalMoves - visibleMoves)
     )
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
-
-    // Get scores only from the visible (plus a small buffer) points for dynamic Y-axis scaling
     const visiblePoints = points.slice(
       Math.max(0, startIndex - 1),
       Math.min(points.length, endIndex + 2)
@@ -257,7 +347,6 @@
     const scores = visiblePoints
       .map(p => p.score)
       .filter(s => s !== null) as number[]
-
     if (!scores.length) {
       ctx.fillStyle = '#999'
       ctx.font = '14px Arial'
@@ -271,47 +360,58 @@
       return
     }
 
-    // Apply transformation based on linear Y-axis setting
-    let transScores: number[]
-    let minT: number
-    let maxT: number
-    let displayMinT: number
-    let displayMaxT: number
-    let rangeT: number
+    // --- Y-AXIS SCALING LOGIC (CORRECTED) ---
+    let axisMinScore, axisMaxScore
+    const naturalMinScore = Math.min(...scores)
+    const naturalMaxScore = Math.max(...scores)
 
-    if (useLinearYAxis.value) {
-      // Linear scaling: use scores directly
-      transScores = scores
-      minT = Math.min(...transScores)
-      maxT = Math.max(...transScores)
-      const pad = Math.max(50, (maxT - minT) * 0.1) // Add padding for linear scale
-      displayMinT = minT - pad
-      displayMaxT = maxT + pad
-      rangeT = displayMaxT - displayMinT || 1
+    if (enableYAxisClamp.value && yAxisClampValue.value > 0) {
+      // When clamping is ON, the axis range is strictly the intersection of the natural range and the clamp value.
+      // NO PADDING is applied to prevent the axis from exceeding the clamp value.
+      const clampVal = yAxisClampValue.value
+      axisMinScore = Math.max(-clampVal, naturalMinScore)
+      axisMaxScore = Math.min(clampVal, naturalMaxScore)
     } else {
-      // Non-linear scaling: use asinh transformation
-      transScores = scores.map(transform)
-      minT = Math.min(...transScores)
-      maxT = Math.max(...transScores)
-      const pad = Math.max(0.5, (maxT - minT) * 0.1)
-      displayMinT = minT - pad
-      displayMaxT = maxT + pad
-      rangeT = displayMaxT - displayMinT || 1
+      // When clamping is OFF, add padding for visual breathing room.
+      const scoreRange = naturalMaxScore - naturalMinScore
+      const scorePad = useLinearYAxis.value
+        ? Math.max(50, scoreRange * 0.1)
+        : Math.max(50, scoreRange * 0.1) // Padding for asinh can also be based on score range before transform
+      axisMinScore = naturalMinScore - scorePad
+      axisMaxScore = naturalMaxScore + scorePad
     }
 
-    /* ------- Draw grid / axes / line / points ------- */
-    drawGrid(ctx, area, visibleMoves)
-    drawScoreAxis(ctx, area, displayMinT, displayMaxT)
-    drawMoveAxis(ctx, area, points, visibleMoves)
-    drawScoreLine(ctx, area, points, displayMinT, rangeT, visibleMoves)
+    // Now, transform this definitive range to the canvas coordinate system.
+    let minT: number
+    let maxT: number
+    if (useLinearYAxis.value) {
+      minT = axisMinScore
+      maxT = axisMaxScore
+    } else {
+      minT = transform(axisMinScore)
+      maxT = transform(axisMaxScore)
+    }
+    const rangeT = maxT - minT || 1
 
-    // Only draw data points if showOnlyLines is false
+    // --- DRAWING ---
+    drawGrid(ctx, area, visibleMoves)
+    drawScoreAxis(ctx, area, minT, maxT)
+    drawMoveAxis(ctx, area, points, visibleMoves)
+    drawScoreLine(ctx, area, points, minT, rangeT, visibleMoves)
     if (!showOnlyLines.value) {
-      drawDataPoints(ctx, area, points, displayMinT, rangeT, visibleMoves)
+      drawDataPoints(ctx, area, points, minT, rangeT, visibleMoves)
     }
   }
 
   /* ---------- Drawing Helpers ---------- */
+  const getClampedScore = (score: number): number => {
+    if (enableYAxisClamp.value && yAxisClampValue.value > 0) {
+      const clampVal = yAxisClampValue.value
+      return Math.max(-clampVal, Math.min(score, clampVal))
+    }
+    return score
+  }
+
   const getX = (
     index: number,
     areaWidth: number,
@@ -319,7 +419,6 @@
   ): number => {
     return padding.left + ((index - panOffset.value) / visibleMoves) * areaWidth
   }
-
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -327,8 +426,6 @@
   ) => {
     ctx.strokeStyle = '#e0e0e0'
     ctx.lineWidth = 1
-
-    // Horizontal grid lines
     const rows = 5
     for (let i = 0; i <= rows; i++) {
       const y = area.y + (i / rows) * area.height
@@ -337,8 +434,6 @@
       ctx.lineTo(area.x + area.width, y)
       ctx.stroke()
     }
-
-    // Vertical grid lines (dynamic based on zoom)
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
     for (let i = startIndex; i <= endIndex; i++) {
@@ -351,7 +446,6 @@
       }
     }
   }
-
   const drawScoreAxis = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -362,30 +456,20 @@
     ctx.font = '12px Arial'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-
     const rows = 5
     const rangeT = maxT - minT
     for (let i = 0; i <= rows; i++) {
       const tVal = minT + (i / rows) * rangeT
       const y = area.y + area.height - ((tVal - minT) / rangeT) * area.height
-      let dispScore: number
-      if (useLinearYAxis.value) {
-        // For linear scale, use the value directly
-        dispScore = tVal
-      } else {
-        // For non-linear scale, apply inverse transformation
-        dispScore = inverseTransform(tVal)
-      }
-
-      // Flip evaluation for display if flipEvaluation is enabled
+      let dispScore: number = useLinearYAxis.value
+        ? tVal
+        : inverseTransform(tVal)
       if (blackPerspective.value) {
         dispScore = -dispScore
       }
-
       ctx.fillText(formatScore(dispScore), area.x - 10, y)
     }
   }
-
   const drawMoveAxis = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -396,11 +480,9 @@
     ctx.font = '10px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
-
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
-    const step = Math.max(1, Math.floor(visibleMoves / (area.width / 40))) // Show label approx every 40px
-
+    const step = Math.max(1, Math.floor(visibleMoves / (area.width / 40)))
     for (let i = startIndex; i <= endIndex; i++) {
       if (i >= 0 && i < points.length && points[i].moveNumber % step === 0) {
         const p = points[i]
@@ -409,22 +491,17 @@
       }
     }
   }
-
-  // Helper function to get color based on score
   const getScoreColor = (score: number): string => {
-    // Apply flip evaluation for color determination
     let displayScore = score
     if (blackPerspective.value) {
       displayScore = -displayScore
     }
-
-    if (displayScore > 100) return '#c62828' // Strong red for Red advantage
-    if (displayScore < -100) return '#2e7d32' // Strong green for Black advantage
-    if (displayScore > 50) return '#ef5350' // Light red for slight Red advantage
-    if (displayScore < -50) return '#66bb6a' // Light green for slight Black advantage
-    return '#666666' // Neutral gray
+    if (displayScore > 100) return '#c62828'
+    if (displayScore < -100) return '#2e7d32'
+    if (displayScore > 50) return '#ef5350'
+    if (displayScore < -50) return '#66bb6a'
+    return '#666666'
   }
-
   const drawScoreLine = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -435,9 +512,7 @@
   ) => {
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
-
     if (showOnlyLines.value) {
-      // Draw gradient line when showing only lines
       drawGradientLine(
         ctx,
         area,
@@ -449,25 +524,19 @@
         endIndex
       )
     } else {
-      // Draw solid line when showing data points
       ctx.strokeStyle = '#1976d2'
       ctx.lineWidth = 2
       ctx.beginPath()
-
       let first = true
       for (let i = Math.max(0, startIndex); i <= endIndex + 1; i++) {
         if (i >= points.length) break
         const p = points[i]
         if (p.score !== null && p.score !== undefined) {
           const x = getX(i, area.width, visibleMoves)
-          let t: number
-          if (useLinearYAxis.value) {
-            // For linear scale, use score directly
-            t = p.score
-          } else {
-            // For non-linear scale, apply transformation
-            t = transform(p.score)
-          }
+          const clampedScore = getClampedScore(p.score)
+          const t = useLinearYAxis.value
+            ? clampedScore
+            : transform(clampedScore)
           const y = area.y + area.height - ((t - minT) / rangeT) * area.height
           first ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
           first = false
@@ -476,8 +545,6 @@
       ctx.stroke()
     }
   }
-
-  // MODIFIED: This function now draws a gradient for each line segment
   const drawGradientLine = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -488,46 +555,31 @@
     startIndex: number,
     endIndex: number
   ) => {
-    // Create gradient line segments with different colors based on evaluation
-    let lastX = 0
-    let lastY = 0
-    let lastScore = 0
-    let firstPoint = true
-
+    let lastX = 0,
+      lastY = 0,
+      lastScore = 0,
+      firstPoint = true
     for (let i = Math.max(0, startIndex); i <= endIndex + 1; i++) {
       if (i >= points.length) break
       const p = points[i]
       if (p.score !== null && p.score !== undefined) {
         const x = getX(i, area.width, visibleMoves)
-        let t: number
-        if (useLinearYAxis.value) {
-          // For linear scale, use score directly
-          t = p.score
-        } else {
-          // For non-linear scale, apply transformation
-          t = transform(p.score)
-        }
+        const clampedScore = getClampedScore(p.score)
+        const t = useLinearYAxis.value ? clampedScore : transform(clampedScore)
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
-
         if (!firstPoint) {
-          // Create linear gradient for current line segment
           const gradient = ctx.createLinearGradient(lastX, lastY, x, y)
-
           const startColor = getScoreColor(lastScore)
           const endColor = getScoreColor(p.score)
-
           gradient.addColorStop(0, startColor)
           gradient.addColorStop(1, endColor)
-
-          // Use gradient as stroke style
           ctx.strokeStyle = gradient
-          ctx.lineWidth = 3 // Thicker for better visibility
+          ctx.lineWidth = 3
           ctx.beginPath()
           ctx.moveTo(lastX, lastY)
           ctx.lineTo(x, y)
           ctx.stroke()
         }
-
         lastX = x
         lastY = y
         lastScore = p.score
@@ -535,7 +587,6 @@
       }
     }
   }
-
   const drawDataPoints = (
     ctx: CanvasRenderingContext2D,
     area: any,
@@ -546,31 +597,20 @@
   ) => {
     const startIndex = Math.floor(panOffset.value)
     const endIndex = Math.ceil(panOffset.value + visibleMoves)
-
     for (let i = startIndex; i <= endIndex; i++) {
       if (i < 0 || i >= points.length) continue
       const p = points[i]
       if (p.score !== null && p.score !== undefined) {
         const x = getX(i, area.width, visibleMoves)
         if (x < area.x || x > area.x + area.width) continue
-
-        let t: number
-        if (useLinearYAxis.value) {
-          // For linear scale, use score directly
-          t = p.score
-        } else {
-          // For non-linear scale, apply transformation
-          t = transform(p.score)
-        }
+        const clampedScore = getClampedScore(p.score)
+        const t = useLinearYAxis.value ? clampedScore : transform(clampedScore)
         const y = area.y + area.height - ((t - minT) / rangeT) * area.height
-
         const color = getScoreColor(p.score)
-
         ctx.fillStyle = color
         ctx.beginPath()
         ctx.arc(x, y, 4, 0, 2 * Math.PI)
         ctx.fill()
-
         if (p.moveIndex === props.currentMoveIndex) {
           ctx.strokeStyle = '#ff9800'
           ctx.lineWidth = 2
@@ -588,14 +628,9 @@
     if (s <= -10000) return 'M-'
     return Math.round(s).toString()
   }
-
   const getScoreClass = (s: number): string => {
-    // Apply flip evaluation for class determination
     let displayScore = s
-    if (blackPerspective.value) {
-      displayScore = -displayScore
-    }
-
+    if (blackPerspective.value) displayScore = -displayScore
     if (displayScore > 100) return 'score-positive'
     if (displayScore < -100) return 'score-negative'
     if (displayScore > 50) return 'score-slight-positive'
@@ -609,51 +644,39 @@
   const handleWheel = (e: WheelEvent) => {
     if (!chartCanvas.value) return
     e.preventDefault()
-
     const areaWidth = chartWidth.value - padding.left - padding.right
     if (areaWidth <= 0) return
-
     const mouseX = e.offsetX
     const totalMoves = Math.max(1, chartData.value.length - 1)
     const currentVisibleMoves = totalMoves / zoomLevel.value
-
     const mouseProportion = (mouseX - padding.left) / areaWidth
     const moveIndexAtCursor =
       panOffset.value + mouseProportion * currentVisibleMoves
-
     const zoomFactor = 1.15
     const oldZoomLevel = zoomLevel.value
     let newZoomLevel =
       e.deltaY < 0 ? oldZoomLevel * zoomFactor : oldZoomLevel / zoomFactor
     zoomLevel.value = Math.max(minZoom, Math.min(maxZoom, newZoomLevel))
-
     const newVisibleMoves = totalMoves / zoomLevel.value
     panOffset.value = moveIndexAtCursor - mouseProportion * newVisibleMoves
-
     nextTick(drawChart)
   }
-
   const handleMouseDown = (e: MouseEvent) => {
     isPanning.value = true
     lastPanX.value = e.clientX
     if (chartContainer.value) chartContainer.value.style.cursor = 'grabbing'
   }
-
   const handlePanEnd = () => {
     isPanning.value = false
-    if (chartContainer.value) {
+    if (chartContainer.value)
       chartContainer.value.style.cursor =
         zoomLevel.value > 1.0 ? 'grab' : 'default'
-    }
   }
-
   const handleMouseLeave = () => {
     tooltipVisible.value = false
   }
-
   const handleMouseMove = (e: MouseEvent) => {
     if (!chartCanvas.value || !chartContainer.value) return
-
     if (isPanning.value) {
       tooltipVisible.value = false
       const totalMoves = Math.max(1, chartData.value.length - 1)
@@ -666,40 +689,29 @@
       nextTick(drawChart)
       return
     }
-
-    // Tooltip logic
     const points = chartData.value
     if (points.length < 2) {
       tooltipVisible.value = false
       return
     }
-
     const areaWidth = chartCanvas.value.width - padding.left - padding.right
     const totalMoves = points.length - 1
     const visibleMoves = totalMoves / zoomLevel.value
     const mouseProportion = (e.offsetX - padding.left) / areaWidth
     const moveIndex = panOffset.value + mouseProportion * visibleMoves
     const closestIndex = Math.round(moveIndex)
-
     if (closestIndex < 0 || closestIndex >= points.length) {
       tooltipVisible.value = false
       return
     }
-
     const closestPoint = points[closestIndex]
     const pointX = getX(closestIndex, areaWidth, visibleMoves)
     const distance = Math.abs(e.offsetX - pointX)
-    const threshold = areaWidth / visibleMoves / 2 // Half a move's width
-
+    const threshold = areaWidth / visibleMoves / 2
     if (closestPoint && closestPoint.score !== null && distance < threshold) {
       tooltipVisible.value = true
-
-      // Apply flip evaluation for tooltip display
       let displayScore = closestPoint.score
-      if (blackPerspective.value) {
-        displayScore = -displayScore
-      }
-
+      if (blackPerspective.value) displayScore = -displayScore
       tooltipData.value = {
         move: closestPoint.moveText,
         score: formatScore(displayScore),
@@ -732,16 +744,22 @@
   watch(
     [() => props.history, () => props.currentMoveIndex],
     () => {
-      // Reset zoom/pan on history change
       zoomLevel.value = 1.0
       panOffset.value = 0
       nextTick(drawChart)
     },
     { deep: true }
   )
-  // Watch for settings changes to redraw chart
-  watch([showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective], () =>
-    nextTick(drawChart)
+  watch(
+    [
+      showMoveLabels,
+      useLinearYAxis,
+      showOnlyLines,
+      blackPerspective,
+      enableYAxisClamp,
+      yAxisClampValue,
+    ],
+    () => nextTick(drawChart)
   )
 
   /* ---------- Lifecycle Hooks ---------- */
@@ -754,50 +772,60 @@
       chartCanvas.value.addEventListener('mousedown', handleMouseDown)
       chartCanvas.value.addEventListener('mousemove', handleMouseMove)
       chartCanvas.value.addEventListener('mouseleave', handleMouseLeave)
-      // Listen on container for mouse up/leave to catch events outside canvas
+      chartCanvas.value.addEventListener('contextmenu', handleContextMenu)
       chartContainer.value.addEventListener('mouseup', handlePanEnd)
       chartContainer.value.addEventListener('mouseleave', handlePanEnd)
       handleResize()
       window.addEventListener('resize', handleResize)
+      document.addEventListener('click', handleContextMenuClickOutside)
     }
   })
-
   onUnmounted(() => {
     if (chartCanvas.value && chartContainer.value) {
       chartCanvas.value.removeEventListener('wheel', handleWheel)
       chartCanvas.value.removeEventListener('mousedown', handleMouseDown)
       chartCanvas.value.removeEventListener('mousemove', handleMouseMove)
       chartCanvas.value.removeEventListener('mouseleave', handleMouseLeave)
+      chartCanvas.value.removeEventListener('contextmenu', handleContextMenu)
       chartContainer.value.removeEventListener('mouseup', handlePanEnd)
       chartContainer.value.removeEventListener('mouseleave', handlePanEnd)
     }
     window.removeEventListener('resize', handleResize)
+    document.removeEventListener('click', handleContextMenuClickOutside)
   })
 </script>
 
 <style lang="scss" scoped>
   .evaluation-chart {
     border-radius: 8px;
-    padding: 12px; /* Reduced padding to make chart more compact */
+    padding: 12px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     box-sizing: border-box;
     background-color: rgb(var(--v-theme-surface));
   }
   .chart-title {
-    margin: 0 0 12px 0; /* Reduced margin to make chart more compact */
+    margin: 0 0 12px 0;
     font-size: 16px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    .chart-hint {
+      font-size: 12px;
+      font-weight: normal;
+      color: rgba(var(--v-theme-on-surface), 0.6);
+    }
   }
   .chart-container {
     position: relative;
     width: 100%;
-    height: 150px; /* Reduced height for desktop to prevent unnecessary scrolling */
+    height: 150px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     overflow: hidden;
-    cursor: default; /* Default cursor */
-    user-select: none; /* Prevent text selection while panning */
+    cursor: default;
+    user-select: none;
   }
   .chart-canvas {
     display: block;
@@ -865,12 +893,48 @@
       font-size: 10px;
     }
   }
-  .chart-controls {
-    margin-top: 8px; /* Reduced margin to make chart more compact */
-    display: flex;
-    gap: 16px;
-    .v-switch {
-      margin: 0;
+  .context-menu {
+    position: fixed;
+    background: rgb(var(--v-theme-surface));
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    z-index: 1001;
+    min-width: 190px;
+    .context-menu-divider {
+      height: 1px;
+      background-color: rgba(var(--v-border-color), var(--v-border-opacity));
+      margin: 4px 0;
+    }
+    .context-menu-item {
+      padding: 0 12px; /* Adjusted padding for text-field alignment */
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgb(var(--v-theme-on-surface));
+      transition: background-color 0.2s ease;
+      &:hover {
+        background-color: rgba(var(--v-theme-primary), 0.1);
+      }
+      .clamp-input {
+        :deep(input) {
+          text-align: center;
+        }
+      }
+      :deep(.v-switch .v-label) {
+        font-size: 13px;
+      }
+      :deep(.v-switch .v-selection-control) {
+        min-height: auto;
+        height: 36px;
+      }
+      .v-switch {
+        margin: 0;
+        flex-shrink: 0;
+      }
     }
   }
   @media (max-width: 768px) {
@@ -879,10 +943,6 @@
     }
     .chart-container {
       height: 180px;
-    }
-    .chart-controls {
-      flex-direction: column;
-      gap: 8px;
     }
     .chart-title {
       font-size: 14px;

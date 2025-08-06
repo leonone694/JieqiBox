@@ -28,6 +28,8 @@ interface ConfigData {
     useLinearYAxis: boolean
     showOnlyLines: boolean
     blackPerspective: boolean
+    enableYAxisClamp: boolean
+    yAxisClampValue: number
   }
   analysisSettings: {
     movetime: number
@@ -73,6 +75,8 @@ const defaultConfig: ConfigData = {
     useLinearYAxis: false,
     showOnlyLines: false,
     blackPerspective: false,
+    enableYAxisClamp: false,
+    yAxisClampValue: 500,
   },
   analysisSettings: {
     movetime: 1000,

@@ -313,7 +313,10 @@
           <!-- Show analysis info from UCI engine transparently passed through -->
           <div v-if="jaiEngine?.analysisInfo?.value" class="analysis-info">
             <div class="info-header">{{ $t('analysis.engineAnalysis') }}</div>
-            <div class="analysis-line" v-html="parseJaiAnalysisInfo(jaiEngine.analysisInfo.value)"></div>
+            <div
+              class="analysis-line"
+              v-html="parseJaiAnalysisInfo(jaiEngine.analysisInfo.value)"
+            ></div>
           </div>
         </div>
         <div v-else class="no-match-info">
@@ -1825,22 +1828,26 @@
   // Parse JAI analysis info similar to UCI engine output
   function parseJaiAnalysisInfo(analysisInfo: string): string {
     if (!analysisInfo) return ''
-    
+
     // Split by lines and process each line
-    const lines = analysisInfo.split('\n').filter(line => line.trim().length > 0)
-    
-    return lines.map(line => {
-      if (line.startsWith('info ')) {
-        // Decide whether to parse UCI info based on parseUciInfo setting
-        if (parseUciInfo.value) {
-          const info = parseUciInfoLine(line)
-          if (info) return formatUciInfo(info)
+    const lines = analysisInfo
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+
+    return lines
+      .map(line => {
+        if (line.startsWith('info ')) {
+          // Decide whether to parse UCI info based on parseUciInfo setting
+          if (parseUciInfo.value) {
+            const info = parseUciInfoLine(line)
+            if (info) return formatUciInfo(info)
+          }
+          // If not parsing, return original line
+          return line
         }
-        // If not parsing, return original line
-        return line
-      }
-      return line // Non-info lines are returned as is
-    }).join('<br>')
+        return line // Non-info lines are returned as is
+      })
+      .join('<br>')
   }
 
   // Helper functions for engine analysis display

@@ -334,10 +334,13 @@ export default {
   // 局势图
   evaluationChart: {
     title: '局势图',
+    rightClickHint: '右键点击查看选项',
     showMoveLabels: '显示着法标签',
     linearYAxis: '线性Y轴',
     showOnlyLines: '仅显示线条',
     blackPerspective: '黑方视角',
+    clampYAxis: '限制Y轴范围',
+    clampValue: '限制值',
     opening: '开局',
     noData: '暂无分析数据',
     newGame: '新对局',

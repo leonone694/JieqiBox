@@ -305,10 +305,13 @@ export default {
   // Biểu đồ đánh giá
   evaluationChart: {
     title: 'Biểu đồ đánh giá',
+    rightClickHint: 'Nhấp chuột phải để xem tùy chọn',
     showMoveLabels: 'Hiển thị nhãn nước đi',
     linearYAxis: 'Trục Y tuyến tính',
     showOnlyLines: 'Chỉ hiển thị đường',
     blackPerspective: 'Góc nhìn Đen',
+    clampYAxis: 'Giới hạn phạm vi trục Y',
+    clampValue: 'Giá trị giới hạn',
     opening: 'Khai cuộc',
     noData: 'Không có dữ liệu phân tích',
     newGame: 'Ván mới',
@@ -363,7 +366,8 @@ export default {
     title: 'Tùy chọn engine trận đấu JAI',
     loadingText: 'Đang tải tùy chọn engine...',
     noEngineLoaded: 'Hiện tại chưa có engine trận đấu nào được tải.',
-    pleaseLoadEngineFirst: 'Vui lòng tải engine trận đấu trước để cấu hình các tùy chọn của nó.',
+    pleaseLoadEngineFirst:
+      'Vui lòng tải engine trận đấu trước để cấu hình các tùy chọn của nó.',
     loadEngine: 'Tải engine',
     noOptionsAvailable: 'Không có tùy chọn JAI nào cho engine này.',
     refreshOptions: 'Làm mới tùy chọn',

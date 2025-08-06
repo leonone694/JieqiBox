@@ -554,7 +554,7 @@ export function useChessGame() {
         // Try to extract score from the last valid engine output line that contains score
         const engineOutput = engineState.engineOutput?.value || []
         let lastValidScoreLine = ''
-        
+
         // In match mode, we need to find the score from the info depth line that comes before the info move line
         const isMatchMode = (window as any).__MATCH_MODE__ || false
         if (isMatchMode) {
@@ -567,7 +567,7 @@ export function useChessGame() {
               break
             }
           }
-          
+
           // If we found an info move line, look for the preceding info depth line
           if (lastMoveIndex >= 0) {
             for (let i = lastMoveIndex - 1; i >= 0; i--) {
