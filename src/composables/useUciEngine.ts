@@ -937,23 +937,17 @@ export function useUciEngine(generateFen: () => string, gameState: any) {
     window.addEventListener('match-mode-changed', (event: Event) => {
       const customEvent = event as CustomEvent
       const newMatchMode = customEvent.detail?.isMatchMode || false
-      console.log('[DEBUG] useUciEngine: Match mode changed to:', newMatchMode)
+      const isStartup = customEvent.detail?.isStartup || false
+      console.log('[DEBUG] useUciEngine: Match mode changed to:', newMatchMode, 'isStartup:', isStartup)
 
       if (newMatchMode) {
-        // Entering match mode - unload UCI engine
-        if (isEngineLoaded.value) {
+        // Entering match mode
+        if (isEngineLoaded.value && !isStartup) {
+          // Only unload if this is manual switching, not startup
           console.log(
             '[DEBUG] useUciEngine: Unloading UCI engine for match mode'
           )
           unloadEngine()
-        }
-      } else {
-        // Exiting match mode - auto-load UCI engine
-        if (!isEngineLoaded.value) {
-          console.log(
-            '[DEBUG] useUciEngine: Auto-loading UCI engine after exiting match mode'
-          )
-          autoLoadLastEngine()
         }
       }
     })

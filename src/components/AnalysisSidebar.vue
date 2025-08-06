@@ -1233,7 +1233,7 @@
     // Trigger custom event for engine state management
     window.dispatchEvent(
       new CustomEvent('match-mode-changed', {
-        detail: { isMatchMode: isMatchMode.value },
+        detail: { isMatchMode: isMatchMode.value, isStartup: false },
       })
     )
 
@@ -1241,24 +1241,9 @@
       // Initialize JAI engine when entering match mode
       // Use the same engine manager but different protocol
       initializeJaiEngine()
-
-      // Auto-load JAI engine when entering match mode
-      if (jaiEngine?.autoLoadLastEngine) {
-        console.log(
-          '[DEBUG] AnalysisSidebar: Auto-loading JAI engine when entering match mode'
-        )
-        await jaiEngine.autoLoadLastEngine()
-      }
     } else {
       // Clean up JAI engine when exiting match mode
       cleanupJaiEngine()
-
-      // Auto-load UCI engine when exiting match mode
-      console.log(
-        '[DEBUG] AnalysisSidebar: Auto-loading UCI engine when exiting match mode'
-      )
-      // Note: UCI engine auto-loading is handled in useUciEngine.onMounted
-      // We just need to trigger a re-evaluation of the match mode state
       ;(window as any).__MATCH_MODE__ = false
     }
   }
@@ -1377,7 +1362,7 @@
       // Trigger custom event for engine state management on startup
       window.dispatchEvent(
         new CustomEvent('match-mode-changed', {
-          detail: { isMatchMode: isMatchMode.value },
+          detail: { isMatchMode: isMatchMode.value, isStartup: true },
         })
       )
     } catch (error) {
