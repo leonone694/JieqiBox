@@ -824,7 +824,7 @@
   .chart-container {
     position: relative;
     width: 100%;
-    height: 150px;
+    height: 200px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     overflow: hidden;
