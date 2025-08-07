@@ -2,9 +2,6 @@
   <div class="evaluation-chart">
     <h3 class="chart-title">
       {{ $t('evaluationChart.title') }}
-      <span class="chart-hint"
-        >({{ $t('evaluationChart.rightClickHint') }})</span
-      >
     </h3>
 
     <!-- Chart container -->
@@ -34,6 +31,11 @@
           {{ tooltipData.time }}
         </div>
       </div>
+    </div>
+
+    <!-- Right click hint at bottom -->
+    <div class="chart-hint-bottom">
+      {{ $t('evaluationChart.rightClickHint') }}
     </div>
     <Teleport to="body">
       <div
@@ -818,14 +820,6 @@
     margin: 0 0 12px 0;
     font-size: 16px;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    .chart-hint {
-      font-size: 12px;
-      font-weight: normal;
-      color: rgba(var(--v-theme-on-surface), 0.6);
-    }
   }
   .chart-container {
     position: relative;
@@ -902,6 +896,12 @@
       color: #ccc;
       font-size: 10px;
     }
+  }
+  .chart-hint-bottom {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 15px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
   }
   .context-menu {
     position: fixed;
