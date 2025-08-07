@@ -145,11 +145,19 @@
     set: value => emit('update:modelValue', value),
   })
 
-  const totalGames = computed(() => wins.value + losses.value + draws.value)
+  const totalGames = computed(() => {
+    const w = Number(wins.value) || 0
+    const l = Number(losses.value) || 0
+    const d = Number(draws.value) || 0
+    return w + l + d
+  })
 
   const eloResult = computed(() => {
     if (totalGames.value === 0) return null
-    return calculateEloRating(wins.value, losses.value, draws.value)
+    const w = Number(wins.value) || 0
+    const l = Number(losses.value) || 0
+    const d = Number(draws.value) || 0
+    return calculateEloRating(w, l, d)
   })
 
   // Methods
