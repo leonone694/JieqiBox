@@ -554,18 +554,19 @@ export function useChessGame() {
         // In match mode, use JAI engine output; otherwise, use UCI engine output
         const isMatchMode = (window as any).__MATCH_MODE__ || false
         const jaiEngine = (window as any).__JAI_ENGINE__
-        const engineOutput = isMatchMode && jaiEngine?.engineOutput?.value 
-          ? jaiEngine.engineOutput.value 
-          : (engineState.engineOutput?.value || [])
-        
+        const engineOutput =
+          isMatchMode && jaiEngine?.engineOutput?.value
+            ? jaiEngine.engineOutput.value
+            : engineState.engineOutput?.value || []
+
         console.log('[DEBUG] RECORD_AND_FINALIZE: Using engine output:', {
           isMatchMode,
           outputSource: isMatchMode ? 'JAI' : 'UCI',
-          outputLength: engineOutput.length
+          outputLength: engineOutput.length,
         })
 
         let lastValidScoreLine = ''
-        
+
         if (isMatchMode) {
           // Find the last info move line first
           let lastMoveIndex = -1
@@ -576,9 +577,12 @@ export function useChessGame() {
               break
             }
           }
-          
-          console.log('[DEBUG] RECORD_AND_FINALIZE: Found last move index:', lastMoveIndex)
-          
+
+          console.log(
+            '[DEBUG] RECORD_AND_FINALIZE: Found last move index:',
+            lastMoveIndex
+          )
+
           // If we found an info move line, look for the preceding info depth line
           if (lastMoveIndex >= 0) {
             for (let i = lastMoveIndex - 1; i >= 0; i--) {
@@ -591,7 +595,12 @@ export function useChessGame() {
                 !line.text.includes('upperbound')
               ) {
                 lastValidScoreLine = line.text
-                console.log('[DEBUG] RECORD_AND_FINALIZE: Found score line at index:', i, 'Line:', line.text)
+                console.log(
+                  '[DEBUG] RECORD_AND_FINALIZE: Found score line at index:',
+                  i,
+                  'Line:',
+                  line.text
+                )
                 break
               }
             }

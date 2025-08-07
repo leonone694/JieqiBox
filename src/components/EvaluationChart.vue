@@ -135,8 +135,14 @@
 
   /* ---------- Display State ---------- */
   // Get persistent settings from the composable
-  const { showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective, enableYAxisClamp, yAxisClampValue } =
-    useEvaluationChartSettings()
+  const {
+    showMoveLabels,
+    useLinearYAxis,
+    showOnlyLines,
+    blackPerspective,
+    enableYAxisClamp,
+    yAxisClampValue,
+  } = useEvaluationChartSettings()
 
   const tooltipVisible = ref(false)
   const tooltipStyle = ref({ left: '0px', top: '0px' })
@@ -157,7 +163,11 @@
 
   /* ---------- Context Menu State ---------- */
   const contextMenuVisible = ref(false)
-  const contextMenuStyle = ref<{ left: string; top: string; visibility?: 'visible' | 'hidden' }>({ left: '0px', top: '0px' })
+  const contextMenuStyle = ref<{
+    left: string
+    top: string
+    visibility?: 'visible' | 'hidden'
+  }>({ left: '0px', top: '0px' })
   const contextMenu = ref<HTMLElement | null>(null) // Ref for the context menu element itself
 
   // Context menu toggle functions

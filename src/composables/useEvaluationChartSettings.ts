@@ -67,7 +67,14 @@ const isConfigLoaded = ref(false)
 
 // Watch for changes and persist to config file
 watch(
-  [showMoveLabels, useLinearYAxis, showOnlyLines, blackPerspective, enableYAxisClamp, yAxisClampValue],
+  [
+    showMoveLabels,
+    useLinearYAxis,
+    showOnlyLines,
+    blackPerspective,
+    enableYAxisClamp,
+    yAxisClampValue,
+  ],
   async ([
     newShowMoveLabels,
     newUseLinearYAxis,

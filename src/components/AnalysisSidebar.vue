@@ -597,10 +597,10 @@
   import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
   import { useGameSettings } from '@/composables/useGameSettings'
   import AboutDialog from './AboutDialog.vue'
-// Import Engine Manager components and types
-import EngineManagerDialog from './EngineManagerDialog.vue'
-import JaiOptionsDialog from './JaiOptionsDialog.vue'
-import EloCalculatorDialog from './EloCalculatorDialog.vue'
+  // Import Engine Manager components and types
+  import EngineManagerDialog from './EngineManagerDialog.vue'
+  import JaiOptionsDialog from './JaiOptionsDialog.vue'
+  import EloCalculatorDialog from './EloCalculatorDialog.vue'
   import {
     useConfigManager,
     type ManagedEngine,
@@ -1979,8 +1979,6 @@ import EloCalculatorDialog from './EloCalculatorDialog.vue'
       analysisSettings.value
     )
   }
-
-
 </script>
 
 <style lang="scss">
@@ -2428,8 +2426,6 @@ import EloCalculatorDialog from './EloCalculatorDialog.vue'
     font-weight: 500;
     color: rgb(var(--v-theme-primary));
   }
-
-
 
   .no-match-info {
     padding: 20px;
