@@ -165,7 +165,7 @@
     </div>
 
     <!-- AI auto-play settings - Disabled when engine is not loaded or during manual analysis -->
-    <div class="autoplay-settings">
+    <div v-if="!isMatchMode" class="autoplay-settings">
       <v-btn
         @click="toggleRedAi"
         :color="isRedAi ? 'error' : 'blue-grey-darken-1'"
@@ -199,7 +199,7 @@
       </v-btn>
     </div>
 
-    <div class="switch-row">
+    <div v-if="!isMatchMode" class="switch-row">
       <v-switch
         v-model="flipMode"
         :label="$t('analysis.freeFlipMode')"
