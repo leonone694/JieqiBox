@@ -7,6 +7,7 @@
         color="teal"
         variant="text"
         @click="setupNewGame"
+        :disabled="isMatchRunning"
         :title="$t('toolbar.newGame')"
       />
       <v-btn
@@ -14,7 +15,8 @@
         size="small"
         color="amber"
         variant="text"
-        @click="showPositionEditor = true"
+        @click="handleEditPosition"
+        :disabled="isMatchRunning"
         :title="$t('toolbar.editPosition')"
       />
       <v-btn
@@ -83,6 +85,7 @@
         variant="text"
         @click="handleOpenNotation"
         :loading="isOpening"
+        :disabled="isMatchRunning"
         :title="$t('toolbar.openNotation')"
       />
       <LanguageSelector />
@@ -119,6 +122,9 @@
   const gameState: any = inject('game-state')
   const engineState: any = inject('engine-state')
 
+  // Inject JAI engine state for tournament mode support
+  const jaiEngine = inject('jai-engine-state') as any
+
   // Get dark mode setting from interface settings
   const { darkMode } = useInterfaceSettings()
 
@@ -152,6 +158,11 @@
 
   // Check if engine is currently analyzing (including pondering)
   const isAnalyzing = computed(() => engineState.isThinking?.value)
+
+  // Check if match is running to disable certain interactions
+  const isMatchRunning = computed(() => {
+    return jaiEngine?.isMatchRunning?.value || false
+  })
 
   // Get the currently loaded engine's ID
   const currentEngineId = computed(
@@ -305,8 +316,21 @@
   // Listen for position changes to reset variation state
   window.addEventListener('force-stop-ai', resetVariationState)
 
+  // Handle edit position button click
+  const handleEditPosition = () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
+    showPositionEditor.value = true
+  }
+
   // New game - stop engine analysis before starting new game
   const setupNewGame = () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     // Stop engine analysis before starting new game to prevent continued thinking
     if (engineState.stopAnalysis) {
       engineState.stopAnalysis()
@@ -330,6 +354,10 @@
 
   // Open notation - stop engine analysis before loading new game
   const handleOpenNotation = () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     // Stop engine analysis before loading new game to prevent continued thinking
     if (engineState.stopAnalysis) {
       engineState.stopAnalysis()

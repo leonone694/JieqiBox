@@ -118,15 +118,27 @@
         <v-btn @click="copyFenToClipboard" size="small" color="button">{{
           $t('chessboard.copyFen')
         }}</v-btn>
-        <v-btn @click="pasteFenFromClipboard" size="small" color="button">{{
-          $t('chessboard.pasteFen')
-        }}</v-btn>
-        <v-btn @click="inputFenStringWithArrow" size="small" color="button">{{
-          $t('chessboard.inputFen')
-        }}</v-btn>
-        <v-btn @click="setupNewGameWithArrow" size="small" color="button">{{
-          $t('chessboard.newGame')
-        }}</v-btn>
+        <v-btn
+          @click="pasteFenFromClipboard"
+          size="small"
+          color="button"
+          :disabled="isMatchRunning"
+          >{{ $t('chessboard.pasteFen') }}</v-btn
+        >
+        <v-btn
+          @click="inputFenStringWithArrow"
+          size="small"
+          color="button"
+          :disabled="isMatchRunning"
+          >{{ $t('chessboard.inputFen') }}</v-btn
+        >
+        <v-btn
+          @click="setupNewGameWithArrow"
+          size="small"
+          color="button"
+          :disabled="isMatchRunning"
+          >{{ $t('chessboard.newGame') }}</v-btn
+        >
       </div>
 
       <!-- Copy success tip - positioned absolutely to avoid layout shifts -->
@@ -194,6 +206,11 @@
 
   // Inject JAI engine state for tournament mode support
   const jaiEngine = inject('jai-engine-state') as any
+
+  // Check if match is running to disable certain interactions
+  const isMatchRunning = computed(() => {
+    return jaiEngine?.isMatchRunning?.value || false
+  })
 
   const {
     pieces,
@@ -298,6 +315,11 @@
 
   // Encapsulated click handling
   const boardClick = (e: MouseEvent) => {
+    // Disable manual moves during match running
+    if (isMatchRunning.value) {
+      return
+    }
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const xp = ((e.clientX - rect.left) / rect.width) * 100,
       yp = ((e.clientY - rect.top) / rect.height) * 100
@@ -497,6 +519,10 @@
 
   // Wrap original methods (now just call the original method, arrow clearing is triggered automatically)
   const setupNewGameWithArrow = () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     // Stop engine analysis before starting new game to prevent continued thinking
     if (es.stopAnalysis) {
       es.stopAnalysis()
@@ -504,6 +530,10 @@
     setupNewGame()
   }
   const inputFenStringWithArrow = () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     // Stop engine analysis before inputting FEN to prevent continued thinking
     if (es.stopAnalysis) {
       es.stopAnalysis()
@@ -514,6 +544,10 @@
 
   // Paste FEN from clipboard functionality
   const pasteFenFromClipboard = async () => {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     // Stop engine analysis before pasting FEN to prevent continued thinking
     if (es.stopAnalysis) {
       es.stopAnalysis()

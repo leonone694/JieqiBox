@@ -143,7 +143,7 @@
     <div class="button-group">
       <v-btn
         @click="handleUndoMove"
-        :disabled="currentMoveIndex <= 0"
+        :disabled="currentMoveIndex <= 0 || isMatchRunning"
         color="error"
         class="grouped-btn"
         size="small"
@@ -363,7 +363,7 @@
           <div class="notation-controls">
             <v-btn
               @click="goToFirstMove"
-              :disabled="currentMoveIndex <= 0"
+              :disabled="currentMoveIndex <= 0 || isMatchRunning"
               icon="mdi-skip-backward"
               size="x-small"
               color="primary"
@@ -372,7 +372,7 @@
             />
             <v-btn
               @click="goToPreviousMove"
-              :disabled="currentMoveIndex <= 0"
+              :disabled="currentMoveIndex <= 0 || isMatchRunning"
               icon="mdi-step-backward"
               size="x-small"
               color="primary"
@@ -385,11 +385,12 @@
               :icon="isPlaying ? 'mdi-pause' : 'mdi-play'"
               size="x-small"
               variant="text"
+              :disabled="isMatchRunning"
               :title="isPlaying ? $t('analysis.pause') : $t('analysis.play')"
             />
             <v-btn
               @click="goToNextMove"
-              :disabled="currentMoveIndex >= history.length"
+              :disabled="currentMoveIndex >= history.length || isMatchRunning"
               icon="mdi-step-forward"
               size="x-small"
               color="primary"
@@ -398,7 +399,7 @@
             />
             <v-btn
               @click="goToLastMove"
-              :disabled="currentMoveIndex >= history.length"
+              :disabled="currentMoveIndex >= history.length || isMatchRunning"
               icon="mdi-skip-forward"
               size="x-small"
               color="primary"
@@ -408,7 +409,11 @@
           </div>
         </div>
       </template>
-      <div class="move-list" ref="moveListElement">
+      <div
+        class="move-list"
+        ref="moveListElement"
+        :class="{ 'disabled-clicks': isMatchRunning }"
+      >
         <div
           class="move-item"
           :class="{ 'current-move': currentMoveIndex === 0 }"
@@ -988,6 +993,10 @@
     }
   }
   function handleMoveClick(moveIndex: number) {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     replayToMove(moveIndex)
   }
 
@@ -995,6 +1004,10 @@
 
   // Navigate to the first move (opening position)
   function goToFirstMove() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (currentMoveIndex.value > 0) {
       replayToMove(0)
       stopPlayback()
@@ -1003,6 +1016,10 @@
 
   // Navigate to the previous move
   function goToPreviousMove() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (currentMoveIndex.value > 0) {
       replayToMove(currentMoveIndex.value - 1)
       stopPlayback()
@@ -1011,6 +1028,10 @@
 
   // Navigate to the next move
   function goToNextMove() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (currentMoveIndex.value < history.value.length) {
       replayToMove(currentMoveIndex.value + 1)
       stopPlayback()
@@ -1019,6 +1040,10 @@
 
   // Navigate to the last move
   function goToLastMove() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (currentMoveIndex.value < history.value.length) {
       replayToMove(history.value.length)
       stopPlayback()
@@ -1027,6 +1052,10 @@
 
   // Toggle play/pause functionality
   function togglePlayPause() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (isPlaying.value) {
       stopPlayback()
     } else {
@@ -1036,6 +1065,10 @@
 
   // Start automatic playback
   function startPlayback() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     if (isPlaying.value) return
 
     isPlaying.value = true
@@ -1139,6 +1172,10 @@
 
   // Undo the last move
   function handleUndoMove() {
+    // Disable during match running
+    if (isMatchRunning.value) {
+      return
+    }
     undoLastMove()
   }
 
@@ -2479,5 +2516,11 @@
   .notation-controls .v-btn {
     min-width: 28px;
     height: 28px;
+  }
+
+  /* Disable clicks during match running */
+  .disabled-clicks .move-item {
+    pointer-events: none;
+    opacity: 0.6;
   }
 </style>

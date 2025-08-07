@@ -118,7 +118,7 @@
             :label="$t('evaluationChart.colorScheme')"
             :items="[
               { title: $t('evaluationChart.redGreen'), value: 'default' },
-              { title: $t('evaluationChart.blueOrange'), value: 'blueOrange' }
+              { title: $t('evaluationChart.blueOrange'), value: 'blueOrange' },
             ]"
             variant="underlined"
             density="compact"
@@ -525,7 +525,7 @@
     if (blackPerspective.value) {
       displayScore = -displayScore
     }
-    
+
     // Color scheme selection
     if (colorScheme.value === 'blueOrange') {
       if (displayScore < -100) return '#0072B2'
@@ -534,7 +534,7 @@
       if (displayScore > 50) return '#E69F00'
       return '#666666'
     }
-    
+
     // Default color scheme (red-green)
     if (displayScore > 100) return '#c62828'
     if (displayScore < -100) return '#2e7d32'
