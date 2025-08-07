@@ -30,6 +30,7 @@ interface ConfigData {
     blackPerspective: boolean
     enableYAxisClamp: boolean
     yAxisClampValue: number
+    colorScheme: string
   }
   analysisSettings: {
     movetime: number
@@ -77,6 +78,7 @@ const defaultConfig: ConfigData = {
     blackPerspective: false,
     enableYAxisClamp: false,
     yAxisClampValue: 500,
+    colorScheme: 'default',
   },
   analysisSettings: {
     movetime: 1000,

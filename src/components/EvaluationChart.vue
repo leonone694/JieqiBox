@@ -110,6 +110,22 @@
             class="clamp-input"
           ></v-text-field>
         </div>
+        <!-- Color Scheme Controls -->
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" @click.stop>
+          <v-select
+            v-model="colorScheme"
+            :label="$t('evaluationChart.colorScheme')"
+            :items="[
+              { title: $t('evaluationChart.redGreen'), value: 'default' },
+              { title: $t('evaluationChart.blueOrange'), value: 'blueOrange' }
+            ]"
+            variant="underlined"
+            density="compact"
+            hide-details
+            class="color-scheme-select"
+          />
+        </div>
       </div>
     </Teleport>
   </div>
@@ -144,6 +160,7 @@
     blackPerspective,
     enableYAxisClamp,
     yAxisClampValue,
+    colorScheme,
   } = useEvaluationChartSettings()
 
   const tooltipVisible = ref(false)
@@ -508,6 +525,17 @@
     if (blackPerspective.value) {
       displayScore = -displayScore
     }
+    
+    // Color scheme selection
+    if (colorScheme.value === 'blueOrange') {
+      if (displayScore < -100) return '#0072B2'
+      if (displayScore > 100) return '#D55E00'
+      if (displayScore < -50) return '#56B4E9'
+      if (displayScore > 50) return '#E69F00'
+      return '#666666'
+    }
+    
+    // Default color scheme (red-green)
     if (displayScore > 100) return '#c62828'
     if (displayScore < -100) return '#2e7d32'
     if (displayScore > 50) return '#ef5350'
@@ -770,6 +798,7 @@
       blackPerspective,
       enableYAxisClamp,
       yAxisClampValue,
+      colorScheme,
     ],
     () => nextTick(drawChart)
   )
@@ -932,6 +961,16 @@
       .clamp-input {
         :deep(input) {
           text-align: center;
+        }
+      }
+      .color-scheme-select {
+        :deep(.v-field__input) {
+          min-height: 36px;
+          padding-top: 0;
+          padding-bottom: 0;
+        }
+        :deep(.v-field__field) {
+          min-height: 36px;
         }
       }
       :deep(.v-switch .v-label) {
