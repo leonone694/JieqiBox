@@ -192,6 +192,9 @@
     ponderhit: any
   }
 
+  // Inject JAI engine state for tournament mode support
+  const jaiEngine = inject('jai-engine-state') as any
+
   const {
     pieces,
     selectedPieceId,
@@ -367,8 +370,57 @@
     }
   }
 
+  // Parse PV moves from JAI engine analysis info
+  const parseJaiAnalysisInfoForPV = (analysisInfo: string): string[][] => {
+    if (!analysisInfo) return []
+
+    const pvMoves: string[][] = []
+    const lines = analysisInfo
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+
+    lines.forEach(line => {
+      // Look for lines containing " pv " (Principal Variation)
+      const pvIndex = line.indexOf(' pv ')
+      if (pvIndex !== -1) {
+        const pvString = line.slice(pvIndex + 4).trim() // 4 = ' pv '.length
+        const moves = pvString.split(/\s+/).filter(move => move.length >= 4)
+
+        if (moves.length > 0) {
+          pvMoves.push(moves)
+        }
+      }
+    })
+
+    return pvMoves
+  }
+
   const updateArrow = () => {
-    // 1. If engine is pondering (but not infinite pondering) and not ponderhit, display expected move arrow
+    // Check if we're in tournament mode and JAI engine is available
+    const isMatchMode = (window as any).__MATCH_MODE__ || false
+    const jaiAnalysisInfo = jaiEngine?.analysisInfo?.value || ''
+
+    // 1. If in tournament mode and JAI engine has analysis info, display arrows from JAI analysis
+    if (isMatchMode && jaiAnalysisInfo) {
+      const jaiPvMoves = parseJaiAnalysisInfoForPV(jaiAnalysisInfo)
+      if (jaiPvMoves.length > 0) {
+        const arrows: Arrow[] = []
+        jaiPvMoves.forEach((moves: string[], idx: number) => {
+          if (!moves || !moves.length) return
+          const mv = moves[0]
+          if (mv && mv.length >= 4) {
+            const coords = uciToDisplayRC(mv)
+            const f = percentToSvgCoords(coords.from.row, coords.from.col),
+              t = percentToSvgCoords(coords.to.row, coords.to.col)
+            arrows.push({ x1: f.x, y1: f.y, x2: t.x, y2: t.y, pv: idx + 1 })
+          }
+        })
+        arrs.value = arrows
+        return
+      }
+    }
+
+    // 2. If engine is pondering (but not infinite pondering) and not ponderhit, display expected move arrow
     if (
       isPondering.value &&
       !isInfinitePondering.value &&
@@ -385,7 +437,7 @@
       }
     }
 
-    // 2. If engine is thinking or infinite pondering, display arrows for all available PVs
+    // 3. If engine is thinking or infinite pondering, display arrows for all available PVs
     if (
       (isThinking.value || (isPondering.value && isInfinitePondering.value)) &&
       multiPvMoves.value.length
@@ -405,7 +457,7 @@
       return
     }
 
-    // 3. If not thinking and not pondering, show best move if available
+    // 4. If not thinking and not pondering, show best move if available
     if (!isThinking.value && !isPondering.value && bestMove.value) {
       const mv = bestMove.value
       if (mv.length >= 4) {
@@ -429,6 +481,9 @@
     void ponderMove.value // track ponderMove
     void ponderhit.value // track ponderhit
     void multiPvMoves.value.map((m: string[]) => m.join(',')) // track nested arrays
+    // Track JAI engine analysis info for tournament mode
+    void jaiEngine?.analysisInfo?.value // track JAI analysis info
+    void (window as any).__MATCH_MODE__ // track match mode state
     updateArrow()
   })
 
