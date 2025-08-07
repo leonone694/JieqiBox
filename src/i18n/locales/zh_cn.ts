@@ -229,13 +229,15 @@ export default {
     exitMatchMode: '退出比赛模式',
     startMatch: '开始比赛',
     stopMatch: '停止比赛',
-    jaiSettings: '比赛引擎选项',
+    jaiSettings: '比赛选项',
     matchInfo: '比赛信息',
     matchStatus: '状态',
     gameProgress: '进度',
     engineInfo: '引擎',
     lastResult: '结果',
     matchWld: '胜负和',
+    eloRating: 'Elo评级',
+    eloCalculator: 'Elo计算器',
     matchEngines: '引擎',
     running: '运行中',
     stopped: '已停止',
@@ -272,7 +274,7 @@ export default {
 
   // JAI 选项对话框
   jaiOptions: {
-    title: 'JAI比赛引擎选项',
+    title: 'JAI比赛选项',
     loadingText: '正在加载引擎选项...',
     noEngineLoaded: '当前未加载任何比赛引擎。',
     pleaseLoadEngineFirst: '请先加载比赛引擎以配置其选项。',
@@ -304,6 +306,24 @@ export default {
     matchStopped: '比赛已停止',
     gameProgress: '第 {current} 局，共 {total} 局',
     matchResult: '比赛结果: {result}',
+  },
+
+  // Elo 计算器
+  eloCalculator: {
+    title: 'Elo表现评级计算器',
+    inputSection: '输入胜负和统计',
+    wins: '胜',
+    losses: '负',
+    draws: '和',
+    totalGames: '总局数',
+    resultsSection: '计算结果',
+    performance: '表现评级',
+    errorMargin: '误差范围',
+    confidenceInterval: '95%置信区间',
+    scoreRate: '得分率',
+    standardError: '标准误差',
+    noResults: '无可用结果',
+    close: '关闭',
   },
 
   // 错误消息

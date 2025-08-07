@@ -232,13 +232,15 @@ export default {
     exitMatchMode: 'Exit Match Mode',
     startMatch: 'Start Match',
     stopMatch: 'Stop Match',
-    jaiSettings: 'Match Engine Options',
+    jaiSettings: 'Match Options',
     matchInfo: 'Match Information',
     matchStatus: 'Status',
     gameProgress: 'Progress',
     engineInfo: 'Engine',
     lastResult: 'Result',
     matchWld: 'WLD',
+    eloRating: 'Elo Rating',
+    eloCalculator: 'Elo Calculator',
     matchEngines: 'Engines',
     running: 'Running',
     stopped: 'Stopped',
@@ -277,7 +279,7 @@ export default {
 
   // JAI options dialog
   jaiOptions: {
-    title: 'JAI Match Engine Options',
+    title: 'JAI Match Options',
     loadingText: 'Loading engine options...',
     noEngineLoaded: 'No match engine is currently loaded.',
     pleaseLoadEngineFirst:
@@ -310,6 +312,24 @@ export default {
     matchStopped: 'Match stopped',
     gameProgress: 'Game {current} of {total}',
     matchResult: 'Match result: {result}',
+  },
+
+  // Elo Calculator
+  eloCalculator: {
+    title: 'Elo Performance Rating Calculator',
+    inputSection: 'Input WLD Statistics',
+    wins: 'Wins',
+    losses: 'Losses',
+    draws: 'Draws',
+    totalGames: 'Total Games',
+    resultsSection: 'Calculation Results',
+    performance: 'Performance Rating',
+    errorMargin: 'Error Margin',
+    confidenceInterval: '95% Confidence Interval',
+    scoreRate: 'Score Rate',
+    standardError: 'Standard Error',
+    noResults: 'No results available',
+    close: 'Close',
   },
 
   // Error messages

@@ -231,13 +231,15 @@ export default {
     exitMatchMode: 'マッチモードを終了',
     startMatch: 'マッチ開始',
     stopMatch: 'マッチ停止',
-    jaiSettings: 'マッチエンジンオプション',
+    jaiSettings: 'マッチオプション',
     matchInfo: 'マッチ情報',
     matchStatus: '状態',
     gameProgress: '進捗',
     engineInfo: 'エンジン',
     lastResult: '結果',
     matchWld: '勝敗分',
+    eloRating: 'Eloレーティング',
+    eloCalculator: 'Elo計算機',
     matchEngines: 'エンジン',
     running: '実行中',
     stopped: '停止',
@@ -361,7 +363,7 @@ export default {
 
   // JAIオプションダイアログ
   jaiOptions: {
-    title: 'JAIマッチエンジンオプション',
+    title: 'JAIマッチオプション',
     loadingText: 'エンジンオプションを読み込み中...',
     noEngineLoaded: '現在、マッチエンジンが読み込まれていません。',
     pleaseLoadEngineFirst:
@@ -394,6 +396,24 @@ export default {
     matchStopped: 'マッチが停止されました',
     gameProgress: '第 {current} 局、全 {total} 局',
     matchResult: 'マッチ結果: {result}',
+  },
+
+  // Elo計算機
+  eloCalculator: {
+    title: 'Eloパフォーマンスレーティング計算機',
+    inputSection: 'WLD統計入力',
+    wins: '勝',
+    losses: '負',
+    draws: '分',
+    totalGames: '総ゲーム数',
+    resultsSection: '計算結果',
+    performance: 'パフォーマンスレーティング',
+    errorMargin: '誤差範囲',
+    confidenceInterval: '95%信頼区間',
+    scoreRate: 'スコア率',
+    standardError: '標準誤差',
+    noResults: '結果がありません',
+    close: '閉じる',
   },
 
   // ゲーム操作確認

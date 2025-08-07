@@ -74,47 +74,68 @@
       </v-btn>
     </div>
 
-    <!-- Match mode button group -->
-    <div class="button-group">
+    <!-- Match mode button groups -->
+    <div v-if="isMatchMode" class="match-mode-buttons">
+      <!-- First row: Exit match mode | Start match -->
+      <div class="button-group">
+        <v-btn
+          @click="toggleMatchMode"
+          color="success"
+          class="grouped-btn"
+          size="small"
+        >
+          {{ $t('analysis.exitMatchMode') }}
+        </v-btn>
+
+        <v-btn
+          @click="handleMatchButtonClick"
+          :disabled="!jaiEngine?.isEngineLoaded?.value"
+          :color="jaiEngine?.isMatchRunning?.value ? 'warning' : 'green'"
+          class="grouped-btn"
+          size="small"
+        >
+          {{
+            jaiEngine?.isMatchRunning?.value
+              ? $t('analysis.stopMatch')
+              : $t('analysis.startMatch')
+          }}
+        </v-btn>
+      </div>
+
+      <!-- Second row: Settings | ELO Calculator -->
+      <div class="button-group">
+        <v-btn
+          @click="showJaiOptionsDialog = true"
+          :disabled="!jaiEngine?.isEngineLoaded?.value"
+          color="purple"
+          size="small"
+          class="grouped-btn"
+          prepend-icon="mdi-cogs"
+        >
+          {{ $t('analysis.jaiSettings') }}
+        </v-btn>
+
+        <v-btn
+          @click="showEloCalculatorDialog = true"
+          color="orange"
+          size="small"
+          class="grouped-btn"
+          prepend-icon="mdi-calculator"
+        >
+          {{ $t('analysis.eloCalculator') }}
+        </v-btn>
+      </div>
+    </div>
+
+    <!-- Enter match mode button (when not in match mode) -->
+    <div v-else class="button-group">
       <v-btn
         @click="toggleMatchMode"
-        :color="isMatchMode ? 'success' : 'amber'"
+        color="amber"
         class="grouped-btn"
         size="small"
       >
-        {{
-          isMatchMode
-            ? $t('analysis.exitMatchMode')
-            : $t('analysis.enterMatchMode')
-        }}
-      </v-btn>
-
-      <v-btn
-        v-if="isMatchMode"
-        @click="handleMatchButtonClick"
-        :disabled="!jaiEngine?.isEngineLoaded?.value"
-        :color="jaiEngine?.isMatchRunning?.value ? 'warning' : 'green'"
-        class="grouped-btn"
-        size="small"
-      >
-        {{
-          jaiEngine?.isMatchRunning?.value
-            ? $t('analysis.stopMatch')
-            : $t('analysis.startMatch')
-        }}
-      </v-btn>
-
-      <v-btn
-        v-if="isMatchMode"
-        @click="showJaiOptionsDialog = true"
-        :disabled="!jaiEngine?.isEngineLoaded?.value"
-        color="purple"
-        size="x-small"
-        class="grouped-btn"
-        icon="mdi-cogs"
-        :title="$t('analysis.jaiSettings')"
-        rounded
-      >
+        {{ $t('analysis.enterMatchMode') }}
       </v-btn>
     </div>
 
@@ -296,6 +317,7 @@
                 }}-{{ jaiEngine.matchDraws.value }}</span
               >
             </div>
+
             <div
               v-if="
                 jaiEngine?.redEngine?.value || jaiEngine?.blackEngine?.value
@@ -551,6 +573,12 @@
       v-model="showJaiOptionsDialog"
       :engine-id="currentJaiEngineId"
     />
+    <EloCalculatorDialog
+      v-model="showEloCalculatorDialog"
+      :initial-wins="jaiEngine?.matchWins?.value || 0"
+      :initial-losses="jaiEngine?.matchLosses?.value || 0"
+      :initial-draws="jaiEngine?.matchDraws?.value || 0"
+    />
   </div>
 </template>
 
@@ -569,9 +597,10 @@
   import { useInterfaceSettings } from '@/composables/useInterfaceSettings'
   import { useGameSettings } from '@/composables/useGameSettings'
   import AboutDialog from './AboutDialog.vue'
-  // Import Engine Manager components and types
-  import EngineManagerDialog from './EngineManagerDialog.vue'
-  import JaiOptionsDialog from './JaiOptionsDialog.vue'
+// Import Engine Manager components and types
+import EngineManagerDialog from './EngineManagerDialog.vue'
+import JaiOptionsDialog from './JaiOptionsDialog.vue'
+import EloCalculatorDialog from './EloCalculatorDialog.vue'
   import {
     useConfigManager,
     type ManagedEngine,
@@ -647,6 +676,7 @@
   /* ---------- JAI Match Mode State ---------- */
   const isMatchMode = ref(false)
   const showJaiOptionsDialog = ref(false)
+  const showEloCalculatorDialog = ref(false)
 
   // JAI engine state properties - use reactive references from JAI engine
   const isMatchRunning = computed(
@@ -1949,6 +1979,8 @@
       analysisSettings.value
     )
   }
+
+
 </script>
 
 <style lang="scss">
@@ -2002,6 +2034,18 @@
 
   .button-group {
     display: flex;
+    gap: 6px;
+    width: 100%;
+
+    // Mobile responsive adjustments
+    @media (max-width: 768px) {
+      gap: 4px;
+    }
+  }
+
+  .match-mode-buttons {
+    display: flex;
+    flex-direction: column;
     gap: 6px;
     width: 100%;
 
@@ -2384,6 +2428,8 @@
     font-weight: 500;
     color: rgb(var(--v-theme-primary));
   }
+
+
 
   .no-match-info {
     padding: 20px;

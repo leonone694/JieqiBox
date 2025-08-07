@@ -233,13 +233,15 @@ export default {
     exitMatchMode: 'Thoát chế độ trận đấu',
     startMatch: 'Bắt đầu trận đấu',
     stopMatch: 'Dừng trận đấu',
-    jaiSettings: 'Tùy chọn engine trận đấu',
+    jaiSettings: 'Tùy chọn trận đấu',
     matchInfo: 'Thông tin trận đấu',
     matchStatus: 'Trạng thái',
     gameProgress: 'Tiến độ',
     engineInfo: 'Engine',
     lastResult: 'Kết quả',
     matchWld: 'Thắng-Thua-Hòa',
+    eloRating: 'Xếp hạng Elo',
+    eloCalculator: 'Máy tính Elo',
     matchEngines: 'Engine',
     running: 'Đang chạy',
     stopped: 'Đã dừng',
@@ -363,7 +365,7 @@ export default {
 
   // Hộp thoại tùy chọn JAI
   jaiOptions: {
-    title: 'Tùy chọn engine trận đấu JAI',
+    title: 'Tùy chọn trận đấu JAI',
     loadingText: 'Đang tải tùy chọn engine...',
     noEngineLoaded: 'Hiện tại chưa có engine trận đấu nào được tải.',
     pleaseLoadEngineFirst:
@@ -396,6 +398,24 @@ export default {
     matchStopped: 'Trận đấu đã dừng',
     gameProgress: 'Ván {current} / {total}',
     matchResult: 'Kết quả trận đấu: {result}',
+  },
+
+  // Máy tính Elo
+  eloCalculator: {
+    title: 'Máy tính Xếp hạng Hiệu suất Elo',
+    inputSection: 'Nhập Thống kê WLD',
+    wins: 'Thắng',
+    losses: 'Thua',
+    draws: 'Hòa',
+    totalGames: 'Tổng số ván',
+    resultsSection: 'Kết quả Tính toán',
+    performance: 'Xếp hạng Hiệu suất',
+    errorMargin: 'Biên độ Lỗi',
+    confidenceInterval: 'Khoảng tin cậy 95%',
+    scoreRate: 'Tỷ lệ Điểm',
+    standardError: 'Lỗi Chuẩn',
+    noResults: 'Không có kết quả',
+    close: 'Đóng',
   },
 
   // Xác nhận thao tác trò chơi
