@@ -468,7 +468,9 @@
   }
 
   // Helper: classify unknown color by king-based halves
-  const classifyUnknownByKings = (row: number): 'red_unknown' | 'black_unknown' => {
+  const classifyUnknownByKings = (
+    row: number
+  ): 'red_unknown' | 'black_unknown' => {
     const { redRows } = getDarkRowsByKings()
     return redRows.includes(row) ? 'red_unknown' : 'black_unknown'
   }
@@ -544,7 +546,8 @@
       selectedPiece.value.col = col
       // Update initial placement role for dark move logic
       if (gameState.getRoleByPosition) {
-        selectedPiece.value.initialRole = gameState.getRoleByPosition(row, col) || ''
+        selectedPiece.value.initialRole =
+          gameState.getRoleByPosition(row, col) || ''
       }
       selectedPiece.value.initialRow = row
       selectedPiece.value.initialCol = col
@@ -801,7 +804,9 @@
         if (!validRows.includes(piece.row)) {
           return {
             type: 'error',
-            message: t('positionEditor.validationStatus.darkPieceInvalidPosition'),
+            message: t(
+              'positionEditor.validationStatus.darkPieceInvalidPosition'
+            ),
           }
         }
       }
@@ -903,7 +908,11 @@
       const blackKingOnBottom = blackKing.row >= 5
       const kingsInOppositePositions = redKingOnTop && blackKingOnBottom
 
-      if (redKingInWrongPalace || blackKingInWrongPalace || kingsInOppositePositions) {
+      if (
+        redKingInWrongPalace ||
+        blackKingInWrongPalace ||
+        kingsInOppositePositions
+      ) {
         needsAutoFlip = true
       }
     }
