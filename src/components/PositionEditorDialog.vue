@@ -382,6 +382,12 @@
           : piece.row >= 5
             ? 'red_unknown'
             : 'black_unknown',
+        // Ensure initialRole matches the piece's current square
+        initialRole: gameState.getRoleByPosition
+          ? gameState.getRoleByPosition(piece.row, piece.col)
+          : piece.initialRole,
+        initialRow: piece.row,
+        initialCol: piece.col,
       }))
       // Reclassify by king halves to avoid any flip-induced mislabeling
       reclassifyAllDarkPieces()
@@ -536,6 +542,16 @@
     if (selectedPiece.value.row !== -1) {
       selectedPiece.value.row = row
       selectedPiece.value.col = col
+      // Update initial placement role for dark move logic
+      if (gameState.getRoleByPosition) {
+        selectedPiece.value.initialRole = gameState.getRoleByPosition(row, col) || ''
+      }
+      selectedPiece.value.initialRow = row
+      selectedPiece.value.initialCol = col
+      // Reclassify unknown color label based on king halves if it's a dark piece
+      if (!selectedPiece.value.isKnown) {
+        selectedPiece.value.name = classifyUnknownByKings(row)
+      }
       // If a king moved, dark piece halves may change; reclassify
       if (
         selectedPiece.value.name === 'red_king' ||
@@ -578,13 +594,23 @@
 
   // Flip the board
   const flipBoard = () => {
-    editingPieces.value = editingPieces.value.map(piece => ({
-      ...piece,
-      row: 9 - piece.row,
-      col: 8 - piece.col,
-      initialRow: 9 - piece.initialRow,
-      initialCol: 8 - piece.initialCol,
-    }))
+    editingPieces.value = editingPieces.value.map(piece => {
+      const flippedRow = 9 - piece.row
+      const flippedCol = 8 - piece.col
+      const flippedInitialRow = 9 - piece.initialRow
+      const flippedInitialCol = 8 - piece.initialCol
+      return {
+        ...piece,
+        row: flippedRow,
+        col: flippedCol,
+        initialRow: flippedInitialRow,
+        initialCol: flippedInitialCol,
+        // Recompute initialRole based on new square to keep dark move logic consistent with position
+        initialRole: gameState.getRoleByPosition
+          ? gameState.getRoleByPosition(flippedRow, flippedCol)
+          : piece.initialRole,
+      }
+    })
 
     // Reclassify dark pieces after coordinates change
     reclassifyAllDarkPieces()
