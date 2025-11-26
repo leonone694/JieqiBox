@@ -603,11 +603,8 @@ export function useLinker() {
       return
     }
 
-    // Initialize model first
-    const modelReady = await initializeModel()
-    if (!modelReady) {
-      return
-    }
+    // Don't initialize model here - defer to connect() when actually needed
+    // This avoids initialization failures when just listing windows
 
     // Refresh window list
     await refreshWindowList()
@@ -620,6 +617,12 @@ export function useLinker() {
   const connect = async (): Promise<void> => {
     if (!selectedWindowId.value || !selectedWindow.value) {
       errorMessage.value = t('linker.error.noWindowSelected')
+      return
+    }
+
+    // Initialize model when connecting (deferred from start)
+    const modelReady = await initializeModel()
+    if (!modelReady) {
       return
     }
 
