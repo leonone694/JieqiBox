@@ -60,6 +60,21 @@ const PIECE_TO_FEN: { [key: string]: string } = {
   dark_b_soldier: 'x',
 }
 
+// Helper function: Convert board coordinates to UCI notation (e.g., row=0, col=0 -> "a9")
+const coordsToNotation = (row: number, col: number): string => {
+  return `${String.fromCharCode(97 + col)}${9 - row}`
+}
+
+// Helper function: Create a PNG blob from a canvas
+const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob> => {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      b => (b ? resolve(b) : reject(new Error('Failed to create blob'))),
+      'image/png'
+    )
+  })
+}
+
 export function useLinker() {
   const { t } = useI18n()
   const imageRecognition = useImageRecognition()
@@ -184,6 +199,8 @@ export function useLinker() {
       }
 
       // Calculate grid position
+      // Note: We divide by 8 and 9 because we're measuring intervals between positions
+      // 9 columns means 8 intervals, 10 rows means 9 intervals
       const cellWidth = bw / 8
       const cellHeight = bh / 9
       const col = Math.round((pieceCenterX - bx) / cellWidth)
@@ -262,6 +279,9 @@ export function useLinker() {
   }
 
   // Compare two boards and find the move
+  // Note: _isReversed and _isWatchMode are reserved for future use:
+  // - _isReversed: for handling reversed board orientation in move direction detection
+  // - _isWatchMode: for different behavior when only watching vs auto-playing
   const compareBoardsAndFindMove = (
     linkBoard: BoardGrid,
     engineBoard: BoardGrid,
@@ -308,8 +328,8 @@ export function useLinker() {
           !d2.enginePiece
         ) {
           // Piece moved from d1 to d2 (opponent's move)
-          const from = `${String.fromCharCode(97 + d1.col)}${9 - d1.row}`
-          const to = `${String.fromCharCode(97 + d2.col)}${9 - d2.row}`
+          const from = coordsToNotation(d1.row, d1.col)
+          const to = coordsToNotation(d2.row, d2.col)
           return { flag: 1, from, to }
         }
 
@@ -321,8 +341,8 @@ export function useLinker() {
           !d1.enginePiece
         ) {
           // Piece moved from d2 to d1 (opponent's move)
-          const from = `${String.fromCharCode(97 + d2.col)}${9 - d2.row}`
-          const to = `${String.fromCharCode(97 + d1.col)}${9 - d1.row}`
+          const from = coordsToNotation(d2.row, d2.col)
+          const to = coordsToNotation(d1.row, d1.col)
           return { flag: 1, from, to }
         }
 
@@ -335,8 +355,8 @@ export function useLinker() {
           d2.linkPiece === d1.enginePiece
         ) {
           // Capture: piece from d1 captured piece at d2
-          const from = `${String.fromCharCode(97 + d1.col)}${9 - d1.row}`
-          const to = `${String.fromCharCode(97 + d2.col)}${9 - d2.row}`
+          const from = coordsToNotation(d1.row, d1.col)
+          const to = coordsToNotation(d2.row, d2.col)
           return { flag: 1, from, to }
         }
 
@@ -348,8 +368,8 @@ export function useLinker() {
           d1.linkPiece === d2.enginePiece
         ) {
           // Capture: piece from d2 captured piece at d1
-          const from = `${String.fromCharCode(97 + d2.col)}${9 - d2.row}`
-          const to = `${String.fromCharCode(97 + d1.col)}${9 - d1.row}`
+          const from = coordsToNotation(d2.row, d2.col)
+          const to = coordsToNotation(d1.row, d1.col)
           return { flag: 1, from, to }
         }
       }
@@ -381,9 +401,7 @@ export function useLinker() {
         canvas.height = imageData.height
         const ctx = canvas.getContext('2d')!
         ctx.putImageData(imageData, 0, 0)
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Failed to create blob'))), 'image/png')
-        })
+        const blob = await canvasToBlob(canvas)
         imageData = blob
       }
 
@@ -414,9 +432,7 @@ export function useLinker() {
       canvas.height = img.height
       const ctx = canvas.getContext('2d')!
       ctx.drawImage(img, 0, 0)
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Failed to create blob'))), 'image/png')
-      })
+      const blob = await canvasToBlob(canvas)
       const file = new File([blob], 'screenshot.png', { type: 'image/png' })
 
       // Process image
