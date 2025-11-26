@@ -244,6 +244,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, inject } from 'vue'
 import { useLinker, type BoardGrid, type WindowInfo } from '../composables/useLinker'
+import { useImageRecognition } from '../composables/image-recognition'
 import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
 const props = defineProps<{
@@ -259,7 +260,9 @@ const emit = defineEmits<{
 const gameState = inject('game-state') as any
 const engineState = inject('engine-state') as any
 
-const linker = useLinker()
+// Create image recognition instance and share it with the linker
+const imageRecognition = useImageRecognition()
+const linker = useLinker({ imageRecognition })
 const showSettings = ref(false)
 const isRefreshing = ref(false)
 const isCapturing = ref(false)

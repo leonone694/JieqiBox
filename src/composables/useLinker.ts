@@ -3,6 +3,9 @@ import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { useImageRecognition, LABELS, type DetectionBox } from './image-recognition'
 
+// Type for the image recognition instance
+type ImageRecognitionInstance = ReturnType<typeof useImageRecognition>
+
 // Linker operation modes
 export type LinkerMode = 'auto' | 'watch'
 
@@ -94,11 +97,17 @@ const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
   })
 }
 
-export function useLinker() {
+// Options for useLinker
+export interface UseLinkerOptions {
+  imageRecognition?: ImageRecognitionInstance
+}
+
+export function useLinker(options: UseLinkerOptions = {}) {
   const { t } = useI18n()
 
-  // Lazy initialization of image recognition
-  let imageRecognition: ReturnType<typeof useImageRecognition> | null = null
+  // Use provided image recognition instance or create a new one
+  // This allows sharing the same instance with other parts of the app
+  let imageRecognition: ImageRecognitionInstance | null = options.imageRecognition || null
   const getImageRecognition = () => {
     if (!imageRecognition) {
       imageRecognition = useImageRecognition()
