@@ -688,4 +688,47 @@ prev.prev - 上上步（支持无限嵌套）`,
     noMarkedMoves: '没有找到绘制的合法着法',
     batchSettings: '批量设置',
   },
+
+  // 连线功能
+  linker: {
+    title: '连线',
+    start: '开始连线',
+    stop: '停止连线',
+    confirm: '确认并开始',
+    settings: '设置',
+    settingsTitle: '连线设置',
+    uploadScreenshot: '上传截图',
+    recognizedFen: '识别到的局面',
+    mode: {
+      auto: '自动落子',
+      watch: '仅观战',
+    },
+    status: {
+      idle: '未连接',
+      selecting: '选择棋盘中...',
+      scanning: '扫描中...',
+      connected: '已连接',
+      error: '错误',
+    },
+    instructions: {
+      idle: '点击"开始连线"以连接外部象棋软件。支持通过图像识别同步局面和自动落子。',
+      selecting: '请上传包含棋盘的截图，系统将自动识别局面。',
+    },
+    error: {
+      modelInitFailed: '图像识别模型初始化失败',
+      noBoardDetected: '未检测到棋盘',
+      recognitionFailed: '识别失败',
+    },
+    settingsForm: {
+      mouseClickDelay: '鼠标点击延迟',
+      mouseClickDelayHint: '鼠标按下和释放之间的延迟（毫秒）',
+      mouseMoveDelay: '鼠标移动延迟',
+      mouseMoveDelayHint: '两次点击之间的延迟（毫秒）',
+      scanInterval: '扫描间隔',
+      scanIntervalHint: '每次扫描之间的间隔（毫秒）',
+      animationConfirm: '等待动画确认',
+      animationConfirmHint: '在检测到可能的着法后，等待棋子动画完成后再确认',
+      reset: '重置为默认',
+    },
+  },
 }

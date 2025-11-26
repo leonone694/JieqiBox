@@ -709,4 +709,47 @@ prev.prev - Previous-previous move (supports infinite nesting)`,
     noMarkedMoves: 'No drawing legal moves found',
     batchSettings: 'Batch Settings',
   },
+
+  // Linker feature
+  linker: {
+    title: 'Board Link',
+    start: 'Start Link',
+    stop: 'Stop Link',
+    confirm: 'Confirm & Start',
+    settings: 'Settings',
+    settingsTitle: 'Linker Settings',
+    uploadScreenshot: 'Upload Screenshot',
+    recognizedFen: 'Recognized Position',
+    mode: {
+      auto: 'Auto Move',
+      watch: 'Watch Only',
+    },
+    status: {
+      idle: 'Not Connected',
+      selecting: 'Selecting Board...',
+      scanning: 'Scanning...',
+      connected: 'Connected',
+      error: 'Error',
+    },
+    instructions: {
+      idle: 'Click "Start Link" to connect to an external chess software. Supports position sync and auto-move through image recognition.',
+      selecting: 'Please upload a screenshot containing the chess board. The system will automatically recognize the position.',
+    },
+    error: {
+      modelInitFailed: 'Failed to initialize image recognition model',
+      noBoardDetected: 'No chess board detected',
+      recognitionFailed: 'Recognition failed',
+    },
+    settingsForm: {
+      mouseClickDelay: 'Mouse Click Delay',
+      mouseClickDelayHint: 'Delay between mouse press and release (ms)',
+      mouseMoveDelay: 'Mouse Move Delay',
+      mouseMoveDelayHint: 'Delay between two clicks (ms)',
+      scanInterval: 'Scan Interval',
+      scanIntervalHint: 'Interval between scans (ms)',
+      animationConfirm: 'Wait for Animation',
+      animationConfirmHint: 'After detecting a possible move, wait for piece animation to complete before confirming',
+      reset: 'Reset to Default',
+    },
+  },
 }

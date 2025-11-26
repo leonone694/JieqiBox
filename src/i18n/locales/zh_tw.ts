@@ -686,4 +686,47 @@ prev.prev - 上上步（支援無限巢狀）`,
     confirmDelete: '確認刪除',
     deleteWarning: '您確定要刪除此著法嗎？此操作無法撤銷。',
   },
+
+  // 連線功能
+  linker: {
+    title: '連線',
+    start: '開始連線',
+    stop: '停止連線',
+    confirm: '確認並開始',
+    settings: '設定',
+    settingsTitle: '連線設定',
+    uploadScreenshot: '上傳截圖',
+    recognizedFen: '識別到的局面',
+    mode: {
+      auto: '自動落子',
+      watch: '僅觀戰',
+    },
+    status: {
+      idle: '未連接',
+      selecting: '選擇棋盤中...',
+      scanning: '掃描中...',
+      connected: '已連接',
+      error: '錯誤',
+    },
+    instructions: {
+      idle: '點擊「開始連線」以連接外部象棋軟體。支援透過圖像識別同步局面和自動落子。',
+      selecting: '請上傳包含棋盤的截圖，系統將自動識別局面。',
+    },
+    error: {
+      modelInitFailed: '圖像識別模型初始化失敗',
+      noBoardDetected: '未檢測到棋盤',
+      recognitionFailed: '識別失敗',
+    },
+    settingsForm: {
+      mouseClickDelay: '滑鼠點擊延遲',
+      mouseClickDelayHint: '滑鼠按下和釋放之間的延遲（毫秒）',
+      mouseMoveDelay: '滑鼠移動延遲',
+      mouseMoveDelayHint: '兩次點擊之間的延遲（毫秒）',
+      scanInterval: '掃描間隔',
+      scanIntervalHint: '每次掃描之間的間隔（毫秒）',
+      animationConfirm: '等待動畫確認',
+      animationConfirmHint: '在檢測到可能的著法後，等待棋子動畫完成後再確認',
+      reset: '重置為預設',
+    },
+  },
 }
