@@ -1,15 +1,34 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { invoke } from '@tauri-apps/api/core'
 import { useImageRecognition, LABELS, type DetectionBox } from './image-recognition'
 
 // Linker operation modes
 export type LinkerMode = 'auto' | 'watch'
 
 // Linker state
-export type LinkerState = 'idle' | 'selecting' | 'connecting' | 'error'
+export type LinkerState = 'idle' | 'selecting' | 'connecting' | 'paused' | 'error'
 
 // Board cell type (for 10x9 chess board)
 export type BoardGrid = (string | null)[][]
+
+// Window info from Tauri
+export interface WindowInfo {
+  id: number
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  is_minimized: boolean
+}
+
+// Capture result from Tauri
+export interface CaptureResult {
+  image_base64: string
+  width: number
+  height: number
+}
 
 // Linker settings
 export interface LinkerSettings {
@@ -43,7 +62,7 @@ const PIECE_TO_FEN: { [key: string]: string } = {
   b_chariot: 'r',
   b_cannon: 'c',
   b_soldier: 'p',
-  dark: 'x', // Dark piece placeholder
+  dark: 'x',
   dark_r_general: 'X',
   dark_r_advisor: 'X',
   dark_r_elephant: 'X',
@@ -60,24 +79,32 @@ const PIECE_TO_FEN: { [key: string]: string } = {
   dark_b_soldier: 'x',
 }
 
-// Helper function: Convert board coordinates to UCI notation (e.g., row=0, col=0 -> "a9")
+// Helper function: Convert board coordinates to UCI notation
 const coordsToNotation = (row: number, col: number): string => {
   return `${String.fromCharCode(97 + col)}${9 - row}`
 }
 
-// Helper function: Create a PNG blob from a canvas
-const canvasToBlob = (canvas: HTMLCanvasElement): Promise<Blob> => {
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      b => (b ? resolve(b) : reject(new Error('Failed to create blob'))),
-      'image/png'
-    )
+// Helper: Convert base64 to image
+const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = `data:image/png;base64,${base64}`
   })
 }
 
 export function useLinker() {
   const { t } = useI18n()
-  const imageRecognition = useImageRecognition()
+
+  // Lazy initialization of image recognition
+  let imageRecognition: ReturnType<typeof useImageRecognition> | null = null
+  const getImageRecognition = () => {
+    if (!imageRecognition) {
+      imageRecognition = useImageRecognition()
+    }
+    return imageRecognition
+  }
 
   // State
   const state = ref<LinkerState>('idle')
@@ -86,9 +113,23 @@ export function useLinker() {
   const errorMessage = ref<string>('')
   const isScanning = ref(false)
 
+  // Window selection
+  const availableWindows = ref<WindowInfo[]>([])
+  const selectedWindowId = ref<number | null>(null)
+  const selectedWindow = ref<WindowInfo | null>(null)
+
   // Board state from image recognition
   const recognizedBoard = ref<BoardGrid | null>(null)
-  const boardPosition = ref<{
+  const previousBoard = ref<BoardGrid | null>(null)
+  const boardBounds = ref<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
+
+  // Board position in screen coordinates (for clicking)
+  const screenBoardBounds = ref<{
     x: number
     y: number
     width: number
@@ -96,15 +137,18 @@ export function useLinker() {
   } | null>(null)
 
   // Scanning control
-  let scanTimer: ReturnType<typeof setTimeout> | null = null
+  let scanTimer: ReturnType<typeof setInterval> | null = null
 
-  // Callbacks for integration with game state
+  // Game state integration callbacks
   let onMoveDetected: ((from: string, to: string) => void) | null = null
-  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null =
-    null
+  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null = null
   let getEngineBoard: (() => BoardGrid | null) | null = null
+  let getEngineBestMove: (() => string | null) | null = null
   let isEngineThinking: (() => boolean) | null = null
-  let executeMove: ((from: string, to: string) => void) | null = null
+  let playMove: ((from: string, to: string) => void) | null = null
+
+  // Board orientation
+  const isReversed = ref(false)
 
   // Computed
   const isActive = computed(() => state.value === 'connecting')
@@ -118,6 +162,8 @@ export function useLinker() {
         return isScanning.value
           ? t('linker.status.scanning')
           : t('linker.status.connected')
+      case 'paused':
+        return t('linker.status.paused')
       case 'error':
         return errorMessage.value || t('linker.status.error')
       default:
@@ -125,10 +171,33 @@ export function useLinker() {
     }
   })
 
+  // List available windows
+  const refreshWindowList = async (): Promise<void> => {
+    try {
+      const windows = await invoke<WindowInfo[]>('list_windows')
+      availableWindows.value = windows
+    } catch (error) {
+      console.error('Failed to list windows:', error)
+      errorMessage.value = t('linker.error.listWindowsFailed')
+    }
+  }
+
+  // Select a window for linking
+  const selectWindow = async (windowId: number): Promise<void> => {
+    try {
+      const windowInfo = await invoke<WindowInfo>('get_window_info', { windowId })
+      selectedWindowId.value = windowId
+      selectedWindow.value = windowInfo
+    } catch (error) {
+      console.error('Failed to get window info:', error)
+      errorMessage.value = t('linker.error.windowNotFound')
+    }
+  }
+
   // Initialize image recognition model
   const initializeModel = async (): Promise<boolean> => {
     try {
-      await imageRecognition.initializeModel()
+      await getImageRecognition().initializeModel()
       return true
     } catch (error) {
       console.error('Failed to initialize image recognition model:', error)
@@ -138,24 +207,25 @@ export function useLinker() {
     }
   }
 
-  // Convert label index to piece name
+  // Label index to piece name
   const labelIndexToPieceName = (labelIndex: number): string | null => {
     const label = LABELS[labelIndex]
     if (!label || label.name === 'Board') return null
-    // Handle numbered labels (2-5) which might be for selection markers
     if (['2', '3', '4', '5'].includes(label.name)) return null
     return label.name
   }
 
-  // Convert piece name to FEN character
+  // Piece name to FEN character
   const pieceNameToFen = (pieceName: string): string | null => {
     return PIECE_TO_FEN[pieceName] || null
   }
 
   // Process detection boxes into a board grid
   const processDetectionsToBoard = (
-    boxes: DetectionBox[]
-  ): { board: BoardGrid; isReversed: boolean } | null => {
+    boxes: DetectionBox[],
+    imageWidth: number,
+    imageHeight: number
+  ): { board: BoardGrid; boardBox: { x: number; y: number; width: number; height: number }; isReversed: boolean } | null => {
     // Find board bounding box
     const boardBox = boxes
       .filter(b => LABELS[b.labelIndex]?.name === 'Board')
@@ -167,7 +237,6 @@ export function useLinker() {
     }
 
     const [bx, by, bw, bh] = boardBox.box
-    boardPosition.value = { x: bx, y: by, width: bw, height: bh }
 
     // Initialize empty board (10 rows x 9 columns)
     const board: BoardGrid = Array(10)
@@ -198,9 +267,7 @@ export function useLinker() {
         continue
       }
 
-      // Calculate grid position
-      // Note: We divide by 8 and 9 because we're measuring intervals between positions
-      // 9 columns means 8 intervals, 10 rows means 9 intervals
+      // Calculate grid position (9 columns means 8 intervals, 10 rows means 9 intervals)
       const cellWidth = bw / 8
       const cellHeight = bh / 9
       const col = Math.round((pieceCenterX - bx) / cellWidth)
@@ -218,11 +285,11 @@ export function useLinker() {
     }
 
     // Detect if board is reversed (red on top)
-    let isReversed = false
+    let reversed = false
     for (let row = 0; row < 3; row++) {
       for (let col = 3; col < 6; col++) {
         if (board[row][col] === 'K') {
-          isReversed = true
+          reversed = true
           break
         }
       }
@@ -230,14 +297,14 @@ export function useLinker() {
     for (let row = 7; row < 10; row++) {
       for (let col = 3; col < 6; col++) {
         if (board[row][col] === 'k') {
-          isReversed = true
+          reversed = true
           break
         }
       }
     }
 
     // If reversed, flip the board
-    if (isReversed) {
+    if (reversed) {
       const flippedBoard: BoardGrid = Array(10)
         .fill(null)
         .map(() => Array(9).fill(null))
@@ -246,10 +313,10 @@ export function useLinker() {
           flippedBoard[r][c] = board[9 - r][8 - c]
         }
       }
-      return { board: flippedBoard, isReversed }
+      return { board: flippedBoard, boardBox: { x: bx, y: by, width: bw, height: bh }, isReversed: reversed }
     }
 
-    return { board, isReversed }
+    return { board, boardBox: { x: bx, y: by, width: bw, height: bh }, isReversed: reversed }
   }
 
   // Convert board grid to FEN string
@@ -278,337 +345,382 @@ export function useLinker() {
     return rows.join('/')
   }
 
-  // Compare two boards and find the move
-  // Note: _isReversed and _isWatchMode are reserved for future use:
-  // - _isReversed: for handling reversed board orientation in move direction detection
-  // - _isWatchMode: for different behavior when only watching vs auto-playing
+  // Compare boards and find the move that was made
   const compareBoardsAndFindMove = (
-    linkBoard: BoardGrid,
-    engineBoard: BoardGrid,
-    _isReversed: boolean,
-    _isWatchMode: boolean
-  ): { flag: number; from?: string; to?: string } | null => {
-    // Count differences
-    const differences: {
-      row: number
-      col: number
-      linkPiece: string | null
-      enginePiece: string | null
-    }[] = []
+    oldBoard: BoardGrid,
+    newBoard: BoardGrid
+  ): { from: string; to: string } | null => {
+    const differences: { row: number; col: number; old: string | null; new: string | null }[] = []
 
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
-        if (linkBoard[r][c] !== engineBoard[r][c]) {
+        if (oldBoard[r][c] !== newBoard[r][c]) {
           differences.push({
             row: r,
             col: c,
-            linkPiece: linkBoard[r][c],
-            enginePiece: engineBoard[r][c],
+            old: oldBoard[r][c],
+            new: newBoard[r][c],
           })
         }
       }
     }
 
-    // If more than 2 significant differences, might be a new game
-    if (differences.length > 4) {
-      return { flag: 3 } // New game detected
-    }
-
-    // Try to find a valid move
-    for (let i = 0; i < differences.length; i++) {
-      for (let j = i + 1; j < differences.length; j++) {
-        const d1 = differences[i]
-        const d2 = differences[j]
-
-        // Check if this could be a move from d1 to d2
-        if (
-          d1.enginePiece &&
-          !d1.linkPiece &&
-          d2.linkPiece === d1.enginePiece &&
-          !d2.enginePiece
-        ) {
-          // Piece moved from d1 to d2 (opponent's move)
-          const from = coordsToNotation(d1.row, d1.col)
-          const to = coordsToNotation(d2.row, d2.col)
-          return { flag: 1, from, to }
-        }
-
-        // Check if this could be a move from d2 to d1
-        if (
-          d2.enginePiece &&
-          !d2.linkPiece &&
-          d1.linkPiece === d2.enginePiece &&
-          !d1.enginePiece
-        ) {
-          // Piece moved from d2 to d1 (opponent's move)
-          const from = coordsToNotation(d2.row, d2.col)
-          const to = coordsToNotation(d1.row, d1.col)
-          return { flag: 1, from, to }
-        }
-
-        // Check for capture moves
-        if (
-          d1.enginePiece &&
-          !d1.linkPiece &&
-          d2.linkPiece &&
-          d2.enginePiece &&
-          d2.linkPiece === d1.enginePiece
-        ) {
-          // Capture: piece from d1 captured piece at d2
-          const from = coordsToNotation(d1.row, d1.col)
-          const to = coordsToNotation(d2.row, d2.col)
-          return { flag: 1, from, to }
-        }
-
-        if (
-          d2.enginePiece &&
-          !d2.linkPiece &&
-          d1.linkPiece &&
-          d1.enginePiece &&
-          d1.linkPiece === d2.enginePiece
-        ) {
-          // Capture: piece from d2 captured piece at d1
-          const from = coordsToNotation(d2.row, d2.col)
-          const to = coordsToNotation(d1.row, d1.col)
-          return { flag: 1, from, to }
+    // A move typically creates 2 differences: source becomes empty, destination gets the piece
+    if (differences.length === 2) {
+      const [d1, d2] = differences
+      // Source: had piece, now empty
+      // Destination: was empty or had different piece, now has the moved piece
+      if (d1.old && !d1.new && d2.new) {
+        return {
+          from: coordsToNotation(d1.row, d1.col),
+          to: coordsToNotation(d2.row, d2.col),
         }
       }
-    }
-
-    // If we couldn't find a move but have differences, might need to wait
-    if (differences.length > 0 && differences.length <= 4) {
-      return { flag: 4 } // Possible move in progress
+      if (d2.old && !d2.new && d1.new) {
+        return {
+          from: coordsToNotation(d2.row, d2.col),
+          to: coordsToNotation(d1.row, d1.col),
+        }
+      }
+      // Capture: source becomes empty, destination changes piece
+      if (d1.old && !d1.new && d2.old && d2.new && d2.new === d1.old) {
+        return {
+          from: coordsToNotation(d1.row, d1.col),
+          to: coordsToNotation(d2.row, d2.col),
+        }
+      }
+      if (d2.old && !d2.new && d1.old && d1.new && d1.new === d2.old) {
+        return {
+          from: coordsToNotation(d2.row, d2.col),
+          to: coordsToNotation(d1.row, d1.col),
+        }
+      }
     }
 
     return null
   }
 
-  // Process a screenshot and recognize the board
-  const processScreenshot = async (
-    imageData: ImageData | Blob | HTMLCanvasElement
-  ): Promise<{
+  // Convert UCI move to screen coordinates for clicking
+  const moveToScreenCoords = (
+    move: string,
+    windowInfo: WindowInfo,
+    boardBox: { x: number; y: number; width: number; height: number },
+    reversed: boolean
+  ): { fromX: number; fromY: number; toX: number; toY: number } | null => {
+    if (move.length < 4) return null
+
+    const fromCol = move.charCodeAt(0) - 97 // 'a' = 0
+    const fromRow = 9 - parseInt(move[1]) // '9' = row 0
+    const toCol = move.charCodeAt(2) - 97
+    const toRow = 9 - parseInt(move[3])
+
+    if (fromCol < 0 || fromCol > 8 || fromRow < 0 || fromRow > 9) return null
+    if (toCol < 0 || toCol > 8 || toRow < 0 || toRow > 9) return null
+
+    // Cell dimensions
+    const cellWidth = boardBox.width / 8
+    const cellHeight = boardBox.height / 9
+
+    // Calculate positions in board coordinates
+    let fx = boardBox.x + fromCol * cellWidth
+    let fy = boardBox.y + fromRow * cellHeight
+    let tx = boardBox.x + toCol * cellWidth
+    let ty = boardBox.y + toRow * cellHeight
+
+    // If reversed, flip the coordinates
+    if (reversed) {
+      fx = boardBox.x + boardBox.width - fromCol * cellWidth
+      fy = boardBox.y + boardBox.height - fromRow * cellHeight
+      tx = boardBox.x + boardBox.width - toCol * cellWidth
+      ty = boardBox.y + boardBox.height - toRow * cellHeight
+    }
+
+    // Convert to screen coordinates (add window position)
+    return {
+      fromX: Math.round(windowInfo.x + fx),
+      fromY: Math.round(windowInfo.y + fy),
+      toX: Math.round(windowInfo.x + tx),
+      toY: Math.round(windowInfo.y + ty),
+    }
+  }
+
+  // Capture and process the target window
+  const captureAndProcess = async (): Promise<{
     board: BoardGrid
+    boardBox: { x: number; y: number; width: number; height: number }
     isReversed: boolean
-    fen: string
   } | null> => {
+    if (!selectedWindowId.value) {
+      return null
+    }
+
     try {
-      // Convert to image element
-      let img: HTMLImageElement
+      // Capture the window
+      const result = await invoke<CaptureResult>('capture_window', {
+        windowId: selectedWindowId.value,
+      })
 
-      if (imageData instanceof ImageData) {
-        const canvas = document.createElement('canvas')
-        canvas.width = imageData.width
-        canvas.height = imageData.height
-        const ctx = canvas.getContext('2d')!
-        ctx.putImageData(imageData, 0, 0)
-        const blob = await canvasToBlob(canvas)
-        imageData = blob
-      }
+      // Convert base64 to image
+      const img = await base64ToImage(result.image_base64)
 
-      if (imageData instanceof Blob) {
-        img = new Image()
-        const url = URL.createObjectURL(imageData)
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            URL.revokeObjectURL(url)
-            resolve()
-          }
-          img.onerror = reject
-          img.src = url
-        })
-      } else if (imageData instanceof HTMLCanvasElement) {
-        img = new Image()
-        img.src = imageData.toDataURL()
-        await new Promise<void>(resolve => {
-          img.onload = () => resolve()
-        })
-      } else {
-        throw new Error('Unsupported image data type')
-      }
-
-      // Create a File object for the image recognition
+      // Create canvas and draw image
       const canvas = document.createElement('canvas')
       canvas.width = img.width
       canvas.height = img.height
       const ctx = canvas.getContext('2d')!
       ctx.drawImage(img, 0, 0)
-      const blob = await canvasToBlob(canvas)
-      const file = new File([blob], 'screenshot.png', { type: 'image/png' })
 
-      // Process image
-      await imageRecognition.processImage(file)
+      // Convert to blob and File for image recognition
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Failed to create blob'))), 'image/png')
+      })
+      const file = new File([blob], 'capture.png', { type: 'image/png' })
 
-      // Get detected boxes
-      const boxes = imageRecognition.detectedBoxes.value
+      // Process with image recognition
+      const ir = getImageRecognition()
+      await ir.processImage(file)
+      const boxes = ir.detectedBoxes.value
 
       // Process detections to board
-      const result = processDetectionsToBoard(boxes)
-      if (!result) return null
-
-      const { board, isReversed } = result
-      const fen = boardToFen(board)
-
-      recognizedBoard.value = board
-
-      return { board, isReversed, fen }
+      return processDetectionsToBoard(boxes, result.width, result.height)
     } catch (error) {
-      console.error('Failed to process screenshot:', error)
+      console.error('Capture and process failed:', error)
       return null
     }
   }
 
+  // Execute a move on the external application
+  const executeExternalMove = async (move: string): Promise<boolean> => {
+    if (!selectedWindow.value || !boardBounds.value) {
+      return false
+    }
+
+    const coords = moveToScreenCoords(
+      move,
+      selectedWindow.value,
+      boardBounds.value,
+      isReversed.value
+    )
+
+    if (!coords) {
+      console.error('Failed to calculate move coordinates')
+      return false
+    }
+
+    try {
+      await invoke('simulate_move', {
+        fromX: coords.fromX,
+        fromY: coords.fromY,
+        toX: coords.toX,
+        toY: coords.toY,
+        clickDelayMs: settings.value.mouseClickDelay,
+        moveDelayMs: settings.value.mouseMoveDelay,
+      })
+      return true
+    } catch (error) {
+      console.error('Failed to simulate move:', error)
+      return false
+    }
+  }
+
+  // Main scan loop
+  const scanLoop = async () => {
+    if (state.value !== 'connecting' || !isScanning.value) {
+      return
+    }
+
+    try {
+      const result = await captureAndProcess()
+      if (!result) {
+        return
+      }
+
+      const { board, boardBox, isReversed: reversed } = result
+      boardBounds.value = boardBox
+      isReversed.value = reversed
+
+      // First scan - initialize the board
+      if (!previousBoard.value) {
+        previousBoard.value = board
+        recognizedBoard.value = board
+        const fen = boardToFen(board) + ' w - - 0 1'
+        if (onBoardInitialized) {
+          onBoardInitialized(fen, reversed)
+        }
+        return
+      }
+
+      // Compare with previous board to detect moves
+      const detectedMove = compareBoardsAndFindMove(previousBoard.value, board)
+      if (detectedMove) {
+        // Update boards
+        previousBoard.value = board
+        recognizedBoard.value = board
+
+        // Notify about the detected move (opponent's move)
+        if (onMoveDetected) {
+          onMoveDetected(detectedMove.from, detectedMove.to)
+        }
+
+        // If in auto mode, get and play the best move
+        if (mode.value === 'auto' && getEngineBestMove) {
+          // Wait a bit for the engine to calculate
+          await new Promise(resolve => setTimeout(resolve, 100))
+
+          const bestMove = getEngineBestMove()
+          if (bestMove && bestMove.length >= 4) {
+            // Play the move on our board
+            if (playMove) {
+              playMove(bestMove.substring(0, 2), bestMove.substring(2, 4))
+            }
+
+            // Wait for the move to be played locally
+            await new Promise(resolve => setTimeout(resolve, 50))
+
+            // Execute the move on the external application
+            await executeExternalMove(bestMove)
+
+            // Update previous board to include our move
+            const afterMoveResult = await captureAndProcess()
+            if (afterMoveResult) {
+              previousBoard.value = afterMoveResult.board
+              recognizedBoard.value = afterMoveResult.board
+            }
+          }
+        }
+      } else {
+        // No move detected, update recognized board
+        recognizedBoard.value = board
+      }
+    } catch (error) {
+      console.error('Scan loop error:', error)
+    }
+  }
+
   // Start the linker
-  const start = async () => {
+  const start = async (): Promise<void> => {
     if (state.value === 'connecting') {
       return
     }
 
-    // Initialize model if not already done
+    // Initialize model first
     const modelReady = await initializeModel()
     if (!modelReady) {
       return
     }
 
+    // Refresh window list
+    await refreshWindowList()
+
     state.value = 'selecting'
     errorMessage.value = ''
   }
 
-  // Stop the linker
-  const stop = () => {
-    state.value = 'idle'
-    isScanning.value = false
-    recognizedBoard.value = null
-    boardPosition.value = null
+  // Connect to the selected window and start scanning
+  const connect = async (): Promise<void> => {
+    if (!selectedWindowId.value || !selectedWindow.value) {
+      errorMessage.value = t('linker.error.noWindowSelected')
+      return
+    }
 
+    // Initial capture to get board position
+    const result = await captureAndProcess()
+    if (!result) {
+      errorMessage.value = t('linker.error.noBoardDetected')
+      return
+    }
+
+    boardBounds.value = result.boardBox
+    previousBoard.value = result.board
+    recognizedBoard.value = result.board
+    isReversed.value = result.isReversed
+
+    // Notify about initial board
+    const fen = boardToFen(result.board) + ' w - - 0 1'
+    if (onBoardInitialized) {
+      onBoardInitialized(fen, result.isReversed)
+    }
+
+    // Start scanning
+    state.value = 'connecting'
+    isScanning.value = true
+
+    scanTimer = setInterval(scanLoop, settings.value.scanInterval)
+  }
+
+  // Pause scanning
+  const pause = (): void => {
+    if (state.value !== 'connecting') return
+    state.value = 'paused'
+    isScanning.value = false
     if (scanTimer) {
-      clearTimeout(scanTimer)
+      clearInterval(scanTimer)
       scanTimer = null
     }
   }
 
-  // Start scanning (called after board is selected/detected)
-  const startScanning = () => {
-    if (state.value !== 'selecting') {
-      return
-    }
-
+  // Resume scanning
+  const resume = (): void => {
+    if (state.value !== 'paused') return
     state.value = 'connecting'
     isScanning.value = true
-
-    // The actual scanning loop would be implemented here
-    // In a web environment, this would need platform-specific screen capture
-    // For now, this provides the interface for manual image input
+    scanTimer = setInterval(scanLoop, settings.value.scanInterval)
   }
 
-  // Process a single scan frame
-  const processScanFrame = async (
-    imageData: ImageData | Blob | HTMLCanvasElement
-  ): Promise<void> => {
-    if (state.value !== 'connecting' || !isScanning.value) {
-      return
+  // Stop the linker
+  const stop = (): void => {
+    state.value = 'idle'
+    isScanning.value = false
+    selectedWindowId.value = null
+    selectedWindow.value = null
+    recognizedBoard.value = null
+    previousBoard.value = null
+    boardBounds.value = null
+    screenBoardBounds.value = null
+
+    if (scanTimer) {
+      clearInterval(scanTimer)
+      scanTimer = null
     }
-
-    const result = await processScreenshot(imageData)
-    if (!result) {
-      return
-    }
-
-    const { board, isReversed, fen } = result
-
-    // If this is the first scan, initialize the board
-    if (!recognizedBoard.value) {
-      recognizedBoard.value = board
-      if (onBoardInitialized) {
-        onBoardInitialized(fen + ' w - - 0 1', isReversed)
-      }
-      return
-    }
-
-    // Compare with engine board
-    const engineBoard = getEngineBoard?.()
-    if (!engineBoard) {
-      return
-    }
-
-    // Skip if engine is thinking
-    if (isEngineThinking?.()) {
-      return
-    }
-
-    // Compare boards
-    const moveResult = compareBoardsAndFindMove(
-      board,
-      engineBoard,
-      isReversed,
-      mode.value === 'watch'
-    )
-
-    if (!moveResult) {
-      return
-    }
-
-    switch (moveResult.flag) {
-      case 1: // Opponent moved, sync to engine
-        if (onMoveDetected && moveResult.from && moveResult.to) {
-          onMoveDetected(moveResult.from, moveResult.to)
-        }
-        break
-
-      case 2: // Engine moved, need to click on target
-        if (
-          mode.value === 'auto' &&
-          executeMove &&
-          moveResult.from &&
-          moveResult.to
-        ) {
-          executeMove(moveResult.from, moveResult.to)
-        }
-        break
-
-      case 3: // New game detected
-        recognizedBoard.value = board
-        if (onBoardInitialized) {
-          onBoardInitialized(fen + ' w - - 0 1', isReversed)
-        }
-        break
-
-      case 4: // Possible move in progress, wait
-        break
-    }
-
-    // Update recognized board
-    recognizedBoard.value = board
   }
 
-  // Set callbacks
+  // Set callbacks for integration with game state
   const setCallbacks = (callbacks: {
     onMoveDetected?: (from: string, to: string) => void
     onBoardInitialized?: (fen: string, isReversed: boolean) => void
     getEngineBoard?: () => BoardGrid | null
+    getEngineBestMove?: () => string | null
     isEngineThinking?: () => boolean
-    executeMove?: (from: string, to: string) => void
-  }) => {
-    if (callbacks.onMoveDetected)
-      onMoveDetected = callbacks.onMoveDetected
-    if (callbacks.onBoardInitialized)
-      onBoardInitialized = callbacks.onBoardInitialized
-    if (callbacks.getEngineBoard)
-      getEngineBoard = callbacks.getEngineBoard
-    if (callbacks.isEngineThinking)
-      isEngineThinking = callbacks.isEngineThinking
-    if (callbacks.executeMove)
-      executeMove = callbacks.executeMove
+    playMove?: (from: string, to: string) => void
+  }): void => {
+    if (callbacks.onMoveDetected) onMoveDetected = callbacks.onMoveDetected
+    if (callbacks.onBoardInitialized) onBoardInitialized = callbacks.onBoardInitialized
+    if (callbacks.getEngineBoard) getEngineBoard = callbacks.getEngineBoard
+    if (callbacks.getEngineBestMove) getEngineBestMove = callbacks.getEngineBestMove
+    if (callbacks.isEngineThinking) isEngineThinking = callbacks.isEngineThinking
+    if (callbacks.playMove) playMove = callbacks.playMove
   }
 
   // Update settings
-  const updateSettings = (newSettings: Partial<LinkerSettings>) => {
+  const updateSettings = (newSettings: Partial<LinkerSettings>): void => {
     settings.value = { ...settings.value, ...newSettings }
+
+    // Restart scan timer if running
+    if (scanTimer && state.value === 'connecting') {
+      clearInterval(scanTimer)
+      scanTimer = setInterval(scanLoop, settings.value.scanInterval)
+    }
   }
 
   // Reset settings to defaults
-  const resetSettings = () => {
+  const resetSettings = (): void => {
     settings.value = { ...DEFAULT_SETTINGS }
   }
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stop()
+  })
 
   return {
     // State
@@ -617,8 +729,12 @@ export function useLinker() {
     settings,
     errorMessage,
     isScanning,
+    availableWindows,
+    selectedWindowId,
+    selectedWindow,
     recognizedBoard,
-    boardPosition,
+    boardBounds,
+    isReversed,
 
     // Computed
     isActive,
@@ -627,16 +743,19 @@ export function useLinker() {
     // Actions
     start,
     stop,
-    startScanning,
-    processScreenshot,
-    processScanFrame,
+    connect,
+    pause,
+    resume,
+    refreshWindowList,
+    selectWindow,
     setCallbacks,
     updateSettings,
     resetSettings,
     initializeModel,
+    captureAndProcess,
+    executeExternalMove,
 
     // Utilities
     boardToFen,
-    processDetectionsToBoard,
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialogVisible" max-width="600" persistent>
+  <v-dialog v-model="dialogVisible" max-width="700" persistent>
     <v-card>
       <v-card-title class="headline d-flex justify-space-between align-center">
         <span>{{ $t('linker.title') }}</span>
@@ -17,6 +17,13 @@
           >
             <v-icon start size="small">{{ statusIcon }}</v-icon>
             {{ linker.statusText.value }}
+          </v-chip>
+          <v-chip
+            v-if="linker.selectedWindow.value"
+            variant="outlined"
+            size="small"
+          >
+            {{ linker.selectedWindow.value.name }}
           </v-chip>
         </div>
 
@@ -51,6 +58,24 @@
         </v-alert>
 
         <v-alert
+          v-else-if="linker.state.value === 'connecting'"
+          type="success"
+          variant="tonal"
+          class="mb-4"
+        >
+          {{ $t('linker.instructions.connected') }}
+        </v-alert>
+
+        <v-alert
+          v-else-if="linker.state.value === 'paused'"
+          type="info"
+          variant="tonal"
+          class="mb-4"
+        >
+          {{ $t('linker.instructions.paused') }}
+        </v-alert>
+
+        <v-alert
           v-else-if="linker.state.value === 'error'"
           type="error"
           variant="tonal"
@@ -59,53 +84,95 @@
           {{ linker.errorMessage.value }}
         </v-alert>
 
-        <!-- Image Upload Section (for web-based manual input) -->
-        <div v-if="linker.state.value === 'selecting'" class="upload-section">
-          <v-file-input
-            v-model="selectedFile"
-            :label="$t('linker.uploadScreenshot')"
-            accept="image/*"
-            prepend-icon="mdi-camera"
-            variant="outlined"
+        <!-- Window Selection Section -->
+        <div v-if="linker.state.value === 'selecting'" class="window-section">
+          <div class="d-flex align-center mb-2">
+            <span class="text-subtitle-2">{{ $t('linker.selectWindow') }}</span>
+            <v-spacer />
+            <v-btn
+              size="small"
+              variant="text"
+              @click="refreshWindows"
+              :loading="isRefreshing"
+            >
+              <v-icon start>mdi-refresh</v-icon>
+              {{ $t('common.refresh') }}
+            </v-btn>
+          </div>
+
+          <v-list
             density="compact"
-            @update:model-value="handleFileSelected"
-          />
+            class="window-list"
+            max-height="250"
+          >
+            <v-list-item
+              v-for="window in linker.availableWindows.value"
+              :key="window.id"
+              :active="linker.selectedWindowId.value === window.id"
+              @click="selectWindow(window)"
+              rounded="lg"
+            >
+              <template #prepend>
+                <v-icon>mdi-application</v-icon>
+              </template>
+              <v-list-item-title>{{ window.name }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ window.width }} x {{ window.height }}
+              </v-list-item-subtitle>
+            </v-list-item>
+
+            <v-list-item v-if="linker.availableWindows.value.length === 0">
+              <v-list-item-title class="text-center text-grey">
+                {{ $t('linker.noWindowsFound') }}
+              </v-list-item-title>
+            </v-list-item>
+          </v-list>
         </div>
 
-        <!-- Recognition Preview -->
-        <div
-          v-if="previewImageUrl"
-          class="preview-section mt-4"
-        >
-          <div class="preview-container">
+        <!-- Board Preview (when connected) -->
+        <div v-if="linker.state.value === 'connecting' || linker.state.value === 'paused'" class="board-section mt-4">
+          <div class="d-flex align-center mb-2">
+            <span class="text-subtitle-2">{{ $t('linker.boardPreview') }}</span>
+            <v-spacer />
+            <v-btn
+              size="small"
+              variant="text"
+              @click="capturePreview"
+              :loading="isCapturing"
+            >
+              <v-icon start>mdi-camera</v-icon>
+              {{ $t('linker.capture') }}
+            </v-btn>
+          </div>
+
+          <div v-if="previewImageUrl" class="preview-container">
             <img
-              ref="previewImage"
               :src="previewImageUrl"
               class="preview-image"
-              alt="Screenshot preview"
+              alt="Board preview"
             />
-            <canvas ref="overlayCanvas" class="overlay-canvas" />
           </div>
-        </div>
 
-        <!-- Recognized FEN Display -->
-        <div v-if="recognizedFen" class="fen-section mt-4">
-          <v-text-field
-            v-model="recognizedFen"
-            :label="$t('linker.recognizedFen')"
-            readonly
-            variant="outlined"
-            density="compact"
-          >
-            <template #append>
-              <v-btn
-                icon="mdi-content-copy"
-                variant="text"
-                size="small"
-                @click="copyFen"
-              />
-            </template>
-          </v-text-field>
+          <!-- Recognized FEN Display -->
+          <div v-if="recognizedFen" class="fen-section mt-2">
+            <v-text-field
+              v-model="recognizedFen"
+              :label="$t('linker.recognizedFen')"
+              readonly
+              variant="outlined"
+              density="compact"
+              hide-details
+            >
+              <template #append>
+                <v-btn
+                  icon="mdi-content-copy"
+                  variant="text"
+                  size="small"
+                  @click="copyFen"
+                />
+              </template>
+            </v-text-field>
+          </div>
         </div>
       </v-card-text>
 
@@ -119,18 +186,39 @@
         </v-btn>
 
         <v-btn
-          v-else-if="linker.state.value === 'selecting' && recognizedFen"
+          v-else-if="linker.state.value === 'selecting' && linker.selectedWindowId.value"
           color="success"
-          @click="handleConfirm"
+          @click="handleConnect"
         >
-          {{ $t('linker.confirm') }}
+          <v-icon start>mdi-link</v-icon>
+          {{ $t('linker.connect') }}
         </v-btn>
 
         <v-btn
           v-else-if="linker.state.value === 'connecting'"
+          color="warning"
+          @click="handlePause"
+        >
+          <v-icon start>mdi-pause</v-icon>
+          {{ $t('linker.pause') }}
+        </v-btn>
+
+        <v-btn
+          v-else-if="linker.state.value === 'paused'"
+          color="success"
+          @click="handleResume"
+        >
+          <v-icon start>mdi-play</v-icon>
+          {{ $t('linker.resume') }}
+        </v-btn>
+
+        <v-btn
+          v-if="linker.state.value === 'connecting' || linker.state.value === 'paused'"
           color="error"
+          variant="text"
           @click="handleStop"
         >
+          <v-icon start>mdi-stop</v-icon>
           {{ $t('linker.stop') }}
         </v-btn>
 
@@ -154,8 +242,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, inject, nextTick } from 'vue'
-import { useLinker, type BoardGrid } from '../composables/useLinker'
+import { ref, computed, watch, inject } from 'vue'
+import { useLinker, type BoardGrid, type WindowInfo } from '../composables/useLinker'
 import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
 const props = defineProps<{
@@ -173,11 +261,10 @@ const engineState = inject('engine-state') as any
 
 const linker = useLinker()
 const showSettings = ref(false)
-const selectedFile = ref<File | null>(null)
+const isRefreshing = ref(false)
+const isCapturing = ref(false)
 const previewImageUrl = ref<string | null>(null)
 const recognizedFen = ref<string | null>(null)
-const previewImage = ref<HTMLImageElement | null>(null)
-const overlayCanvas = ref<HTMLCanvasElement | null>(null)
 
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -192,7 +279,9 @@ const statusColor = computed(() => {
     case 'selecting':
       return 'warning'
     case 'connecting':
-      return linker.isScanning.value ? 'success' : 'info'
+      return 'success'
+    case 'paused':
+      return 'info'
     case 'error':
       return 'error'
     default:
@@ -208,6 +297,8 @@ const statusIcon = computed(() => {
       return 'mdi-cursor-default-click'
     case 'connecting':
       return linker.isScanning.value ? 'mdi-radar' : 'mdi-link'
+    case 'paused':
+      return 'mdi-pause-circle'
     case 'error':
       return 'mdi-alert-circle'
     default:
@@ -219,20 +310,20 @@ const statusIcon = computed(() => {
 linker.setCallbacks({
   onMoveDetected: (from: string, to: string) => {
     emit('moveDetected', from, to)
-    // Also apply the move to the game
+    // Apply the move to the game
     if (gameState?.playMoveFromUci) {
       gameState.playMoveFromUci(from + to)
     }
   },
   onBoardInitialized: (fen: string, isReversed: boolean) => {
     emit('boardInitialized', fen, isReversed)
+    recognizedFen.value = fen
     // Load the FEN into the game
     if (gameState?.confirmFenInput) {
       gameState.confirmFenInput(fen)
     }
   },
   getEngineBoard: (): BoardGrid | null => {
-    // Convert game state to board grid
     if (!gameState?.pieces?.value) return null
 
     const board: BoardGrid = Array(10)
@@ -246,7 +337,6 @@ linker.setCallbacks({
           board[piece.row][piece.col] = fenChar
         }
       } else {
-        // Dark piece
         const side = gameState.getPieceSide?.(piece)
         if (piece.row >= 0 && piece.row < 10 && piece.col >= 0 && piece.col < 9) {
           board[piece.row][piece.col] = side === 'red' ? 'X' : 'x'
@@ -256,76 +346,49 @@ linker.setCallbacks({
 
     return board
   },
+  getEngineBestMove: (): string | null => {
+    // Get best move from engine PV
+    if (engineState?.pvMoves?.value && engineState.pvMoves.value.length > 0) {
+      return engineState.pvMoves.value[0]
+    }
+    return null
+  },
   isEngineThinking: () => {
     return engineState?.isThinking?.value || false
   },
+  playMove: (from: string, to: string) => {
+    if (gameState?.playMoveFromUci) {
+      gameState.playMoveFromUci(from + to)
+    }
+  },
 })
 
-// Handle file selection
-const handleFileSelected = async (files: File[] | File | null) => {
-  const file = Array.isArray(files) ? files[0] : files
-  if (!file) {
-    previewImageUrl.value = null
-    recognizedFen.value = null
-    return
-  }
-
-  // Create preview URL
-  previewImageUrl.value = URL.createObjectURL(file)
-
-  // Process the image
-  const result = await linker.processScreenshot(file)
-  if (result) {
-    recognizedFen.value = result.fen + ' w - - 0 1'
-
-    // Draw bounding boxes on preview
-    await nextTick()
-    drawRecognitionOverlay()
+// Refresh window list
+const refreshWindows = async () => {
+  isRefreshing.value = true
+  try {
+    await linker.refreshWindowList()
+  } finally {
+    isRefreshing.value = false
   }
 }
 
-// Draw recognition overlay
-const drawRecognitionOverlay = () => {
-  if (!previewImage.value || !overlayCanvas.value) return
+// Select a window
+const selectWindow = (window: WindowInfo) => {
+  linker.selectWindow(window.id)
+}
 
-  const img = previewImage.value
-  const canvas = overlayCanvas.value
-
-  // Wait for image to load
-  if (!img.complete) {
-    img.onload = () => drawRecognitionOverlay()
-    return
-  }
-
-  const dispW = img.clientWidth
-  const dispH = img.clientHeight
-
-  canvas.style.position = 'absolute'
-  canvas.style.left = '0'
-  canvas.style.top = '0'
-  canvas.style.width = dispW + 'px'
-  canvas.style.height = dispH + 'px'
-  canvas.style.pointerEvents = 'none'
-
-  const dpr = window.devicePixelRatio || 1
-  canvas.width = Math.round(dispW * dpr)
-  canvas.height = Math.round(dispH * dpr)
-
-  const ctx = canvas.getContext('2d')!
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, dispW, dispH)
-
-  // Draw board position
-  if (linker.boardPosition.value) {
-    const natW = img.naturalWidth
-    const natH = img.naturalHeight
-    const scaleX = dispW / natW
-    const scaleY = dispH / natH
-
-    const { x, y, width, height } = linker.boardPosition.value
-    ctx.strokeStyle = '#4CAF50'
-    ctx.lineWidth = 2
-    ctx.strokeRect(x * scaleX, y * scaleY, width * scaleX, height * scaleY)
+// Capture preview image
+const capturePreview = async () => {
+  isCapturing.value = true
+  try {
+    const result = await linker.captureAndProcess()
+    if (result) {
+      // Update FEN
+      recognizedFen.value = linker.boardToFen(result.board) + ' w - - 0 1'
+    }
+  } finally {
+    isCapturing.value = false
   }
 }
 
@@ -345,14 +408,16 @@ const handleStart = async () => {
   await linker.start()
 }
 
-const handleConfirm = () => {
-  if (recognizedFen.value) {
-    emit('boardInitialized', recognizedFen.value, false)
-    if (gameState?.confirmFenInput) {
-      gameState.confirmFenInput(recognizedFen.value)
-    }
-    linker.startScanning()
-  }
+const handleConnect = async () => {
+  await linker.connect()
+}
+
+const handlePause = () => {
+  linker.pause()
+}
+
+const handleResume = () => {
+  linker.resume()
 }
 
 const handleStop = () => {
@@ -362,19 +427,17 @@ const handleStop = () => {
 }
 
 const close = () => {
-  handleStop()
+  // Don't stop linker when closing dialog - it should keep running
   dialogVisible.value = false
 }
 
-// Cleanup preview URL when dialog closes
+// Cleanup when dialog closes
 watch(dialogVisible, newValue => {
   if (!newValue) {
     if (previewImageUrl.value) {
       URL.revokeObjectURL(previewImageUrl.value)
       previewImageUrl.value = null
     }
-    recognizedFen.value = null
-    selectedFile.value = null
   }
 })
 </script>
@@ -383,20 +446,31 @@ watch(dialogVisible, newValue => {
 .status-section {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-.upload-section {
+.window-section {
   margin-top: 16px;
 }
 
-.preview-section {
-  position: relative;
+.window-list {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.board-section {
+  margin-top: 16px;
 }
 
 .preview-container {
   position: relative;
-  display: inline-block;
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(var(--v-theme-surface-variant), 0.3);
 }
 
 .preview-image {
@@ -404,17 +478,9 @@ watch(dialogVisible, newValue => {
   max-height: 300px;
   object-fit: contain;
   border-radius: 4px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-.overlay-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
 }
 
 .fen-section {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 </style>

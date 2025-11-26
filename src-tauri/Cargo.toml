@@ -31,3 +31,9 @@ base64 = "0.22"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 sha2 = "0.10"
 hex = "0.4"
+
+# Linker feature dependencies (desktop only)
+[target.'cfg(not(target_os = "android"))'.dependencies]
+xcap = "0.0.14"
+enigo = "0.3"
+image = "0.25"
