@@ -3,6 +3,24 @@
 import { ref } from 'vue'
 import { LABELS, type DetectionBox } from './image-recognition/types'
 
+// Configuration constants for template matching
+const MATCH_THRESHOLD = 0.5 // Minimum NCC score to consider a valid detection
+
+// Board color detection thresholds (typical xiangqi board colors - brown/tan/beige range)
+const BOARD_COLOR = {
+  // Dark board color range (brown/tan)
+  DARK_R_MIN: 150,
+  DARK_R_MAX: 255,
+  DARK_G_MIN: 100,
+  DARK_G_MAX: 220,
+  DARK_B_MIN: 50,
+  DARK_B_MAX: 180,
+  // Light board color range (lighter boards)
+  LIGHT_R_MIN: 180,
+  LIGHT_G_MIN: 150,
+  LIGHT_B_MIN: 100,
+}
+
 // FEN character to piece template filename mapping
 const FEN_TO_TEMPLATE: Record<string, string> = {
   K: 'K', // 红帅
@@ -67,11 +85,11 @@ export const useTemplateMatching = () => {
 
     isLoading.value = true
     try {
-      const base = (import.meta as any).env?.BASE_URL || '/'
+      const base = import.meta.env?.BASE_URL || '/'
       const loadPromises: Promise<void>[] = []
 
       for (const [fen, filename] of Object.entries(FEN_TO_TEMPLATE)) {
-        const promise = new Promise<void>((resolve, reject) => {
+        const promise = new Promise<void>(resolve => {
           const img = new Image()
           img.crossOrigin = 'anonymous'
           img.onload = () => {
@@ -182,7 +200,6 @@ export const useTemplateMatching = () => {
       maxY = 0
 
     // Scan for board region by finding areas with board-like colors
-    // Board is typically a brown/tan color
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4
@@ -190,10 +207,19 @@ export const useTemplateMatching = () => {
         const g = data[idx + 1]
         const b = data[idx + 2]
 
-        // Check for typical xiangqi board colors (brown/tan/beige range)
-        const isBoardColor =
-          (r > 150 && g > 100 && b > 50 && r < 255 && g < 220 && b < 180) ||
-          (r > 180 && g > 150 && b > 100) // lighter boards
+        // Check for typical xiangqi board colors using configured thresholds
+        const isDarkBoardColor =
+          r > BOARD_COLOR.DARK_R_MIN &&
+          r < BOARD_COLOR.DARK_R_MAX &&
+          g > BOARD_COLOR.DARK_G_MIN &&
+          g < BOARD_COLOR.DARK_G_MAX &&
+          b > BOARD_COLOR.DARK_B_MIN &&
+          b < BOARD_COLOR.DARK_B_MAX
+        const isLightBoardColor =
+          r > BOARD_COLOR.LIGHT_R_MIN &&
+          g > BOARD_COLOR.LIGHT_G_MIN &&
+          b > BOARD_COLOR.LIGHT_B_MIN
+        const isBoardColor = isDarkBoardColor || isLightBoardColor
 
         if (isBoardColor) {
           minX = Math.min(minX, x)
@@ -346,8 +372,7 @@ export const useTemplateMatching = () => {
         }
 
         // If we found a good match, add it
-        const threshold = 0.5 // Minimum score to consider a valid detection
-        if (bestScore > threshold && bestFen) {
+        if (bestScore > MATCH_THRESHOLD && bestFen) {
           const labelIndex = FEN_TO_LABEL_INDEX[bestFen]
           if (labelIndex !== undefined) {
             boxes.push({
