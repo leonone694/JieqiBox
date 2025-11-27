@@ -194,7 +194,7 @@
 <script setup lang="ts">
   import { ref, computed, watch, inject } from 'vue'
   import { useLinker, type WindowInfo } from '../composables/useLinker'
-  import { useImageRecognition } from '../composables/image-recognition'
+  import { useTemplateMatching } from '../composables/useTemplateMatching'
   import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
   const props = defineProps<{ modelValue: boolean }>()
@@ -206,10 +206,10 @@
   const gameState = inject('game-state') as any
   const engineState = inject('engine-state') as any
 
-  // Use the existing image recognition
-  const imageRecognition = useImageRecognition()
+  // Use template matching for fast real-time recognition (instead of ONNX)
+  const templateMatching = useTemplateMatching()
   // Pass it to linker
-  const linker = useLinker({ imageRecognition })
+  const linker = useLinker({ templateMatching })
 
   const showSettings = ref(false)
   const isRefreshing = ref(false)

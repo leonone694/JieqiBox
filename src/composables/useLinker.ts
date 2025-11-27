@@ -2,13 +2,10 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import {
-  useImageRecognition,
-  LABELS,
-  type DetectionBox,
-} from './image-recognition'
+import { LABELS, type DetectionBox } from './image-recognition'
+import { useTemplateMatching } from './useTemplateMatching'
 
-type ImageRecognitionInstance = ReturnType<typeof useImageRecognition>
+type TemplateMatchingInstance = ReturnType<typeof useTemplateMatching>
 export type LinkerMode = 'auto' | 'watch'
 export type LinkerState =
   | 'idle'
@@ -107,16 +104,17 @@ const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
 }
 
 export interface UseLinkerOptions {
-  imageRecognition?: ImageRecognitionInstance
+  templateMatching?: TemplateMatchingInstance
 }
 
 export function useLinker(options: UseLinkerOptions = {}) {
   const { t } = useI18n()
-  let imageRecognition: ImageRecognitionInstance | null =
-    options.imageRecognition || null
-  const getImageRecognition = () => {
-    if (!imageRecognition) imageRecognition = useImageRecognition()
-    return imageRecognition
+  // Use template matching for fast real-time recognition (instead of ONNX)
+  let templateMatching: TemplateMatchingInstance | null =
+    options.templateMatching || null
+  const getTemplateMatching = () => {
+    if (!templateMatching) templateMatching = useTemplateMatching()
+    return templateMatching
   }
 
   // --- 状态 ---
@@ -199,7 +197,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
   const initializeModel = async () => {
     try {
-      await getImageRecognition().initializeModel()
+      // Use template matching for fast real-time recognition
+      await getTemplateMatching().initializeModel()
       return true
     } catch (e) {
       state.value = 'error'
@@ -209,8 +208,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
   }
 
   const processDetectionsToBoard = (boxes: DetectionBox[]) => {
-    const ir = getImageRecognition()
-    const grid = ir.updateBoardGrid(boxes)
+    const tm = getTemplateMatching()
+    const grid = tm.updateBoardGrid(boxes)
     const boardBox = boxes
       .filter(b => LABELS[b.labelIndex]?.name === 'Board')
       .sort((a, b) => b.score - a.score)[0]
@@ -401,7 +400,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
         previousBoard.value &&
         JSON.stringify(previousBoard.value) === currentBoardJson
       ) {
-        stabilityCounter.value=1
+        stabilityCounter.value = 1
       } else {
         stabilityCounter.value = 0
         previousBoard.value = result.board
@@ -530,10 +529,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
     })
     // Direct base64 to image conversion, skip unnecessary File/Blob conversions
     const img = await base64ToImage(res.image_base64)
-    const ir = getImageRecognition()
-    // Use the faster direct processing path
-    await ir.processImageDirect(img)
-    return processDetectionsToBoard(ir.detectedBoxes.value)
+    const tm = getTemplateMatching()
+    // Use template matching for fast real-time recognition
+    await tm.processImageDirect(img)
+    return processDetectionsToBoard(tm.detectedBoxes.value)
   }
 
   const start = async () => {
