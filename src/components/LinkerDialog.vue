@@ -193,11 +193,7 @@
 
 <script setup lang="ts">
   import { ref, computed, watch, inject } from 'vue'
-  import {
-    useLinker,
-    type BoardGrid,
-    type WindowInfo,
-  } from '../composables/useLinker'
+  import { useLinker, type WindowInfo } from '../composables/useLinker'
   import { useImageRecognition } from '../composables/image-recognition'
   import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
@@ -205,7 +201,6 @@
   const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
     (e: 'boardInitialized', fen: string, isReversed: boolean): void
-    (e: 'moveDetected', from: string, to: string): void
   }>()
 
   const gameState = inject('game-state') as any
@@ -258,15 +253,13 @@
   })
 
   // Setup callbacks
-  // ★★★ 核心修复逻辑：只做数据透传，不拦截，不缓存 ★★★
+  // ★★★ 新架构：通过FEN直接更新内部棋盘，由外部扫描结果决定棋子状态 ★★★
   linker.setCallbacks({
-    onMoveDetected: (from: string, to: string, flipChar?: string | null) => {
-      emit('moveDetected', from, to)
-      if (gameState?.playMoveFromUci) {
-        // Include flip character in the UCI move if present
-        // This ensures the game state uses the detected piece instead of randomly choosing
-        const uciMove = flipChar ? `${from}${to}${flipChar}` : `${from}${to}`
-        gameState.playMoveFromUci(uciMove)
+    onBoardUpdated: (fen: string) => {
+      // 每次外部棋盘变化后，用扫描结果的FEN更新内部棋盘
+      if (gameState?.confirmFenInput) {
+        console.log(`[LinkerDialog] 更新内部棋盘: ${fen}`)
+        gameState.confirmFenInput(fen)
       }
     },
     onBoardInitialized: (fen: string, isReversed: boolean) => {
@@ -275,37 +268,6 @@
       if (gameState?.confirmFenInput) {
         gameState.confirmFenInput(fen)
       }
-    },
-    getEngineBoard: (): BoardGrid | null => {
-      if (!gameState?.pieces?.value) return null
-      const board: BoardGrid = Array(10)
-        .fill(null)
-        .map(() => Array(9).fill(null))
-      for (const piece of gameState.pieces.value) {
-        if (piece.isKnown) {
-          const fenChar = gameState.getCharFromPieceName?.(piece.name)
-          if (
-            fenChar &&
-            piece.row >= 0 &&
-            piece.row < 10 &&
-            piece.col >= 0 &&
-            piece.col < 9
-          ) {
-            board[piece.row][piece.col] = fenChar
-          }
-        } else {
-          const side = gameState.getPieceSide?.(piece)
-          if (
-            piece.row >= 0 &&
-            piece.row < 10 &&
-            piece.col >= 0 &&
-            piece.col < 9
-          ) {
-            board[piece.row][piece.col] = side === 'red' ? 'X' : 'x'
-          }
-        }
-      }
-      return board
     },
     getEngineBestMove: (): string | null => {
       // 直接返回引擎的 bestMove，不要做任何判断
@@ -317,13 +279,6 @@
     isEngineThinking: () => {
       return engineState?.isThinking?.value || false
     },
-    playMove: (from: string, to: string, flipChar?: string | null) => {
-      if (gameState?.playMoveFromUci) {
-        // Include flip character in the UCI move if present
-        const uciMove = flipChar ? `${from}${to}${flipChar}` : `${from}${to}`
-        gameState.playMoveFromUci(uciMove)
-      }
-    },
     requestEngineStart: () => {
       if (!engineState?.isEngineLoaded?.value) return
       if (engineState.isThinking.value) return
@@ -332,6 +287,12 @@
       // 强制思考时间，防止无限思考
       if (typeof engineState.startAnalysis === 'function') {
         engineState.startAnalysis({ movetime: 3000, analysisMode: 'movetime' })
+      }
+    },
+    stopEngine: () => {
+      if (engineState?.stopAnalysis) {
+        console.log('[LinkerDialog] 停止引擎分析')
+        engineState.stopAnalysis()
       }
     },
   })
@@ -354,7 +315,7 @@
     try {
       const result = await linker.captureAndProcess()
       if (result) {
-        recognizedFen.value = linker.boardToFen(result.board) + ' w - - 0 1'
+        recognizedFen.value = linker.boardToFen(result.board, true)
       }
     } finally {
       isCapturing.value = false
