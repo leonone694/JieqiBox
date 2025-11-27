@@ -512,7 +512,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
       const bestMove = getEngineBestMove()
       if (bestMove && bestMove !== lastAutoExecutedMove.value) {
         console.log(`[Linker] 执行 AI 招法: ${bestMove}`)
-        pendingMyMove.value = bestMove.substring(0, 4) // Only store base move for confirmation
+        // Store only first 4 chars (base move without flip char) for move confirmation matching
+        pendingMyMove.value = bestMove.substring(0, 4)
         lastAutoExecutedMove.value = bestMove
 
         // Extract flip info from bestMove if it has more than 4 characters
