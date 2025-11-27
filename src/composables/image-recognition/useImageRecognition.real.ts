@@ -513,6 +513,25 @@ export const useImageRecognition = () => {
     })
   }
 
+  // Core inference logic - shared between processImage and processImageDirect
+  const runInference = async (
+    img: HTMLImageElement
+  ): Promise<DetectionBox[]> => {
+    const prep = await preprocess(img)
+
+    const inputName = session.value!.inputNames.includes('images')
+      ? 'images'
+      : session.value!.inputNames[0]
+    const feeds = { [inputName]: prep.tensor }
+    const results = await session.value!.run(feeds)
+
+    const firstOut = results.output0 || results[Object.keys(results)[0]]
+    const outputData = firstOut.data as unknown as number[]
+    const outShape = firstOut.dims as number[]
+
+    return postprocess(outputData, outShape, prep.meta)
+  }
+
   // Process image recognition
   const processImage = async (file: File): Promise<void> => {
     try {
@@ -537,26 +556,12 @@ export const useImageRecognition = () => {
       status.value = t(
         'positionEditor.imageRecognitionStatus.preprocessingImage'
       )
-      const prep = await preprocess(img)
 
       status.value = t(
         'positionEditor.imageRecognitionStatus.runningModelInference'
       )
-      // More robust selection of input name (many exported YOLO models use 'images' as input name)
-      const inputName = session.value!.inputNames.includes('images')
-        ? 'images'
-        : session.value!.inputNames[0]
-      const feeds = { [inputName]: prep.tensor }
-      const results = await session.value!.run(feeds)
 
-      const firstOut = results.output0 || results[Object.keys(results)[0]]
-      const outputData = firstOut.data as unknown as number[]
-      const outShape = firstOut.dims as number[]
-
-      status.value = t(
-        'positionEditor.imageRecognitionStatus.postProcessingResults'
-      )
-      const boxes = postprocess(outputData, outShape, prep.meta)
+      const boxes = await runInference(img)
       detectedBoxes.value = boxes
 
       status.value = t(
@@ -640,6 +645,22 @@ export const useImageRecognition = () => {
     return grid
   }
 
+  // Fast processing path for linker - accepts HTMLImageElement directly
+  // This avoids File/Blob conversion overhead
+  const processImageDirect = async (img: HTMLImageElement): Promise<void> => {
+    if (!session.value) {
+      await initializeModel()
+    }
+
+    try {
+      isProcessing.value = true
+      const boxes = await runInference(img)
+      detectedBoxes.value = boxes
+    } finally {
+      isProcessing.value = false
+    }
+  }
+
   return {
     session,
     isModelLoading,
@@ -650,6 +671,7 @@ export const useImageRecognition = () => {
     outputCanvas,
     showBoundingBoxes,
     processImage,
+    processImageDirect,
     drawBoundingBoxes,
     updateBoardGrid,
     initializeModel,

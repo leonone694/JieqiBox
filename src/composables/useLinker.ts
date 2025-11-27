@@ -528,16 +528,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
     const res = await invoke<CaptureResult>('capture_window', {
       windowId: selectedWindowId.value,
     })
+    // Direct base64 to image conversion, skip unnecessary File/Blob conversions
     const img = await base64ToImage(res.image_base64)
-    const cvs = document.createElement('canvas')
-    cvs.width = img.width
-    cvs.height = img.height
-    cvs.getContext('2d')!.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob>(r =>
-      cvs.toBlob(b => r(b!), 'image/png')
-    )
     const ir = getImageRecognition()
-    await ir.processImage(new File([blob], 'cap.png', { type: 'image/png' }))
+    // Use the faster direct processing path
+    await ir.processImageDirect(img)
     return processDetectionsToBoard(ir.detectedBoxes.value)
   }
 
