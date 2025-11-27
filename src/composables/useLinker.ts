@@ -441,26 +441,35 @@ export function useLinker(options: UseLinkerOptions = {}) {
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
 
-        // 生成新的FEN，根据当前轮次决定turn字段
-        // 变化后，轮次切换
-        const newFen = generateJieqiFen(result.board, isMyTurn.value)
-
-        // 通知外部更新棋盘状态
-        if (onBoardUpdated) {
-          onBoardUpdated(newFen)
-        }
-
         // 如果之前在等待AI移动确认，现在棋盘变化了，说明移动成功
+        // 先切换轮次，再生成FEN（FEN的turn应该是切换后的下一位行棋方）
+        let nextTurnIsRed: boolean
         if (waitingForExternalConfirm.value) {
           console.log(`[Linker] AI移动已确认，切换到对方回合`)
           waitingForExternalConfirm.value = false
           isMyTurn.value = false
+          // AI刚走完，下一步是对方走
+          // isReversed=false → AI执红，对方执黑，下一步黑方走 (nextTurnIsRed=false)
+          // isReversed=true → AI执黑，对方执红，下一步红方走 (nextTurnIsRed=true)
+          nextTurnIsRed = isReversed.value
           // 停止引擎，等待对方走完
           if (stopEngine) stopEngine()
         } else {
           // 对方走了一步，切换到己方回合
           console.log(`[Linker] 对方已走棋，切换到己方回合`)
           isMyTurn.value = true
+          // 对方刚走完，下一步是AI走
+          // isReversed=false → AI执红，下一步红方走 (nextTurnIsRed=true)
+          // isReversed=true → AI执黑，下一步黑方走 (nextTurnIsRed=false)
+          nextTurnIsRed = !isReversed.value
+        }
+
+        // 生成新的FEN，turn字段表示下一位行棋方
+        const newFen = generateJieqiFen(result.board, nextTurnIsRed)
+
+        // 通知外部更新棋盘状态
+        if (onBoardUpdated) {
+          onBoardUpdated(newFen)
         }
 
         lastAutoExecutedMove.value = null
