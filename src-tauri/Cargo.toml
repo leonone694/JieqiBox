@@ -35,5 +35,5 @@ hex = "0.4"
 # Linker feature dependencies (desktop only)
 [target.'cfg(not(target_os = "android"))'.dependencies]
 xcap = "0.0.14"
-enigo = "0.3"
+enigo = "0.0.14"
 image = "0.25"

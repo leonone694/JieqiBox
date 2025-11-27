@@ -1,237 +1,140 @@
-// Linker module for screen capture and mouse automation
-// This module provides the native desktop functionality for the "连线" feature
-
-#[cfg(not(target_os = "android"))]
-use xcap::{Monitor, Window};
-#[cfg(not(target_os = "android"))]
-use enigo::{Enigo, Mouse, Settings, Coordinate, Button};
-#[cfg(not(target_os = "android"))]
-use image::ImageFormat;
-#[cfg(not(target_os = "android"))]
+// src-tauri/src/linker.rs
+use tauri::AppHandle;
+use std::{thread, time};
+use enigo::{Enigo, MouseControllable, MouseButton}; 
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use std::io::Cursor;
+use xcap::Window;
+use image::{DynamicImage, Rgba};
+use std::cmp;
 
-use serde::{Deserialize, Serialize};
-use base64::Engine;
-
-/// Information about a window that can be captured
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(serde::Serialize, Clone)]
 pub struct WindowInfo {
-    pub id: u32,
-    pub name: String,
-    pub x: i32,
-    pub y: i32,
-    pub width: u32,
-    pub height: u32,
-    pub is_minimized: bool,
+    id: u32,
+    name: String,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    is_minimized: bool,
 }
 
-/// Information about the captured screen region
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CaptureRegion {
-    pub x: i32,
-    pub y: i32,
-    pub width: u32,
-    pub height: u32,
-}
-
-/// Result of a screen capture operation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(serde::Serialize)]
 pub struct CaptureResult {
-    pub image_base64: String,
-    pub width: u32,
-    pub height: u32,
+    image_base64: String,
+    width: u32,
+    height: u32,
 }
 
-/// List all visible windows on the system
-#[cfg(not(target_os = "android"))]
 #[tauri::command]
 pub async fn list_windows() -> Result<Vec<WindowInfo>, String> {
-    let windows = Window::all().map_err(|e| format!("Failed to enumerate windows: {}", e))?;
-    
+    let windows = Window::all().map_err(|e| e.to_string())?;
     let mut result = Vec::new();
     for window in windows {
-        // Skip windows with empty names or very small sizes
-        let name = window.title();
-        if name.is_empty() {
-            continue;
-        }
-        
-        let x = window.x();
-        let y = window.y();
-        let width = window.width();
-        let height = window.height();
-        
-        // Skip very small windows (likely system windows)
-        if width < 100 || height < 100 {
-            continue;
-        }
-        
         result.push(WindowInfo {
             id: window.id(),
-            name,
-            x,
-            y,
-            width,
-            height,
+            name: window.title().to_string(),
+            x: window.x(),
+            y: window.y(),
+            width: window.width(),
+            height: window.height(),
             is_minimized: window.is_minimized(),
         });
     }
-    
     Ok(result)
 }
 
-#[cfg(target_os = "android")]
 #[tauri::command]
-pub async fn list_windows() -> Result<Vec<WindowInfo>, String> {
-    Err("Window listing is not supported on Android".to_string())
+pub async fn get_window_info(window_id: u32) -> Result<WindowInfo, String> {
+    let windows = Window::all().map_err(|e| e.to_string())?;
+    for window in windows {
+        if window.id() == window_id {
+            return Ok(WindowInfo {
+                id: window.id(),
+                name: window.title().to_string(),
+                x: window.x(),
+                y: window.y(),
+                width: window.width(),
+                height: window.height(),
+                is_minimized: window.is_minimized(),
+            });
+        }
+    }
+    Err("Window not found".to_string())
 }
 
-/// Capture a specific window by ID
-#[cfg(not(target_os = "android"))]
 #[tauri::command]
 pub async fn capture_window(window_id: u32) -> Result<CaptureResult, String> {
-    let windows = Window::all().map_err(|e| format!("Failed to enumerate windows: {}", e))?;
-    
-    let window = windows
-        .into_iter()
-        .find(|w| w.id() == window_id)
-        .ok_or_else(|| format!("Window with ID {} not found", window_id))?;
-    
-    let image = window.capture_image().map_err(|e| format!("Failed to capture window: {}", e))?;
+    let windows = Window::all().map_err(|e| e.to_string())?;
+    for window in windows {
+        if window.id() == window_id {
+            let image = window.capture_image().map_err(|e| e.to_string())?;
+            
+            // 修复 Linux 下截图可能带透明通道导致 AI 识别错误的问题
+            // 强制转为白底 RGB
+            let width = image.width();
+            let height = image.height();
+            let mut rgb_image = image::ImageBuffer::from_pixel(width, height, Rgba([255, 255, 255, 255]));
+            image::imageops::overlay(&mut rgb_image, &image, 0, 0);
+            let dynamic_image = DynamicImage::ImageRgba8(rgb_image);
+            
+            let mut buffer = Vec::new();
+            let mut cursor = Cursor::new(&mut buffer);
+            dynamic_image.write_to(&mut cursor, image::ImageFormat::Png).map_err(|e| e.to_string())?;
+            
+            let base64_string = STANDARD.encode(&buffer);
+            return Ok(CaptureResult {
+                image_base64: base64_string,
+                width,
+                height,
+            });
+        }
+    }
+    Err("Window not found".to_string())
+}
+
+#[tauri::command]
+pub async fn capture_screen(display_id: usize) -> Result<CaptureResult, String> {
+    let screens = xcap::Monitor::all().map_err(|e| e.to_string())?;
+    if display_id >= screens.len() {
+        return Err("Display ID out of range".to_string());
+    }
+    let screen = &screens[display_id];
+    let image = screen.capture_image().map_err(|e| e.to_string())?;
     
     let width = image.width();
     let height = image.height();
-    
-    // Convert to PNG and base64 encode
-    let mut buffer = Cursor::new(Vec::new());
-    image.write_to(&mut buffer, ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
-    
-    let base64_str = base64::engine::general_purpose::STANDARD.encode(buffer.into_inner());
+    let mut buffer = Vec::new();
+    let mut cursor = Cursor::new(&mut buffer);
+    image.write_to(&mut cursor, image::ImageFormat::Png).map_err(|e| e.to_string())?;
     
     Ok(CaptureResult {
-        image_base64: base64_str,
+        image_base64: STANDARD.encode(&buffer),
         width,
         height,
     })
 }
 
-#[cfg(target_os = "android")]
 #[tauri::command]
-pub async fn capture_window(_window_id: u32) -> Result<CaptureResult, String> {
-    Err("Window capture is not supported on Android".to_string())
-}
-
-/// Capture the entire screen or primary monitor
-#[cfg(not(target_os = "android"))]
-#[tauri::command]
-pub async fn capture_screen() -> Result<CaptureResult, String> {
-    let monitors = Monitor::all().map_err(|e| format!("Failed to enumerate monitors: {}", e))?;
+pub async fn capture_region(x: i32, y: i32, width: u32, height: u32) -> Result<CaptureResult, String> {
+    let screens = xcap::Monitor::all().map_err(|e| e.to_string())?;
+    if screens.is_empty() { return Err("No screens found".to_string()); }
     
-    let monitor = monitors
-        .into_iter()
-        .next()
-        .ok_or_else(|| "No monitors found".to_string())?;
+    // 默认截取第一个屏幕并裁剪
+    let image = screens[0].capture_image().map_err(|e| e.to_string())?;
+    let cropped = image::imageops::crop_imm(&image, x as u32, y as u32, width, height).to_image();
     
-    let image = monitor.capture_image().map_err(|e| format!("Failed to capture screen: {}", e))?;
-    
-    let width = image.width();
-    let height = image.height();
-    
-    // Convert to PNG and base64 encode
-    let mut buffer = Cursor::new(Vec::new());
-    image.write_to(&mut buffer, ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
-    
-    let base64_str = base64::engine::general_purpose::STANDARD.encode(buffer.into_inner());
+    let mut buffer = Vec::new();
+    let mut cursor = Cursor::new(&mut buffer);
+    cropped.write_to(&mut cursor, image::ImageFormat::Png).map_err(|e| e.to_string())?;
     
     Ok(CaptureResult {
-        image_base64: base64_str,
+        image_base64: STANDARD.encode(&buffer),
         width,
         height,
     })
 }
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-pub async fn capture_screen() -> Result<CaptureResult, String> {
-    Err("Screen capture is not supported on Android".to_string())
-}
-
-/// Capture a specific region of the screen
-#[cfg(not(target_os = "android"))]
-#[tauri::command]
-pub async fn capture_region(region: CaptureRegion) -> Result<CaptureResult, String> {
-    let monitors = Monitor::all().map_err(|e| format!("Failed to enumerate monitors: {}", e))?;
-    
-    let monitor = monitors
-        .into_iter()
-        .next()
-        .ok_or_else(|| "No monitors found".to_string())?;
-    
-    let full_image = monitor.capture_image().map_err(|e| format!("Failed to capture screen: {}", e))?;
-    
-    // Crop the image to the specified region
-    let cropped = image::imageops::crop_imm(
-        &full_image,
-        region.x as u32,
-        region.y as u32,
-        region.width,
-        region.height,
-    ).to_image();
-    
-    let width = cropped.width();
-    let height = cropped.height();
-    
-    // Convert to PNG and base64 encode
-    let mut buffer = Cursor::new(Vec::new());
-    cropped.write_to(&mut buffer, ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
-    
-    let base64_str = base64::engine::general_purpose::STANDARD.encode(buffer.into_inner());
-    
-    Ok(CaptureResult {
-        image_base64: base64_str,
-        width,
-        height,
-    })
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-pub async fn capture_region(_region: CaptureRegion) -> Result<CaptureResult, String> {
-    Err("Screen capture is not supported on Android".to_string())
-}
-
-/// Simulate a mouse click at the specified screen coordinates
-#[cfg(not(target_os = "android"))]
-#[tauri::command]
-pub async fn simulate_click(x: i32, y: i32, click_delay_ms: u64) -> Result<(), String> {
-    let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to create Enigo instance: {}", e))?;
-    
-    // Move mouse to position
-    enigo.move_mouse(x, y, Coordinate::Abs)
-        .map_err(|e| format!("Failed to move mouse: {}", e))?;
-    
-    // Small delay before clicking
-    std::thread::sleep(std::time::Duration::from_millis(click_delay_ms));
-    
-    // Click
-    enigo.button(Button::Left, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click: {}", e))?;
-    
-    Ok(())
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-pub async fn simulate_click(_x: i32, _y: i32, _click_delay_ms: u64) -> Result<(), String> {
-    Err("Mouse simulation is not supported on Android".to_string())
-}
-
-/// Simulate a chess move by clicking from source to destination
-#[cfg(not(target_os = "android"))]
 #[tauri::command]
 pub async fn simulate_move(
     from_x: i32,
@@ -239,68 +142,54 @@ pub async fn simulate_move(
     to_x: i32,
     to_y: i32,
     click_delay_ms: u64,
-    move_delay_ms: u64,
+    move_delay_ms: u64
 ) -> Result<(), String> {
-    let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to create Enigo instance: {}", e))?;
-    
-    // Click on source square
-    enigo.move_mouse(from_x, from_y, Coordinate::Abs)
-        .map_err(|e| format!("Failed to move mouse to source: {}", e))?;
-    std::thread::sleep(std::time::Duration::from_millis(click_delay_ms));
-    enigo.button(Button::Left, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click source: {}", e))?;
-    
-    // Delay between clicks
-    std::thread::sleep(std::time::Duration::from_millis(move_delay_ms));
-    
-    // Click on destination square
-    enigo.move_mouse(to_x, to_y, Coordinate::Abs)
-        .map_err(|e| format!("Failed to move mouse to destination: {}", e))?;
-    std::thread::sleep(std::time::Duration::from_millis(click_delay_ms));
-    enigo.button(Button::Left, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click destination: {}", e))?;
-    
+    println!("[Rust Linker] >>> 模拟移动: ({}, {}) -> ({}, {})", from_x, from_y, to_x, to_y);
+
+    let mut enigo = Enigo::new();
+
+    // 1. 移动到起点
+    enigo.mouse_move_to(from_x, from_y);
+    thread::sleep(time::Duration::from_millis(50));
+
+    // 2. 点击起点
+    enigo.mouse_down(MouseButton::Left);
+    if click_delay_ms > 0 {
+        thread::sleep(time::Duration::from_millis(click_delay_ms));
+    }
+    enigo.mouse_up(MouseButton::Left);
+    println!("[Rust Linker] 点击起点完成");
+
+    // 3. 移动延迟
+    if move_delay_ms > 0 {
+        thread::sleep(time::Duration::from_millis(move_delay_ms));
+    }
+
+    // 4. 移动到终点
+    enigo.mouse_move_to(to_x, to_y);
+    thread::sleep(time::Duration::from_millis(50));
+
+    // 5. 点击终点
+    enigo.mouse_down(MouseButton::Left);
+    if click_delay_ms > 0 {
+        thread::sleep(time::Duration::from_millis(click_delay_ms));
+    }
+    enigo.mouse_up(MouseButton::Left);
+    println!("[Rust Linker] 点击终点完成");
+
     Ok(())
 }
 
-#[cfg(target_os = "android")]
 #[tauri::command]
-pub async fn simulate_move(
-    _from_x: i32,
-    _from_y: i32,
-    _to_x: i32,
-    _to_y: i32,
-    _click_delay_ms: u64,
-    _move_delay_ms: u64,
-) -> Result<(), String> {
-    Err("Mouse simulation is not supported on Android".to_string())
-}
-
-/// Get information about a specific window by ID
-#[cfg(not(target_os = "android"))]
-#[tauri::command]
-pub async fn get_window_info(window_id: u32) -> Result<WindowInfo, String> {
-    let windows = Window::all().map_err(|e| format!("Failed to enumerate windows: {}", e))?;
-    
-    let window = windows
-        .into_iter()
-        .find(|w| w.id() == window_id)
-        .ok_or_else(|| format!("Window with ID {} not found", window_id))?;
-    
-    Ok(WindowInfo {
-        id: window.id(),
-        name: window.title(),
-        x: window.x(),
-        y: window.y(),
-        width: window.width(),
-        height: window.height(),
-        is_minimized: window.is_minimized(),
-    })
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-pub async fn get_window_info(_window_id: u32) -> Result<WindowInfo, String> {
-    Err("Window info is not supported on Android".to_string())
+pub async fn simulate_click(x: i32, y: i32, delay_ms: u64) -> Result<(), String> {
+    println!("[Rust Linker] >>> 模拟点击: ({}, {})", x, y);
+    let mut enigo = Enigo::new();
+    enigo.mouse_move_to(x, y);
+    thread::sleep(time::Duration::from_millis(50));
+    enigo.mouse_down(MouseButton::Left);
+    if delay_ms > 0 {
+        thread::sleep(time::Duration::from_millis(delay_ms));
+    }
+    enigo.mouse_up(MouseButton::Left);
+    Ok(())
 }

@@ -7,237 +7,74 @@
       </v-card-title>
 
       <v-card-text>
-        <!-- Status Section -->
         <div class="status-section mb-4">
-          <v-chip
-            :color="statusColor"
-            variant="elevated"
-            size="small"
-            class="mr-2"
-          >
-            <v-icon start size="small">{{ statusIcon }}</v-icon>
-            {{ linker.statusText.value }}
+          <v-chip :color="statusColor" variant="elevated" size="small" class="mr-2">
+            <v-icon start size="small">{{ statusIcon }}</v-icon> {{ linker.statusText.value }}
           </v-chip>
-          <v-chip
-            v-if="linker.selectedWindow.value"
-            variant="outlined"
-            size="small"
-          >
+          <v-chip v-if="linker.selectedWindow.value" variant="outlined" size="small">
             {{ linker.selectedWindow.value.name }}
           </v-chip>
         </div>
 
-        <!-- Mode Selection -->
-        <v-radio-group
-          v-model="linker.mode.value"
-          inline
-          :disabled="linker.isActive.value"
-          class="mb-4"
-        >
+        <v-radio-group v-model="linker.mode.value" inline :disabled="linker.isActive.value" class="mb-4">
           <v-radio :label="$t('linker.mode.auto')" value="auto" />
           <v-radio :label="$t('linker.mode.watch')" value="watch" />
         </v-radio-group>
 
-        <!-- Instructions -->
-        <v-alert
-          v-if="linker.state.value === 'idle'"
-          type="info"
-          variant="tonal"
-          class="mb-4"
-        >
-          {{ $t('linker.instructions.idle') }}
-        </v-alert>
+        <!-- Messages -->
+        <v-alert v-if="linker.state.value === 'idle'" type="info" variant="tonal" class="mb-4">{{ $t('linker.instructions.idle') }}</v-alert>
+        <v-alert v-else-if="linker.state.value === 'selecting'" type="warning" variant="tonal" class="mb-4">{{ $t('linker.instructions.selecting') }}</v-alert>
+        <v-alert v-else-if="linker.state.value === 'connecting'" type="success" variant="tonal" class="mb-4">{{ $t('linker.instructions.connected') }}</v-alert>
+        <v-alert v-else-if="linker.state.value === 'error'" type="error" variant="tonal" class="mb-4">{{ linker.errorMessage.value }}</v-alert>
 
-        <v-alert
-          v-else-if="linker.state.value === 'selecting'"
-          type="warning"
-          variant="tonal"
-          class="mb-4"
-        >
-          {{ $t('linker.instructions.selecting') }}
-        </v-alert>
-
-        <v-alert
-          v-else-if="linker.state.value === 'connecting'"
-          type="success"
-          variant="tonal"
-          class="mb-4"
-        >
-          {{ $t('linker.instructions.connected') }}
-        </v-alert>
-
-        <v-alert
-          v-else-if="linker.state.value === 'paused'"
-          type="info"
-          variant="tonal"
-          class="mb-4"
-        >
-          {{ $t('linker.instructions.paused') }}
-        </v-alert>
-
-        <v-alert
-          v-else-if="linker.state.value === 'error'"
-          type="error"
-          variant="tonal"
-          class="mb-4"
-        >
-          {{ linker.errorMessage.value }}
-        </v-alert>
-
-        <!-- Window Selection Section -->
+        <!-- Window Selection -->
         <div v-if="linker.state.value === 'selecting'" class="window-section">
           <div class="d-flex align-center mb-2">
             <span class="text-subtitle-2">{{ $t('linker.selectWindow') }}</span>
             <v-spacer />
-            <v-btn
-              size="small"
-              variant="text"
-              @click="refreshWindows"
-              :loading="isRefreshing"
-            >
-              <v-icon start>mdi-refresh</v-icon>
-              {{ $t('common.refresh') }}
+            <v-btn size="small" variant="text" @click="refreshWindows" :loading="isRefreshing">
+              <v-icon start>mdi-refresh</v-icon> {{ $t('common.refresh') }}
             </v-btn>
           </div>
-
-          <v-list
-            density="compact"
-            class="window-list"
-            max-height="250"
-          >
-            <v-list-item
-              v-for="window in linker.availableWindows.value"
-              :key="window.id"
-              :active="linker.selectedWindowId.value === window.id"
-              @click="selectWindow(window)"
-              rounded="lg"
-            >
-              <template #prepend>
-                <v-icon>mdi-application</v-icon>
-              </template>
+          <v-list density="compact" class="window-list" max-height="250">
+            <v-list-item v-for="window in linker.availableWindows.value" :key="window.id"
+              :active="linker.selectedWindowId.value === window.id" @click="selectWindow(window)" rounded="lg">
+              <template #prepend><v-icon>mdi-application</v-icon></template>
               <v-list-item-title>{{ window.name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ window.width }} x {{ window.height }}
-              </v-list-item-subtitle>
-            </v-list-item>
-
-            <v-list-item v-if="linker.availableWindows.value.length === 0">
-              <v-list-item-title class="text-center text-grey">
-                {{ $t('linker.noWindowsFound') }}
-              </v-list-item-title>
+              <v-list-item-subtitle>{{ window.width }} x {{ window.height }}</v-list-item-subtitle>
             </v-list-item>
           </v-list>
         </div>
 
-        <!-- Board Preview (when connected) -->
+        <!-- Preview -->
         <div v-if="linker.state.value === 'connecting' || linker.state.value === 'paused'" class="board-section mt-4">
           <div class="d-flex align-center mb-2">
             <span class="text-subtitle-2">{{ $t('linker.boardPreview') }}</span>
             <v-spacer />
-            <v-btn
-              size="small"
-              variant="text"
-              @click="capturePreview"
-              :loading="isCapturing"
-            >
-              <v-icon start>mdi-camera</v-icon>
-              {{ $t('linker.capture') }}
+            <v-btn size="small" variant="text" @click="capturePreview" :loading="isCapturing">
+              <v-icon start>mdi-camera</v-icon> {{ $t('linker.capture') }}
             </v-btn>
           </div>
-
           <div v-if="previewImageUrl" class="preview-container">
-            <img
-              :src="previewImageUrl"
-              class="preview-image"
-              alt="Board preview"
-            />
+            <img :src="previewImageUrl" class="preview-image" alt="Board preview" />
           </div>
-
-          <!-- Recognized FEN Display -->
           <div v-if="recognizedFen" class="fen-section mt-2">
-            <v-text-field
-              v-model="recognizedFen"
-              :label="$t('linker.recognizedFen')"
-              readonly
-              variant="outlined"
-              density="compact"
-              hide-details
-            >
-              <template #append>
-                <v-btn
-                  icon="mdi-content-copy"
-                  variant="text"
-                  size="small"
-                  @click="copyFen"
-                />
-              </template>
-            </v-text-field>
+            <v-text-field v-model="recognizedFen" label="FEN" readonly variant="outlined" density="compact" hide-details append-inner-icon="mdi-content-copy" @click:append-inner="copyFen" />
           </div>
         </div>
       </v-card-text>
 
       <v-card-actions>
-        <v-btn
-          v-if="linker.state.value === 'idle'"
-          color="primary"
-          @click="handleStart"
-        >
-          {{ $t('linker.start') }}
-        </v-btn>
-
-        <v-btn
-          v-else-if="linker.state.value === 'selecting' && linker.selectedWindowId.value"
-          color="success"
-          @click="handleConnect"
-        >
-          <v-icon start>mdi-link</v-icon>
-          {{ $t('linker.connect') }}
-        </v-btn>
-
-        <v-btn
-          v-else-if="linker.state.value === 'connecting'"
-          color="warning"
-          @click="handlePause"
-        >
-          <v-icon start>mdi-pause</v-icon>
-          {{ $t('linker.pause') }}
-        </v-btn>
-
-        <v-btn
-          v-else-if="linker.state.value === 'paused'"
-          color="success"
-          @click="handleResume"
-        >
-          <v-icon start>mdi-play</v-icon>
-          {{ $t('linker.resume') }}
-        </v-btn>
-
-        <v-btn
-          v-if="linker.state.value === 'connecting' || linker.state.value === 'paused'"
-          color="error"
-          variant="text"
-          @click="handleStop"
-        >
-          <v-icon start>mdi-stop</v-icon>
-          {{ $t('linker.stop') }}
-        </v-btn>
-
+        <v-btn v-if="linker.state.value === 'idle'" color="primary" @click="handleStart">{{ $t('linker.start') }}</v-btn>
+        <v-btn v-else-if="linker.state.value === 'selecting' && linker.selectedWindowId.value" color="success" @click="handleConnect"><v-icon start>mdi-link</v-icon>{{ $t('linker.connect') }}</v-btn>
+        <v-btn v-else-if="linker.state.value === 'connecting'" color="warning" @click="handlePause"><v-icon start>mdi-pause</v-icon>{{ $t('linker.pause') }}</v-btn>
+        <v-btn v-else-if="linker.state.value === 'paused'" color="success" @click="handleResume"><v-icon start>mdi-play</v-icon>{{ $t('linker.resume') }}</v-btn>
+        <v-btn v-if="linker.state.value === 'connecting' || linker.state.value === 'paused'" color="error" variant="text" @click="handleStop"><v-icon start>mdi-stop</v-icon>{{ $t('linker.stop') }}</v-btn>
         <v-spacer />
-
-        <v-btn variant="text" @click="showSettings = true">
-          <v-icon start>mdi-cog</v-icon>
-          {{ $t('linker.settings') }}
-        </v-btn>
+        <v-btn variant="text" @click="showSettings = true"><v-icon start>mdi-cog</v-icon>{{ $t('linker.settings') }}</v-btn>
       </v-card-actions>
     </v-card>
-
-    <!-- Settings Dialog -->
-    <LinkerSettingsDialog
-      v-model="showSettings"
-      :settings="linker.settings.value"
-      @update:settings="linker.updateSettings"
-      @reset="linker.resetSettings"
-    />
+    <LinkerSettingsDialog v-model="showSettings" :settings="linker.settings.value" @update:settings="linker.updateSettings" @reset="linker.resetSettings" />
   </v-dialog>
 </template>
 
@@ -247,10 +84,7 @@ import { useLinker, type BoardGrid, type WindowInfo } from '../composables/useLi
 import { useImageRecognition } from '../composables/image-recognition'
 import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
-const props = defineProps<{
-  modelValue: boolean
-}>()
-
+const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'boardInitialized', fen: string, isReversed: boolean): void
@@ -260,9 +94,11 @@ const emit = defineEmits<{
 const gameState = inject('game-state') as any
 const engineState = inject('engine-state') as any
 
-// Create image recognition instance and share it with the linker
+// Use the existing image recognition
 const imageRecognition = useImageRecognition()
+// Pass it to linker
 const linker = useLinker({ imageRecognition })
+
 const showSettings = ref(false)
 const isRefreshing = ref(false)
 const isCapturing = ref(false)
@@ -274,46 +110,31 @@ const dialogVisible = computed({
   set: (value: boolean) => emit('update:modelValue', value),
 })
 
-// Status indicators
 const statusColor = computed(() => {
   switch (linker.state.value) {
-    case 'idle':
-      return 'grey'
-    case 'selecting':
-      return 'warning'
-    case 'connecting':
-      return 'success'
-    case 'paused':
-      return 'info'
-    case 'error':
-      return 'error'
-    default:
-      return 'grey'
+    case 'idle': return 'grey'
+    case 'selecting': return 'warning'
+    case 'connecting': return 'success'
+    case 'paused': return 'info'
+    case 'error': return 'error'
+    default: return 'grey'
   }
 })
 
 const statusIcon = computed(() => {
   switch (linker.state.value) {
-    case 'idle':
-      return 'mdi-link-off'
-    case 'selecting':
-      return 'mdi-cursor-default-click'
-    case 'connecting':
-      return linker.isScanning.value ? 'mdi-radar' : 'mdi-link'
-    case 'paused':
-      return 'mdi-pause-circle'
-    case 'error':
-      return 'mdi-alert-circle'
-    default:
-      return 'mdi-help-circle'
+    case 'connecting': return linker.isScanning.value ? 'mdi-radar' : 'mdi-link'
+    case 'paused': return 'mdi-pause-circle'
+    case 'error': return 'mdi-alert-circle'
+    default: return 'mdi-link-off'
   }
 })
 
-// Set up callbacks for linker
+// Setup callbacks
+// ★★★ 核心修复逻辑：只做数据透传，不拦截，不缓存 ★★★
 linker.setCallbacks({
   onMoveDetected: (from: string, to: string) => {
     emit('moveDetected', from, to)
-    // Apply the move to the game
     if (gameState?.playMoveFromUci) {
       gameState.playMoveFromUci(from + to)
     }
@@ -321,18 +142,13 @@ linker.setCallbacks({
   onBoardInitialized: (fen: string, isReversed: boolean) => {
     emit('boardInitialized', fen, isReversed)
     recognizedFen.value = fen
-    // Load the FEN into the game
     if (gameState?.confirmFenInput) {
       gameState.confirmFenInput(fen)
     }
   },
   getEngineBoard: (): BoardGrid | null => {
     if (!gameState?.pieces?.value) return null
-
-    const board: BoardGrid = Array(10)
-      .fill(null)
-      .map(() => Array(9).fill(null))
-
+    const board: BoardGrid = Array(10).fill(null).map(() => Array(9).fill(null))
     for (const piece of gameState.pieces.value) {
       if (piece.isKnown) {
         const fenChar = gameState.getCharFromPieceName?.(piece.name)
@@ -346,13 +162,12 @@ linker.setCallbacks({
         }
       }
     }
-
     return board
   },
   getEngineBestMove: (): string | null => {
-    // Get best move from engine PV
-    if (engineState?.pvMoves?.value && engineState.pvMoves.value.length > 0) {
-      return engineState.pvMoves.value[0]
+    // 直接返回引擎的 bestMove，不要做任何判断
+    if (engineState?.bestMove?.value) {
+      return engineState.bestMove.value
     }
     return null
   },
@@ -364,30 +179,32 @@ linker.setCallbacks({
       gameState.playMoveFromUci(from + to)
     }
   },
+  requestEngineStart: () => {
+    if (!engineState?.isEngineLoaded?.value) return
+    if (engineState.isThinking.value) return
+    
+    console.log('[LinkerDialog] 触发引擎分析(3s)...')
+    // 强制思考时间，防止无限思考
+    if (typeof engineState.startAnalysis === 'function') {
+      engineState.startAnalysis({ movetime: 3000, analysisMode: 'movetime' })
+    }
+  }
 })
 
-// Refresh window list
 const refreshWindows = async () => {
   isRefreshing.value = true
-  try {
-    await linker.refreshWindowList()
-  } finally {
-    isRefreshing.value = false
-  }
+  try { await linker.refreshWindowList() } finally { isRefreshing.value = false }
 }
 
-// Select a window
 const selectWindow = (window: WindowInfo) => {
   linker.selectWindow(window.id)
 }
 
-// Capture preview image
 const capturePreview = async () => {
   isCapturing.value = true
   try {
     const result = await linker.captureAndProcess()
     if (result) {
-      // Update FEN
       recognizedFen.value = linker.boardToFen(result.board) + ' w - - 0 1'
     }
   } finally {
@@ -395,46 +212,24 @@ const capturePreview = async () => {
   }
 }
 
-// Copy FEN to clipboard
 const copyFen = async () => {
   if (recognizedFen.value) {
-    try {
-      await navigator.clipboard.writeText(recognizedFen.value)
-    } catch (error) {
-      console.error('Failed to copy FEN:', error)
-    }
+    try { await navigator.clipboard.writeText(recognizedFen.value) } catch (error) { console.error(error) }
   }
 }
 
-// Action handlers
-const handleStart = async () => {
-  await linker.start()
-}
-
-const handleConnect = async () => {
-  await linker.connect()
-}
-
-const handlePause = () => {
-  linker.pause()
-}
-
-const handleResume = () => {
-  linker.resume()
-}
-
+const handleStart = async () => { await linker.start() }
+const handleConnect = async () => { await linker.connect() }
+const handlePause = () => { linker.pause() }
+const handleResume = () => { linker.resume() }
 const handleStop = () => {
   linker.stop()
   previewImageUrl.value = null
   recognizedFen.value = null
 }
 
-const close = () => {
-  // Don't stop linker when closing dialog - it should keep running
-  dialogVisible.value = false
-}
+const close = () => { dialogVisible.value = false }
 
-// Cleanup when dialog closes
 watch(dialogVisible, newValue => {
   if (!newValue) {
     if (previewImageUrl.value) {
