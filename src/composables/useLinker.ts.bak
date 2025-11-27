@@ -43,28 +43,58 @@ export interface LinkerSettings {
 
 const DEFAULT_SETTINGS: LinkerSettings = {
   mouseClickDelay: 50,
-  mouseMoveDelay: 150, // 稍微改快一点点
-  scanInterval: 500,   // 平时待机扫描间隔
+  mouseMoveDelay: 200,
+  scanInterval: 500,
   animationConfirm: true,
 }
 
 // 映射表
 const PIECE_TO_FEN: { [key: string]: string } = {
-  r_general: 'K', r_advisor: 'A', r_elephant: 'B', r_horse: 'N',
-  r_chariot: 'R', r_cannon: 'C', r_soldier: 'P',
-  b_general: 'k', b_advisor: 'a', b_elephant: 'b', b_horse: 'n',
-  b_chariot: 'r', b_cannon: 'c', b_soldier: 'p',
+  r_general: 'K',
+  r_advisor: 'A',
+  r_elephant: 'B',
+  r_horse: 'N',
+  r_chariot: 'R',
+  r_cannon: 'C',
+  r_soldier: 'P',
+  b_general: 'k',
+  b_advisor: 'a',
+  b_elephant: 'b',
+  b_horse: 'n',
+  b_chariot: 'r',
+  b_cannon: 'c',
+  b_soldier: 'p',
   dark: 'x',
-  dark_r_general: 'X', dark_r_advisor: 'X', dark_r_elephant: 'X',
-  dark_r_horse: 'X', dark_r_chariot: 'X', dark_r_cannon: 'X', dark_r_soldier: 'X',
-  dark_b_general: 'x', dark_b_advisor: 'x', dark_b_elephant: 'x',
-  dark_b_horse: 'x', dark_b_chariot: 'x', dark_b_cannon: 'x', dark_b_soldier: 'x',
+  dark_r_general: 'X',
+  dark_r_advisor: 'X',
+  dark_r_elephant: 'X',
+  dark_r_horse: 'X',
+  dark_r_chariot: 'X',
+  dark_r_cannon: 'X',
+  dark_r_soldier: 'X',
+  dark_b_general: 'x',
+  dark_b_advisor: 'x',
+  dark_b_elephant: 'x',
+  dark_b_horse: 'x',
+  dark_b_chariot: 'x',
+  dark_b_cannon: 'x',
+  dark_b_soldier: 'x',
 }
 
-// 揭棋棋子总量表
+// 揭棋棋子总量表 (不含帅将)
 const TOTAL_PIECES: { [key: string]: number } = {
-  R: 2, N: 2, B: 2, A: 2, C: 2, P: 5,
-  r: 2, n: 2, b: 2, a: 2, c: 2, p: 5,
+  R: 2,
+  N: 2,
+  B: 2,
+  A: 2,
+  C: 2,
+  P: 5,
+  r: 2,
+  n: 2,
+  b: 2,
+  a: 2,
+  c: 2,
+  p: 5,
 }
 
 const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
@@ -111,19 +141,26 @@ export function useLinker(options: UseLinkerOptions = {}) {
   const isReversed = ref(false)
 
   // 核心控制变量
-  let scanTimer: ReturnType<typeof setTimeout> | null = null // 改为 setTimeout
+  let scanTimer: ReturnType<typeof setInterval> | null = null
   let isProcessingFrame = false
   const stabilityCounter = ref(0)
-  const lastStableFen = ref('')
+  const lastStableFen = ref('') // 这个 FEN 包含暗子池信息
   const lastAutoExecutedMove = ref<string | null>(null)
 
+  // ★★★ 新架构：通过轮次控制 ★★★
+  // isMyTurn: true表示轮到己方(AI)走棋，false表示对方走棋(仅观察)
   const isMyTurn = ref(false)
+  // waitingForExternalConfirm: AI已发送点击指令，等待外部棋盘确认变化
   const waitingForExternalConfirm = ref(false)
+
+  // ★★★ 新增：历史最大明子数量记录 (用于计算暗子池) ★★★
+  // 键是 FEN 字符 (如 'R', 'c'), 值是该子同时在场过的最大数量
   const maxRevealedCounts = ref<Record<string, number>>({})
 
   // 回调接口
   let onBoardUpdated: ((fen: string) => void) | null = null
-  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null = null
+  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null =
+    null
   let getEngineBestMove: (() => string | null) | null = null
   let isEngineThinking: (() => boolean) | null = null
   let requestEngineStart: (() => void) | null = null
@@ -222,13 +259,19 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
   }
 
+  // ★★★ 核心修复：生成带有暗子池的 Jieqi FEN ★★★
   const generateJieqiFen = (board: BoardGrid, isRedTurn: boolean): string => {
+    // 1. 生成棋盘部分
     const boardFen = board
       .map(row => {
-        let empty = 0, line = ''
+        let empty = 0,
+          line = ''
         row.forEach(p => {
           if (p) {
-            if (empty) { line += empty; empty = 0 }
+            if (empty) {
+              line += empty
+              empty = 0
+            }
             line += p
           } else empty++
         })
@@ -237,53 +280,80 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
       .join('/')
 
+    // 2. 统计当前盘面上所有的明子
     const currentCounts: Record<string, number> = {}
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const p = board[r][c]
+        // 只有明子(非X, x)才参与计数
         if (p && p !== 'X' && p !== 'x' && p !== 'K' && p !== 'k') {
           currentCounts[p] = (currentCounts[p] || 0) + 1
         }
       }
     }
 
+    // 3. 更新历史最大明子数 (单调递增，防止死子复活)
     Object.keys(TOTAL_PIECES).forEach(key => {
       const current = currentCounts[key] || 0
       const max = maxRevealedCounts.value[key] || 0
-      if (current > max) maxRevealedCounts.value[key] = current
+      if (current > max) {
+        maxRevealedCounts.value[key] = current
+      }
     })
 
+    // 4. 计算暗子池 (总量 - 历史最大明子数)
+    // 顺序：R r N n B b A a C c P p
     const order = ['R', 'r', 'N', 'n', 'B', 'b', 'A', 'a', 'C', 'c', 'P', 'p']
     let poolStr = ''
+
     order.forEach(key => {
       const total = TOTAL_PIECES[key]
       const revealed = maxRevealedCounts.value[key] || 0
       const remainingInPool = Math.max(0, total - revealed)
-      if (remainingInPool > 0) poolStr += key + remainingInPool
+
+      // 只有当暗子池里还有该类棋子时，才写入FEN
+      if (remainingInPool > 0) {
+        poolStr += key + remainingInPool
+      }
     })
 
-    const turn = isRedTurn ? 'w' : 'b'
+    // 5. 拼接完整 FEN
+    // 格式: [board] [turn] [pool] - [half] [full]
+    const turn = isRedTurn ? 'w' : 'b' // 假设 AI 总是执红先行，或者根据 isReversed 判断?
+    // 这里的 turn 逻辑可能需要根据实际情况调整。
+    // 如果 isReversed=true (AI执黑)，通常意味着黑方在下方。如果此时轮到下方走，那就是 b。
+    // 简单起见，我们暂定: 如果棋盘有变动，由 UI 决定轮次；如果是初始化，默认 w。
+
     return `${boardFen} ${turn} ${poolStr} - 0 1`
   }
 
+  // 原来的 boardToFen 改名为简单版，仅内部对比用
   const boardToSimpleFen = (board: BoardGrid) => {
-    return board.map(row => {
-        let empty = 0, line = ''
+    return board
+      .map(row => {
+        let empty = 0,
+          line = ''
         row.forEach(p => {
           if (p) {
-            if (empty) { line += empty; empty = 0 }
+            if (empty) {
+              line += empty
+              empty = 0
+            }
             line += p
           } else empty++
         })
         if (empty) line += empty
         return line
-      }).join('/')
+      })
+      .join('/')
   }
 
   const executeExternalMove = async (move: string): Promise<boolean> => {
     if (!selectedWindow.value || !boardBounds.value) return false
-    const fC = move.charCodeAt(0) - 97, fR = 9 - parseInt(move[1])
-    const tC = move.charCodeAt(2) - 97, tR = 9 - parseInt(move[3])
+    const fC = move.charCodeAt(0) - 97,
+      fR = 9 - parseInt(move[1])
+    const tC = move.charCodeAt(2) - 97,
+      tR = 9 - parseInt(move[3])
     const cw = boardBounds.value.width / 8
     const ch = boardBounds.value.height / 9
     const getPos = (c: number, r: number) => {
@@ -294,7 +364,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
         }
       return { x: c * cw, y: r * ch }
     }
-    const start = getPos(fC, fR), end = getPos(tC, tR)
+    const start = getPos(fC, fR),
+      end = getPos(tC, tR)
     const winX = selectedWindow.value.x + boardBounds.value.x
     const winY = selectedWindow.value.y + boardBounds.value.y
 
@@ -315,117 +386,116 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
   }
 
-  // ★★★ 核心重构：自适应极速循环 ★★★
   const scanLoop = async () => {
-    if (state.value !== 'connecting' || !isScanning.value) {
-      scanTimer = null
-      return
-    }
-    
-    // 如果上一帧处理太慢，稍微让渡一下
+    if (state.value !== 'connecting' || !isScanning.value) return
     if (isProcessingFrame) {
-      scanTimer = setTimeout(scanLoop, 50)
       return
     }
-
     isProcessingFrame = true
-    // 默认使用用户设置的慢速间隔
-    let nextScanDelay = settings.value.scanInterval
-
     try {
       const result = await captureAndProcess()
-      
-      if (result) {
-        const currentBoardJson = JSON.stringify(result.board)
-        
-        // --- 极速防抖逻辑 ---
-        if (previousBoard.value && JSON.stringify(previousBoard.value) === currentBoardJson) {
-          // 画面稳定
-          stabilityCounter.value++
-        } else {
-          // 画面变了！重置计数，并要求下一帧【立刻】扫描
-          // console.log('[Linker] 视觉检测到变化，进入极速模式')
-          stabilityCounter.value = 0
-          previousBoard.value = result.board
-          nextScanDelay = 100 // 极速模式：50ms后立刻确认
-        }
+      if (!result) return
 
-        // 如果还没稳定（计数器小），或者刚处理完变化，保持极速模式
-        // 阈值设置为1即可，因为现在频率快，连续两次50ms一致就算稳定
-        if (stabilityCounter.value < 1) {
-           nextScanDelay = 50
-        } else {
-           // 稳定后的逻辑
-           boardBounds.value = result.boardBox
-           isReversed.value = result.isReversed
-           const simpleFen = boardToSimpleFen(result.board)
-
-           // 1. 初始化
-           if (!recognizedBoard.value) {
-             recognizedBoard.value = result.board
-             lastStableFen.value = simpleFen
-             maxRevealedCounts.value = {}
-             const initFen = generateJieqiFen(result.board, !result.isReversed)
-             if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
-             isMyTurn.value = !result.isReversed
-             console.log(`[Linker] 初始化完成, isMyTurn=${isMyTurn.value}`)
-           }
-           // 2. 检测到稳定变化
-           else if (simpleFen !== lastStableFen.value) {
-             console.log(`[Linker] 棋盘变化确认`)
-             recognizedBoard.value = result.board
-             lastStableFen.value = simpleFen
-
-             let nextTurnIsRed: boolean
-             if (waitingForExternalConfirm.value) {
-               console.log(`[Linker] AI移动已确认`)
-               waitingForExternalConfirm.value = false
-               isMyTurn.value = false
-               nextTurnIsRed = isReversed.value
-               if (stopEngine) stopEngine()
-             } else {
-               console.log(`[Linker] 对方已走棋`)
-               isMyTurn.value = true
-               nextTurnIsRed = !isReversed.value
-             }
-
-             if (onBoardUpdated) {
-               onBoardUpdated(generateJieqiFen(result.board, nextTurnIsRed))
-             }
-             lastAutoExecutedMove.value = null
-             
-             // 变化刚确认，保险起见下一帧还是快一点
-             nextScanDelay = 100
-           }
-
-           // 3. 尝试AI走棋
-           if (mode.value === 'auto' && isMyTurn.value && !waitingForExternalConfirm.value) {
-             await tryAiAutoMove()
-             // 如果触发了移动，tryAiAutoMove 内部会调整逻辑，这里不需要额外操作
-             // 但如果刚才触发了移动，我们希望尽快看到结果，所以下面会根据 waitingForExternalConfirm 调整频率
-           }
-        }
-      }
-      
-      // 如果正在等待外部棋盘响应AI的走棋，始终保持极速扫描
-      // 这样能最快速度捕捉到棋子落下的瞬间
-      if (waitingForExternalConfirm.value) {
-        nextScanDelay = 50
+      const currentBoardJson = JSON.stringify(result.board)
+      if (
+        previousBoard.value &&
+        JSON.stringify(previousBoard.value) === currentBoardJson
+      ) {
+        stabilityCounter.value=1
+      } else {
+        stabilityCounter.value = 0
+        previousBoard.value = result.board
+        return
       }
 
+      if (stabilityCounter.value < 1) return
+
+      boardBounds.value = result.boardBox
+      isReversed.value = result.isReversed
+
+      // 用于对比变化的简单 FEN
+      const simpleFen = boardToSimpleFen(result.board)
+
+      // ★★★ 初始化逻辑 ★★★
+      if (!recognizedBoard.value) {
+        recognizedBoard.value = result.board
+        lastStableFen.value = simpleFen
+        // 初始化时，重置最大明子计数
+        maxRevealedCounts.value = {}
+        // 重新生成一次以确保 maxRevealedCounts 正确
+        const initFen = generateJieqiFen(result.board, !result.isReversed)
+        if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
+        // 初始化后，根据isReversed决定谁先手
+        // 如果isReversed=true(AI在下方=AI执黑)，则红方先行，AI要等待对方走完
+        // 如果isReversed=false(AI在上方=AI执红)，则AI先行
+        isMyTurn.value = !result.isReversed
+        console.log(
+          `[Linker] 初始化完成, AI执${result.isReversed ? '黑' : '红'}, isMyTurn=${isMyTurn.value}`
+        )
+        return
+      }
+
+      // ★★★ 新架构：检测棋盘变化 ★★★
+      if (simpleFen !== lastStableFen.value) {
+        console.log(`[Linker] 检测到棋盘变化`)
+        recognizedBoard.value = result.board
+        lastStableFen.value = simpleFen
+
+        // 如果之前在等待AI移动确认，现在棋盘变化了，说明移动成功
+        // 先切换轮次，再生成FEN（FEN的turn应该是切换后的下一位行棋方）
+        let nextTurnIsRed: boolean
+        if (waitingForExternalConfirm.value) {
+          console.log(`[Linker] AI移动已确认，切换到对方回合`)
+          waitingForExternalConfirm.value = false
+          isMyTurn.value = false
+          // AI刚走完，下一步是对方走
+          // isReversed=false → AI执红，对方执黑，下一步黑方走 (nextTurnIsRed=false)
+          // isReversed=true → AI执黑，对方执红，下一步红方走 (nextTurnIsRed=true)
+          nextTurnIsRed = isReversed.value
+          // 停止引擎，等待对方走完
+          if (stopEngine) stopEngine()
+        } else {
+          // 对方走了一步，切换到己方回合
+          console.log(`[Linker] 对方已走棋，切换到己方回合`)
+          isMyTurn.value = true
+          // 对方刚走完，下一步是AI走
+          // isReversed=false → AI执红，下一步红方走 (nextTurnIsRed=true)
+          // isReversed=true → AI执黑，下一步黑方走 (nextTurnIsRed=false)
+          nextTurnIsRed = !isReversed.value
+        }
+
+        // 生成新的FEN，turn字段表示下一位行棋方
+        const newFen = generateJieqiFen(result.board, nextTurnIsRed)
+
+        // 通知外部更新棋盘状态
+        if (onBoardUpdated) {
+          onBoardUpdated(newFen)
+        }
+
+        lastAutoExecutedMove.value = null
+      }
+
+      // ★★★ 只有在auto模式且轮到己方时才执行AI移动 ★★★
+      if (
+        mode.value === 'auto' &&
+        isMyTurn.value &&
+        !waitingForExternalConfirm.value
+      ) {
+        await tryAiAutoMove()
+      }
     } catch (e) {
       console.error('Scan Error:', e)
     } finally {
       isProcessingFrame = false
-      if (state.value === 'connecting' && isScanning.value) {
-        // 使用 setTimeout 递归调用
-        scanTimer = setTimeout(scanLoop, nextScanDelay)
-      }
     }
   }
 
   const tryAiAutoMove = async () => {
-    if (!isMyTurn.value || waitingForExternalConfirm.value) return
+    // 不是己方回合，不执行
+    if (!isMyTurn.value) return
+    // 正在等待外部确认，不重复执行
+    if (waitingForExternalConfirm.value) return
+    // 引擎正在思考，等待
     if (isEngineThinking && isEngineThinking()) return
 
     if (getEngineBestMove) {
@@ -434,29 +504,34 @@ export function useLinker(options: UseLinkerOptions = {}) {
         console.log(`[Linker] 执行 AI 招法: ${bestMove}`)
         lastAutoExecutedMove.value = bestMove
 
+        // ★★★ 关键改变：只操作外部软件，不更新内部棋盘 ★★★
+        // 不调用 playMove，等待扫描外部棋盘后统一更新
         const success = await executeExternalMove(bestMove)
         if (success) {
+          // 设置等待确认标志
           waitingForExternalConfirm.value = true
-          // 设为负数是为了等待动画，但通过 scanLoop 里的 nextScanDelay 控制
-          // 我们可以让它以 50ms 的频率快速度过这 -3 的计数
-          stabilityCounter.value = -3 
-          console.log(`[Linker] 指令已发送，进入极速等待模式`)
+          stabilityCounter.value = -3
+          console.log(`[Linker] 已发送移动指令，等待外部棋盘确认`)
         }
         return
       }
     }
 
-    if (requestEngineStart) requestEngineStart()
+    // 没有bestMove，请求引擎开始计算
+    if (requestEngineStart) {
+      requestEngineStart()
+    }
   }
 
   const captureAndProcess = async () => {
     if (!selectedWindowId.value) return null
-    // 捕获和识别尽量使用高效模式
     const res = await invoke<CaptureResult>('capture_window', {
       windowId: selectedWindowId.value,
     })
+    // Direct base64 to image conversion, skip unnecessary File/Blob conversions
     const img = await base64ToImage(res.image_base64)
     const ir = getImageRecognition()
+    // Use the faster direct processing path
     await ir.processImageDirect(img)
     return processDetectionsToBoard(ir.detectedBoxes.value)
   }
@@ -477,34 +552,36 @@ export function useLinker(options: UseLinkerOptions = {}) {
       return
     }
 
-    // 初始化状态
     previousBoard.value = res.board
     recognizedBoard.value = res.board
     boardBounds.value = res.boardBox
     isReversed.value = res.isReversed
-    
-    // 刚连接认为直接稳定
-    stabilityCounter.value = 1 
+
+    // 初始化时重置计数器和状态
     maxRevealedCounts.value = {}
     lastStableFen.value = boardToSimpleFen(res.board)
     waitingForExternalConfirm.value = false
+    // 根据isReversed决定谁先手
+    // 如果isReversed=true(AI在下方=AI执黑)，则红方先行，AI要等待对方走完
+    // 如果isReversed=false(AI在上方=AI执红)，则AI先行
     isMyTurn.value = !res.isReversed
+    console.log(
+      `[Linker] 连接成功, AI执${res.isReversed ? '黑' : '红'}, isMyTurn=${isMyTurn.value}`
+    )
 
     const initFen = generateJieqiFen(res.board, !res.isReversed)
+
     if (onBoardInitialized) onBoardInitialized(initFen, res.isReversed)
 
     state.value = 'connecting'
     isScanning.value = true
-    
-    // 启动递归循环
-    scanLoop()
-    console.log(`[Linker] 连接成功, AI执${res.isReversed ? '黑' : '红'}`)
+    scanTimer = setInterval(scanLoop, settings.value.scanInterval)
   }
 
   const stop = () => {
     state.value = 'idle'
     isScanning.value = false
-    if (scanTimer) clearTimeout(scanTimer) // 清理 timeout
+    if (scanTimer) clearInterval(scanTimer)
     scanTimer = null
     recognizedBoard.value = null
     previousBoard.value = null
@@ -525,17 +602,37 @@ export function useLinker(options: UseLinkerOptions = {}) {
   onUnmounted(stop)
 
   return {
-    state, mode, settings, errorMessage, isScanning,
-    availableWindows, selectedWindowId, selectedWindow,
-    recognizedBoard, boardBounds, isReversed, isMyTurn,
-    isActive, statusText,
-    start, stop, connect,
-    pause: () => { isScanning.value = false },
-    resume: () => { isScanning.value = true; scanLoop() }, // resume 时重新触发
-    refreshWindowList, selectWindow, setCallbacks,
+    state,
+    mode,
+    settings,
+    errorMessage,
+    isScanning,
+    availableWindows,
+    selectedWindowId,
+    selectedWindow,
+    recognizedBoard,
+    boardBounds,
+    isReversed,
+    isMyTurn,
+    isActive,
+    statusText,
+    start,
+    stop,
+    connect,
+    pause: () => {
+      isScanning.value = false
+    },
+    resume: () => {
+      isScanning.value = true
+    },
+    refreshWindowList,
+    selectWindow,
+    setCallbacks,
     updateSettings: (s: any) => (settings.value = { ...settings.value, ...s }),
     resetSettings: () => (settings.value = { ...DEFAULT_SETTINGS }),
-    initializeModel, captureAndProcess, executeExternalMove,
-    boardToFen: generateJieqiFen,
+    initializeModel,
+    captureAndProcess,
+    executeExternalMove,
+    boardToFen: generateJieqiFen, // 导出新的 FEN 生成器供外部调用(如 Capture Preview)
   }
 }
