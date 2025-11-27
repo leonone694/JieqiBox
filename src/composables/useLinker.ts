@@ -2,42 +2,99 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
-import { useImageRecognition, LABELS, type DetectionBox } from './image-recognition'
+import {
+  useImageRecognition,
+  LABELS,
+  type DetectionBox,
+} from './image-recognition'
 
 type ImageRecognitionInstance = ReturnType<typeof useImageRecognition>
 export type LinkerMode = 'auto' | 'watch'
-export type LinkerState = 'idle' | 'selecting' | 'connecting' | 'paused' | 'error'
+export type LinkerState =
+  | 'idle'
+  | 'selecting'
+  | 'connecting'
+  | 'paused'
+  | 'error'
 export type BoardGrid = (string | null)[][]
 
 export interface WindowInfo {
-  id: number; name: string; x: number; y: number; width: number; height: number; is_minimized: boolean
+  id: number
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  is_minimized: boolean
 }
 
 export interface CaptureResult {
-  image_base64: string; width: number; height: number
+  image_base64: string
+  width: number
+  height: number
 }
 
 export interface LinkerSettings {
-  mouseClickDelay: number; mouseMoveDelay: number; scanInterval: number; animationConfirm: boolean
+  mouseClickDelay: number
+  mouseMoveDelay: number
+  scanInterval: number
+  animationConfirm: boolean
 }
 
 const DEFAULT_SETTINGS: LinkerSettings = {
-  mouseClickDelay: 50, mouseMoveDelay: 200, scanInterval: 800, animationConfirm: true,
+  mouseClickDelay: 50,
+  mouseMoveDelay: 200,
+  scanInterval: 800,
+  animationConfirm: true,
 }
 
 // 映射表
 const PIECE_TO_FEN: { [key: string]: string } = {
-  r_general: 'K', r_advisor: 'A', r_elephant: 'B', r_horse: 'N', r_chariot: 'R', r_cannon: 'C', r_soldier: 'P',
-  b_general: 'k', b_advisor: 'a', b_elephant: 'b', b_horse: 'n', b_chariot: 'r', b_cannon: 'c', b_soldier: 'p',
-  dark: 'x', dark_r_general: 'X', dark_r_advisor: 'X', dark_r_elephant: 'X', dark_r_horse: 'X',
-  dark_r_chariot: 'X', dark_r_cannon: 'X', dark_r_soldier: 'X', dark_b_general: 'x', dark_b_advisor: 'x',
-  dark_b_elephant: 'x', dark_b_horse: 'x', dark_b_chariot: 'x', dark_b_cannon: 'x', dark_b_soldier: 'x',
+  r_general: 'K',
+  r_advisor: 'A',
+  r_elephant: 'B',
+  r_horse: 'N',
+  r_chariot: 'R',
+  r_cannon: 'C',
+  r_soldier: 'P',
+  b_general: 'k',
+  b_advisor: 'a',
+  b_elephant: 'b',
+  b_horse: 'n',
+  b_chariot: 'r',
+  b_cannon: 'c',
+  b_soldier: 'p',
+  dark: 'x',
+  dark_r_general: 'X',
+  dark_r_advisor: 'X',
+  dark_r_elephant: 'X',
+  dark_r_horse: 'X',
+  dark_r_chariot: 'X',
+  dark_r_cannon: 'X',
+  dark_r_soldier: 'X',
+  dark_b_general: 'x',
+  dark_b_advisor: 'x',
+  dark_b_elephant: 'x',
+  dark_b_horse: 'x',
+  dark_b_chariot: 'x',
+  dark_b_cannon: 'x',
+  dark_b_soldier: 'x',
 }
 
 // 揭棋棋子总量表 (不含帅将)
 const TOTAL_PIECES: { [key: string]: number } = {
-  R:2, N:2, B:2, A:2, C:2, P:5,
-  r:2, n:2, b:2, a:2, c:2, p:5
+  R: 2,
+  N: 2,
+  B: 2,
+  A: 2,
+  C: 2,
+  P: 5,
+  r: 2,
+  n: 2,
+  b: 2,
+  a: 2,
+  c: 2,
+  p: 5,
 }
 
 const coordsToNotation = (row: number, col: number): string => {
@@ -59,7 +116,8 @@ export interface UseLinkerOptions {
 
 export function useLinker(options: UseLinkerOptions = {}) {
   const { t } = useI18n()
-  let imageRecognition: ImageRecognitionInstance | null = options.imageRecognition || null
+  let imageRecognition: ImageRecognitionInstance | null =
+    options.imageRecognition || null
   const getImageRecognition = () => {
     if (!imageRecognition) imageRecognition = useImageRecognition()
     return imageRecognition
@@ -78,7 +136,12 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
   const recognizedBoard = ref<BoardGrid | null>(null)
   const previousBoard = ref<BoardGrid | null>(null)
-  const boardBounds = ref<{ x: number; y: number; width: number; height: number } | null>(null)
+  const boardBounds = ref<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
   const isReversed = ref(false)
 
   // 核心控制变量
@@ -94,49 +157,74 @@ export function useLinker(options: UseLinkerOptions = {}) {
   const maxRevealedCounts = ref<Record<string, number>>({})
 
   // 回调接口
-  let onMoveDetected: ((from: string, to: string) => void) | null = null
-  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null = null
+  let onMoveDetected:
+    | ((from: string, to: string, flipChar?: string | null) => void)
+    | null = null
+  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null =
+    null
   let getEngineBestMove: (() => string | null) | null = null
   let isEngineThinking: (() => boolean) | null = null
-  let playMove: ((from: string, to: string) => void) | null = null
+  let playMove:
+    | ((from: string, to: string, flipChar?: string | null) => void)
+    | null = null
   let requestEngineStart: (() => void) | null = null
 
   const isActive = computed(() => state.value === 'connecting')
   const statusText = computed(() => {
     if (state.value === 'error') return errorMessage.value
-    if (state.value === 'connecting') return isScanning.value ? t('linker.status.scanning') : t('linker.status.connected')
+    if (state.value === 'connecting')
+      return isScanning.value
+        ? t('linker.status.scanning')
+        : t('linker.status.connected')
     return t(`linker.status.${state.value}`)
   })
 
   // --- 核心逻辑 ---
 
   const refreshWindowList = async () => {
-    try { availableWindows.value = await invoke<WindowInfo[]>('list_windows') }
-    catch (e) { errorMessage.value = t('linker.error.listWindowsFailed') }
+    try {
+      availableWindows.value = await invoke<WindowInfo[]>('list_windows')
+    } catch (e) {
+      errorMessage.value = t('linker.error.listWindowsFailed')
+    }
   }
 
   const selectWindow = async (windowId: number) => {
     try {
       selectedWindowId.value = windowId
-      selectedWindow.value = await invoke<WindowInfo>('get_window_info', { windowId })
-    } catch (e) { errorMessage.value = t('linker.error.windowNotFound') }
+      selectedWindow.value = await invoke<WindowInfo>('get_window_info', {
+        windowId,
+      })
+    } catch (e) {
+      errorMessage.value = t('linker.error.windowNotFound')
+    }
   }
 
   const initializeModel = async () => {
-    try { await getImageRecognition().initializeModel(); return true }
-    catch (e) { state.value = 'error'; errorMessage.value = t('linker.error.modelInitFailed'); return false }
+    try {
+      await getImageRecognition().initializeModel()
+      return true
+    } catch (e) {
+      state.value = 'error'
+      errorMessage.value = t('linker.error.modelInitFailed')
+      return false
+    }
   }
 
   const processDetectionsToBoard = (boxes: DetectionBox[]) => {
     const ir = getImageRecognition()
     const grid = ir.updateBoardGrid(boxes)
-    const boardBox = boxes.filter(b => LABELS[b.labelIndex]?.name === 'Board').sort((a, b) => b.score - a.score)[0]
-    
+    const boardBox = boxes
+      .filter(b => LABELS[b.labelIndex]?.name === 'Board')
+      .sort((a, b) => b.score - a.score)[0]
+
     if (!boardBox) return null
     const [bx, by, bw, bh] = boardBox.box
 
-    const board: BoardGrid = Array(10).fill(null).map(() => Array(9).fill(null))
-    
+    const board: BoardGrid = Array(10)
+      .fill(null)
+      .map(() => Array(9).fill(null))
+
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const piece = grid[r][c]
@@ -150,33 +238,55 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
 
     let reversed = false
-    for(let r=0; r<3; r++) for(let c=3; c<6; c++) if(board[r][c] === 'K') reversed = true
-    for(let r=7; r<10; r++) for(let c=3; c<6; c++) if(board[r][c] === 'k') reversed = true
+    for (let r = 0; r < 3; r++)
+      for (let c = 3; c < 6; c++) if (board[r][c] === 'K') reversed = true
+    for (let r = 7; r < 10; r++)
+      for (let c = 3; c < 6; c++) if (board[r][c] === 'k') reversed = true
 
     if (reversed) {
-      const flipped: BoardGrid = Array(10).fill(null).map(() => Array(9).fill(null))
-      for(let r=0; r<10; r++) for(let c=0; c<9; c++) flipped[r][c] = board[9-r][8-c]
-      return { board: flipped, boardBox: { x: bx, y: by, width: bw, height: bh }, isReversed: reversed }
+      const flipped: BoardGrid = Array(10)
+        .fill(null)
+        .map(() => Array(9).fill(null))
+      for (let r = 0; r < 10; r++)
+        for (let c = 0; c < 9; c++) flipped[r][c] = board[9 - r][8 - c]
+      return {
+        board: flipped,
+        boardBox: { x: bx, y: by, width: bw, height: bh },
+        isReversed: reversed,
+      }
     }
-    return { board, boardBox: { x: bx, y: by, width: bw, height: bh }, isReversed: reversed }
+    return {
+      board,
+      boardBox: { x: bx, y: by, width: bw, height: bh },
+      isReversed: reversed,
+    }
   }
 
   // ★★★ 核心修复：生成带有暗子池的 Jieqi FEN ★★★
   const generateJieqiFen = (board: BoardGrid, isRedTurn: boolean): string => {
     // 1. 生成棋盘部分
-    const boardFen = board.map(row => {
-      let empty = 0, line = ''
-      row.forEach(p => {
-        if (p) { if (empty) { line += empty; empty = 0 } line += p } else empty++
+    const boardFen = board
+      .map(row => {
+        let empty = 0,
+          line = ''
+        row.forEach(p => {
+          if (p) {
+            if (empty) {
+              line += empty
+              empty = 0
+            }
+            line += p
+          } else empty++
+        })
+        if (empty) line += empty
+        return line
       })
-      if (empty) line += empty
-      return line
-    }).join('/')
+      .join('/')
 
     // 2. 统计当前盘面上所有的明子
     const currentCounts: Record<string, number> = {}
-    for(let r=0; r<10; r++) {
-      for(let c=0; c<9; c++) {
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
         const p = board[r][c]
         // 只有明子(非X, x)才参与计数
         if (p && p !== 'X' && p !== 'x' && p !== 'K' && p !== 'k') {
@@ -198,12 +308,12 @@ export function useLinker(options: UseLinkerOptions = {}) {
     // 顺序：R r N n B b A a C c P p
     const order = ['R', 'r', 'N', 'n', 'B', 'b', 'A', 'a', 'C', 'c', 'P', 'p']
     let poolStr = ''
-    
+
     order.forEach(key => {
       const total = TOTAL_PIECES[key]
       const revealed = maxRevealedCounts.value[key] || 0
       const remainingInPool = Math.max(0, total - revealed)
-      
+
       // 只有当暗子池里还有该类棋子时，才写入FEN
       if (remainingInPool > 0) {
         poolStr += key + remainingInPool
@@ -216,73 +326,118 @@ export function useLinker(options: UseLinkerOptions = {}) {
     // 这里的 turn 逻辑可能需要根据实际情况调整。
     // 如果 isReversed=true (AI执黑)，通常意味着黑方在下方。如果此时轮到下方走，那就是 b。
     // 简单起见，我们暂定: 如果棋盘有变动，由 UI 决定轮次；如果是初始化，默认 w。
-    
+
     return `${boardFen} ${turn} ${poolStr} - 0 1`
   }
-  
+
   // 原来的 boardToFen 改名为简单版，仅内部对比用
   const boardToSimpleFen = (board: BoardGrid) => {
-     return board.map(row => {
-      let empty = 0, line = ''
-      row.forEach(p => {
-        if (p) { if (empty) { line += empty; empty = 0 } line += p } else empty++
+    return board
+      .map(row => {
+        let empty = 0,
+          line = ''
+        row.forEach(p => {
+          if (p) {
+            if (empty) {
+              line += empty
+              empty = 0
+            }
+            line += p
+          } else empty++
+        })
+        if (empty) line += empty
+        return line
       })
-      if (empty) line += empty
-      return line
-    }).join('/')
+      .join('/')
   }
 
   const findMove = (oldB: BoardGrid, newB: BoardGrid) => {
-    const diffs: {r:number, c:number, old:string|null, new:string|null}[] = []
-    for(let r=0; r<10; r++) for(let c=0; c<9; c++) if(oldB[r][c] !== newB[r][c]) diffs.push({r,c,old:oldB[r][c], new:newB[r][c]})
+    const diffs: {
+      r: number
+      c: number
+      old: string | null
+      new: string | null
+    }[] = []
+    for (let r = 0; r < 10; r++)
+      for (let c = 0; c < 9; c++)
+        if (oldB[r][c] !== newB[r][c])
+          diffs.push({ r, c, old: oldB[r][c], new: newB[r][c] })
     if (diffs.length === 2) {
       const [d1, d2] = diffs
       const isSrc = (d: typeof d1) => d.old && !d.new
       const isDst = (d: typeof d1) => d.new
-      let src = isSrc(d1) ? d1 : (isSrc(d2) ? d2 : null)
-      let dst = isDst(d1) && d1 !== src ? d1 : (isDst(d2) && d2 !== src ? d2 : null)
-      if (src && dst) return { from: coordsToNotation(src.r, src.c), to: coordsToNotation(dst.r, dst.c) }
+      let src = isSrc(d1) ? d1 : isSrc(d2) ? d2 : null
+      let dst =
+        isDst(d1) && d1 !== src ? d1 : isDst(d2) && d2 !== src ? d2 : null
+      if (src && dst) {
+        // Check if this move involves flipping a dark piece
+        // If source was dark (X or x) and destination is a revealed piece, include flip info
+        const srcWasDark = src.old === 'X' || src.old === 'x'
+        const dstIsRevealed = dst.new && dst.new !== 'X' && dst.new !== 'x'
+        const flipChar = srcWasDark && dstIsRevealed ? dst.new : null
+        return {
+          from: coordsToNotation(src.r, src.c),
+          to: coordsToNotation(dst.r, dst.c),
+          flipChar,
+        }
+      }
     }
     return null
   }
 
   const executeExternalMove = async (move: string): Promise<boolean> => {
     if (!selectedWindow.value || !boardBounds.value) return false
-    const fC = move.charCodeAt(0)-97, fR = 9-parseInt(move[1])
-    const tC = move.charCodeAt(2)-97, tR = 9-parseInt(move[3])
+    const fC = move.charCodeAt(0) - 97,
+      fR = 9 - parseInt(move[1])
+    const tC = move.charCodeAt(2) - 97,
+      tR = 9 - parseInt(move[3])
     const cw = boardBounds.value.width / 8
     const ch = boardBounds.value.height / 9
     const getPos = (c: number, r: number) => {
-      if (isReversed.value) return { x: boardBounds.value!.width - c*cw, y: boardBounds.value!.height - r*ch }
-      return { x: c*cw, y: r*ch }
+      if (isReversed.value)
+        return {
+          x: boardBounds.value!.width - c * cw,
+          y: boardBounds.value!.height - r * ch,
+        }
+      return { x: c * cw, y: r * ch }
     }
-    const start = getPos(fC, fR), end = getPos(tC, tR)
+    const start = getPos(fC, fR),
+      end = getPos(tC, tR)
     const winX = selectedWindow.value.x + boardBounds.value.x
     const winY = selectedWindow.value.y + boardBounds.value.y
 
     try {
       console.log(`[Linker] 发送点击指令: ${move}`)
       await invoke('simulate_move', {
-        fromX: Math.round(winX + start.x), fromY: Math.round(winY + start.y),
-        toX: Math.round(winX + end.x), toY: Math.round(winY + end.y),
-        clickDelayMs: settings.value.mouseClickDelay, moveDelayMs: settings.value.mouseMoveDelay
+        fromX: Math.round(winX + start.x),
+        fromY: Math.round(winY + start.y),
+        toX: Math.round(winX + end.x),
+        toY: Math.round(winY + end.y),
+        clickDelayMs: settings.value.mouseClickDelay,
+        moveDelayMs: settings.value.mouseMoveDelay,
       })
       return true
-    } catch (e) { console.error(e); return false }
+    } catch (e) {
+      console.error(e)
+      return false
+    }
   }
 
   const scanLoop = async () => {
     if (state.value !== 'connecting' || !isScanning.value) return
     if (isProcessingFrame) {
-        return
+      return
     }
     isProcessingFrame = true
     try {
       const result = await captureAndProcess()
-      if (!result) return 
+      if (!result) return
 
       const currentBoardJson = JSON.stringify(result.board)
-      if (previousBoard.value && JSON.stringify(previousBoard.value) === currentBoardJson) {
+      if (
+        previousBoard.value &&
+        JSON.stringify(previousBoard.value) === currentBoardJson
+      ) {
         stabilityCounter.value++
       } else {
         stabilityCounter.value = 0
@@ -290,16 +445,16 @@ export function useLinker(options: UseLinkerOptions = {}) {
         return
       }
 
-      if (stabilityCounter.value < 1) return 
+      if (stabilityCounter.value < 1) return
 
       boardBounds.value = result.boardBox
       isReversed.value = result.isReversed
-      
+
       // 生成带有暗子池信息的 Jieqi FEN
       // 这里的 turn 默认 w (红)，实际游戏中由 onMoveDetected 驱动引擎换边，
       // 但如果是第一次初始化，我们需要一个合法的 FEN
       const fullFen = generateJieqiFen(result.board, !result.isReversed) // 假设不翻转红先，翻转黑先(AI先)
-      
+
       // 用于对比变化的简单 FEN
       const simpleFen = boardToSimpleFen(result.board)
 
@@ -323,16 +478,19 @@ export function useLinker(options: UseLinkerOptions = {}) {
           const moveStr = move.from + move.to
           if (pendingMyMove.value === moveStr) {
             console.log(`[Linker] 确认己方移动: ${moveStr}`)
-            pendingMyMove.value = null 
+            pendingMyMove.value = null
           } else {
-            if (onMoveDetected) onMoveDetected(move.from, move.to)
+            // Pass the flipChar so the game state can properly sync the revealed piece
+            if (onMoveDetected)
+              onMoveDetected(move.from, move.to, move.flipChar)
             lastAutoExecutedMove.value = null
           }
         } else {
           // 棋盘重置/非法移动，强制重置状态
           maxRevealedCounts.value = {}
           const resetFen = generateJieqiFen(result.board, !result.isReversed)
-          if (onBoardInitialized) onBoardInitialized(resetFen, result.isReversed)
+          if (onBoardInitialized)
+            onBoardInitialized(resetFen, result.isReversed)
           lastAutoExecutedMove.value = null
         }
       }
@@ -340,10 +498,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
       if (mode.value === 'auto') {
         await tryAiAutoMove()
       }
-
-    } catch (e) { console.error('Scan Error:', e) }
-    finally {
-        isProcessingFrame = false
+    } catch (e) {
+      console.error('Scan Error:', e)
+    } finally {
+      isProcessingFrame = false
     }
   }
 
@@ -354,14 +512,17 @@ export function useLinker(options: UseLinkerOptions = {}) {
       const bestMove = getEngineBestMove()
       if (bestMove && bestMove !== lastAutoExecutedMove.value) {
         console.log(`[Linker] 执行 AI 招法: ${bestMove}`)
-        pendingMyMove.value = bestMove 
+        pendingMyMove.value = bestMove.substring(0, 4) // Only store base move for confirmation
         lastAutoExecutedMove.value = bestMove
-        
-        if (playMove) playMove(bestMove.substring(0,2), bestMove.substring(2,4))
-        
+
+        // Extract flip info from bestMove if it has more than 4 characters
+        const flipChar = bestMove.length > 4 ? bestMove.substring(4) : null
+        if (playMove)
+          playMove(bestMove.substring(0, 2), bestMove.substring(2, 4), flipChar)
+
         const success = await executeExternalMove(bestMove)
         if (success) {
-           stabilityCounter.value = -3 
+          stabilityCounter.value = -3
         }
         return
       }
@@ -374,66 +535,107 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
   const captureAndProcess = async () => {
     if (!selectedWindowId.value) return null
-    const res = await invoke<CaptureResult>('capture_window', { windowId: selectedWindowId.value })
+    const res = await invoke<CaptureResult>('capture_window', {
+      windowId: selectedWindowId.value,
+    })
     const img = await base64ToImage(res.image_base64)
-    const cvs = document.createElement('canvas'); cvs.width = img.width; cvs.height = img.height
+    const cvs = document.createElement('canvas')
+    cvs.width = img.width
+    cvs.height = img.height
     cvs.getContext('2d')!.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob>(r => cvs.toBlob(b => r(b!), 'image/png'))
+    const blob = await new Promise<Blob>(r =>
+      cvs.toBlob(b => r(b!), 'image/png')
+    )
     const ir = getImageRecognition()
     await ir.processImage(new File([blob], 'cap.png', { type: 'image/png' }))
     return processDetectionsToBoard(ir.detectedBoxes.value)
   }
 
-  const start = async () => { 
-    if(state.value === 'connecting') return
-    await refreshWindowList(); state.value = 'selecting'; errorMessage.value = '' 
+  const start = async () => {
+    if (state.value === 'connecting') return
+    await refreshWindowList()
+    state.value = 'selecting'
+    errorMessage.value = ''
   }
-  
+
   const connect = async () => {
     if (!selectedWindowId.value) return
-    if (!await initializeModel()) return
+    if (!(await initializeModel())) return
     const res = await captureAndProcess()
-    if (!res) { errorMessage.value = t('linker.error.noBoardDetected'); return }
-    
+    if (!res) {
+      errorMessage.value = t('linker.error.noBoardDetected')
+      return
+    }
+
     previousBoard.value = res.board
     recognizedBoard.value = res.board
     boardBounds.value = res.boardBox
     isReversed.value = res.isReversed
-    
+
     // 初始化时重置计数器
     maxRevealedCounts.value = {}
     lastStableFen.value = boardToSimpleFen(res.board)
     const initFen = generateJieqiFen(res.board, !res.isReversed)
-    
+
     if (onBoardInitialized) onBoardInitialized(initFen, res.isReversed)
-    
-    state.value = 'connecting'; isScanning.value = true
+
+    state.value = 'connecting'
+    isScanning.value = true
     scanTimer = setInterval(scanLoop, settings.value.scanInterval)
   }
 
   const stop = () => {
-    state.value = 'idle'; isScanning.value = false; if(scanTimer) clearInterval(scanTimer)
-    scanTimer = null; recognizedBoard.value = null; previousBoard.value = null
+    state.value = 'idle'
+    isScanning.value = false
+    if (scanTimer) clearInterval(scanTimer)
+    scanTimer = null
+    recognizedBoard.value = null
+    previousBoard.value = null
     lastAutoExecutedMove.value = null
   }
 
   const setCallbacks = (cbs: any) => {
-    if(cbs.onMoveDetected) onMoveDetected = cbs.onMoveDetected
-    if(cbs.onBoardInitialized) onBoardInitialized = cbs.onBoardInitialized
-    if(cbs.getEngineBestMove) getEngineBestMove = cbs.getEngineBestMove
-    if(cbs.isEngineThinking) isEngineThinking = cbs.isEngineThinking
-    if(cbs.playMove) playMove = cbs.playMove
-    if(cbs.requestEngineStart) requestEngineStart = cbs.requestEngineStart
+    if (cbs.onMoveDetected) onMoveDetected = cbs.onMoveDetected
+    if (cbs.onBoardInitialized) onBoardInitialized = cbs.onBoardInitialized
+    if (cbs.getEngineBestMove) getEngineBestMove = cbs.getEngineBestMove
+    if (cbs.isEngineThinking) isEngineThinking = cbs.isEngineThinking
+    if (cbs.playMove) playMove = cbs.playMove
+    if (cbs.requestEngineStart) requestEngineStart = cbs.requestEngineStart
   }
 
   onUnmounted(stop)
 
   return {
-    state, mode, settings, errorMessage, isScanning, availableWindows, selectedWindowId,
-    selectedWindow, recognizedBoard, boardBounds, isReversed, isActive, statusText,
-    start, stop, connect, pause: () => { isScanning.value = false }, resume: () => { isScanning.value = true },
-    refreshWindowList, selectWindow, setCallbacks, updateSettings: (s:any) => settings.value = {...settings.value, ...s},
-    resetSettings: () => settings.value = {...DEFAULT_SETTINGS}, initializeModel, captureAndProcess, executeExternalMove, 
-    boardToFen: generateJieqiFen // 导出新的 FEN 生成器供外部调用(如 Capture Preview)
+    state,
+    mode,
+    settings,
+    errorMessage,
+    isScanning,
+    availableWindows,
+    selectedWindowId,
+    selectedWindow,
+    recognizedBoard,
+    boardBounds,
+    isReversed,
+    isActive,
+    statusText,
+    start,
+    stop,
+    connect,
+    pause: () => {
+      isScanning.value = false
+    },
+    resume: () => {
+      isScanning.value = true
+    },
+    refreshWindowList,
+    selectWindow,
+    setCallbacks,
+    updateSettings: (s: any) => (settings.value = { ...settings.value, ...s }),
+    resetSettings: () => (settings.value = { ...DEFAULT_SETTINGS }),
+    initializeModel,
+    captureAndProcess,
+    executeExternalMove,
+    boardToFen: generateJieqiFen, // 导出新的 FEN 生成器供外部调用(如 Capture Preview)
   }
 }
