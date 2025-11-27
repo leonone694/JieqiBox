@@ -7,8 +7,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # model file
-best.onnx
-ort
+public/models
+public/ort
 
 # Build outputs
 dist/
