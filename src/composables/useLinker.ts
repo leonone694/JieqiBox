@@ -401,7 +401,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
         previousBoard.value &&
         JSON.stringify(previousBoard.value) === currentBoardJson
       ) {
-        stabilityCounter.value++
+        stabilityCounter.value=1
       } else {
         stabilityCounter.value = 0
         previousBoard.value = result.board
