@@ -722,7 +722,24 @@ export function useLinker(options: UseLinkerOptions = {}) {
     },
     forceMyTurn: async () => {
       isMyTurn.value = true
-      await rustLog('[Linker] Force switched to my turn')
+      waitingForExternalConfirm.value = false
+      lastAutoExecutedMove.value = null
+
+      // Regenerate FEN with correct turn side and update game state
+      // When forcing my turn: if isReversed=false (Red at bottom), program plays Red -> isRedTurn=true
+      //                       if isReversed=true (Black at bottom), program plays Black -> isRedTurn=false
+      if (recognizedBoard.value && onBoardUpdated) {
+        const isRedTurn = !isReversed.value
+        const newFen = generateJieqiFen(recognizedBoard.value, isRedTurn)
+        onBoardUpdated(newFen)
+        await rustLog(
+          `[Linker] Force switched to my turn. isReversed=${isReversed.value}, isRedTurn=${isRedTurn}, FEN updated`
+        )
+      } else {
+        await rustLog(
+          '[Linker] Force switched to my turn (no board to update FEN)'
+        )
+      }
     },
     refreshWindowList,
     selectWindow,
