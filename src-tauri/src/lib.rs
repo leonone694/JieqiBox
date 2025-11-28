@@ -21,7 +21,7 @@ use opening_book::{JieqiOpeningBook, MoveData, OpeningBookStats, AddEntryRequest
 
 mod linker;
 use linker::{
-    list_windows, capture_window, capture_screen, capture_region,
+    list_windows, capture_window, rust_log, init_capturer, get_latest_capture_raw,
     simulate_click, simulate_move, get_window_info
 };
 
@@ -892,8 +892,9 @@ pub fn run() {
             // Linker commands (screen capture and mouse automation)
             list_windows,
             capture_window,
-            capture_screen,
-            capture_region,
+            rust_log,
+            init_capturer,
+            get_latest_capture_raw,
             simulate_click,
             simulate_move,
             get_window_info,

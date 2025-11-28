@@ -43,38 +43,82 @@ export interface LinkerSettings {
 
 const DEFAULT_SETTINGS: LinkerSettings = {
   mouseClickDelay: 50,
-  mouseMoveDelay: 150, // 稍微改快一点点
-  scanInterval: 500,   // 平时待机扫描间隔
+  mouseMoveDelay: 200,
+  scanInterval: 400,
   animationConfirm: true,
 }
 
 // 映射表
 const PIECE_TO_FEN: { [key: string]: string } = {
-  r_general: 'K', r_advisor: 'A', r_elephant: 'B', r_horse: 'N',
-  r_chariot: 'R', r_cannon: 'C', r_soldier: 'P',
-  b_general: 'k', b_advisor: 'a', b_elephant: 'b', b_horse: 'n',
-  b_chariot: 'r', b_cannon: 'c', b_soldier: 'p',
+  r_general: 'K',
+  r_advisor: 'A',
+  r_elephant: 'B',
+  r_horse: 'N',
+  r_chariot: 'R',
+  r_cannon: 'C',
+  r_soldier: 'P',
+  b_general: 'k',
+  b_advisor: 'a',
+  b_elephant: 'b',
+  b_horse: 'n',
+  b_chariot: 'r',
+  b_cannon: 'c',
+  b_soldier: 'p',
   dark: 'x',
-  dark_r_general: 'X', dark_r_advisor: 'X', dark_r_elephant: 'X',
-  dark_r_horse: 'X', dark_r_chariot: 'X', dark_r_cannon: 'X', dark_r_soldier: 'X',
-  dark_b_general: 'x', dark_b_advisor: 'x', dark_b_elephant: 'x',
-  dark_b_horse: 'x', dark_b_chariot: 'x', dark_b_cannon: 'x', dark_b_soldier: 'x',
+  dark_r_general: 'X',
+  dark_r_advisor: 'X',
+  dark_r_elephant: 'X',
+  dark_r_horse: 'X',
+  dark_r_chariot: 'X',
+  dark_r_cannon: 'X',
+  dark_r_soldier: 'X',
+  dark_b_general: 'x',
+  dark_b_advisor: 'x',
+  dark_b_elephant: 'x',
+  dark_b_horse: 'x',
+  dark_b_chariot: 'x',
+  dark_b_cannon: 'x',
+  dark_b_soldier: 'x',
 }
 
-// 揭棋棋子总量表
+// 揭棋棋子总量表 (不含帅将)
 const TOTAL_PIECES: { [key: string]: number } = {
-  R: 2, N: 2, B: 2, A: 2, C: 2, P: 5,
-  r: 2, n: 2, b: 2, a: 2, c: 2, p: 5,
+  R: 2,
+  N: 2,
+  B: 2,
+  A: 2,
+  C: 2,
+  P: 5,
+  r: 2,
+  n: 2,
+  b: 2,
+  a: 2,
+  c: 2,
+  p: 5,
 }
 
-const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = `data:image/png;base64,${base64}`
-  })
-}
+//const base64ToImageBitmap = async (base64: string): Promise<ImageBitmap> => {
+  // 更快的解码路径：fetch(dataURL) -> blob -> createImageBitmap
+  // createImageBitmap 在多数平台会更快并且有机会在后台线程处理解码
+  //const res = await fetch(`data:image/jpeg;base64,${base64}`)
+  //const blob = await res.blob()
+  //return await createImageBitmap(blob)
+//}
+
+// 如果需要把 ImageBitmap 转成 HTMLImageElement 的回退（尽量不用）
+// 但我们优先直接传 ImageBitmap 给模型或画到 OffscreenCanvas
+//const imageBitmapToHtmlImage = async (bmp: ImageBitmap): Promise<HTMLImageElement> => {
+ // const off = new OffscreenCanvas(bmp.width, bmp.height)
+  //const ctx = off.getContext('2d')!
+  //ctx.drawImage(bmp, 0, 0)
+  //const blob = await off.convertToBlob()
+  //return await new Promise((resolve, reject) => {
+  //  const img = new Image()
+  //  img.onload = () => resolve(img)
+  //  img.onerror = reject
+  //  img.src = URL.createObjectURL(blob)
+  //})
+//}
 
 export interface UseLinkerOptions {
   imageRecognition?: ImageRecognitionInstance
@@ -111,19 +155,23 @@ export function useLinker(options: UseLinkerOptions = {}) {
   const isReversed = ref(false)
 
   // 核心控制变量
-  let scanTimer: ReturnType<typeof setTimeout> | null = null // 改为 setTimeout
+  let scanTimer: ReturnType<typeof setInterval> | null = null
   let isProcessingFrame = false
   const stabilityCounter = ref(0)
-  const lastStableFen = ref('')
+  const lastStableFen = ref('') // 这个 FEN 包含暗子池信息
   const lastAutoExecutedMove = ref<string | null>(null)
 
+  // 新架构变量
   const isMyTurn = ref(false)
   const waitingForExternalConfirm = ref(false)
+
+  // 新增：历史最大明子数量记录 (用于计算暗子池)
   const maxRevealedCounts = ref<Record<string, number>>({})
 
   // 回调接口
   let onBoardUpdated: ((fen: string) => void) | null = null
-  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null = null
+  let onBoardInitialized: ((fen: string, isReversed: boolean) => void) | null =
+    null
   let getEngineBestMove: (() => string | null) | null = null
   let isEngineThinking: (() => boolean) | null = null
   let requestEngineStart: (() => void) | null = null
@@ -139,13 +187,28 @@ export function useLinker(options: UseLinkerOptions = {}) {
     return t(`linker.status.${state.value}`)
   })
 
+  // --- 新的控制量：用于忽略发送动作后若干帧（避免动画干扰） ---
+  let framesToIgnore = 0
+  const STABLE_THRESHOLD = 1 // 连续帧数阈值，1 表示 1 帧即可认为稳定
+
   // --- 核心逻辑 ---
+
+  const rustLog = async (msg: string) => {
+    // 把调试信息发回 Rust 日志（因为你说浏览器控制台不可见）
+    try {
+      await invoke('rust_log', { msg })
+    } catch (e) {
+      // 如果发送失败也别中断流程
+      // console.warn('rust_log failed', e)
+    }
+  }
 
   const refreshWindowList = async () => {
     try {
       availableWindows.value = await invoke<WindowInfo[]>('list_windows')
     } catch (e) {
       errorMessage.value = t('linker.error.listWindowsFailed')
+      await rustLog(`[Linker] list_windows error: ${String(e)}`)
     }
   }
 
@@ -157,6 +220,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
     } catch (e) {
       errorMessage.value = t('linker.error.windowNotFound')
+      await rustLog(`[Linker] get_window_info error: ${String(e)}`)
     }
   }
 
@@ -167,6 +231,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
     } catch (e) {
       state.value = 'error'
       errorMessage.value = t('linker.error.modelInitFailed')
+      await rustLog(`[Linker] model init failed: ${String(e)}`)
       return false
     }
   }
@@ -222,13 +287,18 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
   }
 
+  // 生成 Jieqi FEN（保持原逻辑）
   const generateJieqiFen = (board: BoardGrid, isRedTurn: boolean): string => {
     const boardFen = board
       .map(row => {
-        let empty = 0, line = ''
+        let empty = 0,
+          line = ''
         row.forEach(p => {
           if (p) {
-            if (empty) { line += empty; empty = 0 }
+            if (empty) {
+              line += empty
+              empty = 0
+            }
             line += p
           } else empty++
         })
@@ -250,16 +320,21 @@ export function useLinker(options: UseLinkerOptions = {}) {
     Object.keys(TOTAL_PIECES).forEach(key => {
       const current = currentCounts[key] || 0
       const max = maxRevealedCounts.value[key] || 0
-      if (current > max) maxRevealedCounts.value[key] = current
+      if (current > max) {
+        maxRevealedCounts.value[key] = current
+      }
     })
 
     const order = ['R', 'r', 'N', 'n', 'B', 'b', 'A', 'a', 'C', 'c', 'P', 'p']
     let poolStr = ''
+
     order.forEach(key => {
       const total = TOTAL_PIECES[key]
       const revealed = maxRevealedCounts.value[key] || 0
       const remainingInPool = Math.max(0, total - revealed)
-      if (remainingInPool > 0) poolStr += key + remainingInPool
+      if (remainingInPool > 0) {
+        poolStr += key + remainingInPool
+      }
     })
 
     const turn = isRedTurn ? 'w' : 'b'
@@ -267,23 +342,31 @@ export function useLinker(options: UseLinkerOptions = {}) {
   }
 
   const boardToSimpleFen = (board: BoardGrid) => {
-    return board.map(row => {
-        let empty = 0, line = ''
+    return board
+      .map(row => {
+        let empty = 0,
+          line = ''
         row.forEach(p => {
           if (p) {
-            if (empty) { line += empty; empty = 0 }
+            if (empty) {
+              line += empty
+              empty = 0
+            }
             line += p
           } else empty++
         })
         if (empty) line += empty
         return line
-      }).join('/')
+      })
+      .join('/')
   }
 
   const executeExternalMove = async (move: string): Promise<boolean> => {
     if (!selectedWindow.value || !boardBounds.value) return false
-    const fC = move.charCodeAt(0) - 97, fR = 9 - parseInt(move[1])
-    const tC = move.charCodeAt(2) - 97, tR = 9 - parseInt(move[3])
+    const fC = move.charCodeAt(0) - 97,
+      fR = 9 - parseInt(move[1])
+    const tC = move.charCodeAt(2) - 97,
+      tR = 9 - parseInt(move[3])
     const cw = boardBounds.value.width / 8
     const ch = boardBounds.value.height / 9
     const getPos = (c: number, r: number) => {
@@ -294,12 +377,12 @@ export function useLinker(options: UseLinkerOptions = {}) {
         }
       return { x: c * cw, y: r * ch }
     }
-    const start = getPos(fC, fR), end = getPos(tC, tR)
+    const start = getPos(fC, fR),
+      end = getPos(tC, tR)
     const winX = selectedWindow.value.x + boardBounds.value.x
     const winY = selectedWindow.value.y + boardBounds.value.y
 
     try {
-      console.log(`[Linker] 发送点击指令: ${move}`)
       await invoke('simulate_move', {
         fromX: Math.round(winX + start.x),
         fromY: Math.round(winY + start.y),
@@ -310,155 +393,214 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
       return true
     } catch (e) {
-      console.error(e)
+      await rustLog(`[Linker] simulate_move error: ${String(e)}`)
       return false
     }
   }
 
-  // ★★★ 核心重构：自适应极速循环 ★★★
+  // 快速比较两个 board（逐格早退），替代 JSON.stringify 全量比较
+  const boardsEqualFast = (a: BoardGrid | null, b: BoardGrid | null) => {
+    if (!a || !b) return false
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (a[r][c] !== b[r][c]) return false
+      }
+    }
+    return true
+  }
+
   const scanLoop = async () => {
-    if (state.value !== 'connecting' || !isScanning.value) {
-      scanTimer = null
-      return
-    }
-    
-    // 如果上一帧处理太慢，稍微让渡一下
+    if (state.value !== 'connecting' || !isScanning.value) return
     if (isProcessingFrame) {
-      scanTimer = setTimeout(scanLoop, 50)
       return
     }
-
+    if (framesToIgnore > 0) {
+      framesToIgnore--
+      return
+    }
     isProcessingFrame = true
-    // 默认使用用户设置的慢速间隔
-    let nextScanDelay = settings.value.scanInterval
-
+    const tStart = performance.now()
     try {
       const result = await captureAndProcess()
-      
-      if (result) {
-        const currentBoardJson = JSON.stringify(result.board)
-        
-        // --- 极速防抖逻辑 ---
-        if (previousBoard.value && JSON.stringify(previousBoard.value) === currentBoardJson) {
-          // 画面稳定
-          stabilityCounter.value++
-        } else {
-          // 画面变了！重置计数，并要求下一帧【立刻】扫描
-          // console.log('[Linker] 视觉检测到变化，进入极速模式')
-          stabilityCounter.value = 0
-          previousBoard.value = result.board
-          nextScanDelay = 100 // 极速模式：50ms后立刻确认
-        }
-
-        // 如果还没稳定（计数器小），或者刚处理完变化，保持极速模式
-        // 阈值设置为1即可，因为现在频率快，连续两次50ms一致就算稳定
-        if (stabilityCounter.value < 1) {
-           nextScanDelay = 50
-        } else {
-           // 稳定后的逻辑
-           boardBounds.value = result.boardBox
-           isReversed.value = result.isReversed
-           const simpleFen = boardToSimpleFen(result.board)
-
-           // 1. 初始化
-           if (!recognizedBoard.value) {
-             recognizedBoard.value = result.board
-             lastStableFen.value = simpleFen
-             maxRevealedCounts.value = {}
-             const initFen = generateJieqiFen(result.board, !result.isReversed)
-             if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
-             isMyTurn.value = !result.isReversed
-             console.log(`[Linker] 初始化完成, isMyTurn=${isMyTurn.value}`)
-           }
-           // 2. 检测到稳定变化
-           else if (simpleFen !== lastStableFen.value) {
-             console.log(`[Linker] 棋盘变化确认`)
-             recognizedBoard.value = result.board
-             lastStableFen.value = simpleFen
-
-             let nextTurnIsRed: boolean
-             if (waitingForExternalConfirm.value) {
-               console.log(`[Linker] AI移动已确认`)
-               waitingForExternalConfirm.value = false
-               isMyTurn.value = false
-               nextTurnIsRed = isReversed.value
-               if (stopEngine) stopEngine()
-             } else {
-               console.log(`[Linker] 对方已走棋`)
-               isMyTurn.value = true
-               nextTurnIsRed = !isReversed.value
-             }
-
-             if (onBoardUpdated) {
-               onBoardUpdated(generateJieqiFen(result.board, nextTurnIsRed))
-             }
-             lastAutoExecutedMove.value = null
-             
-             // 变化刚确认，保险起见下一帧还是快一点
-             nextScanDelay = 100
-           }
-
-           // 3. 尝试AI走棋
-           if (mode.value === 'auto' && isMyTurn.value && !waitingForExternalConfirm.value) {
-             await tryAiAutoMove()
-             // 如果触发了移动，tryAiAutoMove 内部会调整逻辑，这里不需要额外操作
-             // 但如果刚才触发了移动，我们希望尽快看到结果，所以下面会根据 waitingForExternalConfirm 调整频率
-           }
-        }
-      }
-      
-      // 如果正在等待外部棋盘响应AI的走棋，始终保持极速扫描
-      // 这样能最快速度捕捉到棋子落下的瞬间
-      if (waitingForExternalConfirm.value) {
-        nextScanDelay = 50
+      const tAfterCapture = performance.now()
+      await rustLog(`[Linker] frame timings: capture+decode ${(tAfterCapture - tStart).toFixed(1)} ms`)
+      if (!result) {
+        isProcessingFrame = false
+        return
       }
 
+      // 如果与 previousBoard 不同，则重置稳定计数
+      if (
+        previousBoard.value &&
+        boardsEqualFast(previousBoard.value, result.board)
+      ) {
+        stabilityCounter.value++
+      } else {
+        stabilityCounter.value = 0
+        previousBoard.value = result.board
+        isProcessingFrame = false
+        return
+      }
+
+      if (stabilityCounter.value < STABLE_THRESHOLD) {
+        isProcessingFrame = false
+        return
+      }
+
+      boardBounds.value = result.boardBox
+      isReversed.value = result.isReversed
+
+      const simpleFen = boardToSimpleFen(result.board)
+
+      // 初始化逻辑
+      if (!recognizedBoard.value) {
+        recognizedBoard.value = result.board
+        lastStableFen.value = simpleFen
+        maxRevealedCounts.value = {}
+        const initFen = generateJieqiFen(result.board, !result.isReversed)
+        if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
+        isMyTurn.value = !result.isReversed
+        await rustLog(`[Linker] initialized isReversed=${result.isReversed}, isMyTurn=${isMyTurn.value}`)
+        isProcessingFrame = false
+        return
+      }
+
+      // 检测棋盘变化
+      if (simpleFen !== lastStableFen.value) {
+        recognizedBoard.value = result.board
+        lastStableFen.value = simpleFen
+
+        let nextTurnIsRed: boolean
+        if (waitingForExternalConfirm.value) {
+          waitingForExternalConfirm.value = false
+          isMyTurn.value = false
+          nextTurnIsRed = isReversed.value
+          if (stopEngine) stopEngine()
+          await rustLog(`[Linker] external confirm: AI move validated`)
+        } else {
+          isMyTurn.value = true
+          nextTurnIsRed = !isReversed.value
+          await rustLog(`[Linker] opponent moved -> our turn`)
+        }
+
+        const newFen = generateJieqiFen(result.board, nextTurnIsRed)
+        if (onBoardUpdated) onBoardUpdated(newFen)
+        lastAutoExecutedMove.value = null
+      }
+
+      // auto 模式下且轮到己方时尝试自动下棋
+      if (
+        mode.value === 'auto' &&
+        isMyTurn.value &&
+        !waitingForExternalConfirm.value
+      ) {
+        await tryAiAutoMove()
+      }
+      const tEnd = performance.now()
+      await rustLog(`[Linker] total frame time ${(tEnd - tStart).toFixed(1)} ms`)
     } catch (e) {
-      console.error('Scan Error:', e)
+      await rustLog(`[Linker] scanLoop error: ${String(e)}`)
     } finally {
       isProcessingFrame = false
-      if (state.value === 'connecting' && isScanning.value) {
-        // 使用 setTimeout 递归调用
-        scanTimer = setTimeout(scanLoop, nextScanDelay)
-      }
     }
   }
 
   const tryAiAutoMove = async () => {
-    if (!isMyTurn.value || waitingForExternalConfirm.value) return
+    if (!isMyTurn.value) return
+    if (waitingForExternalConfirm.value) return
     if (isEngineThinking && isEngineThinking()) return
 
     if (getEngineBestMove) {
       const bestMove = getEngineBestMove()
       if (bestMove && bestMove !== lastAutoExecutedMove.value) {
-        console.log(`[Linker] 执行 AI 招法: ${bestMove}`)
         lastAutoExecutedMove.value = bestMove
 
         const success = await executeExternalMove(bestMove)
         if (success) {
           waitingForExternalConfirm.value = true
-          // 设为负数是为了等待动画，但通过 scanLoop 里的 nextScanDelay 控制
-          // 我们可以让它以 50ms 的频率快速度过这 -3 的计数
-          stabilityCounter.value = -3 
-          console.log(`[Linker] 指令已发送，进入极速等待模式`)
+          // 发送动作后忽略若干帧以避免游戏动画影响识别
+          framesToIgnore = 0
+          stabilityCounter.value = 0
+          await rustLog(`[Linker] sent move ${bestMove}, ignoring next ${framesToIgnore} frames`)
         }
         return
       }
     }
 
-    if (requestEngineStart) requestEngineStart()
+    if (requestEngineStart) {
+      requestEngineStart()
+    }
+  }
+
+  // 标记是否已经初始化过后台线程
+  const isCapturerInitialized = ref(false)
+
+
+  // 辅助函数：极速 Base64 -> Uint8Array
+  // 比 atob 稍微复杂点，但性能更好，且不需要创建 String 对象
+  const base64ToUint8Array = (base64: string): Uint8Array => {
+    const binary_string = window.atob(base64)
+    const len = binary_string.length
+    const bytes = new Uint8Array(len)
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary_string.charCodeAt(i)
+    }
+    return bytes
   }
 
   const captureAndProcess = async () => {
     if (!selectedWindowId.value) return null
-    // 捕获和识别尽量使用高效模式
-    const res = await invoke<CaptureResult>('capture_window', {
-      windowId: selectedWindowId.value,
-    })
-    const img = await base64ToImage(res.image_base64)
+
+    if (!isCapturerInitialized.value) {
+      await invoke('init_capturer', { windowId: selectedWindowId.value, fps: 20 })
+      isCapturerInitialized.value = true
+      await new Promise(r => setTimeout(r, 100))
+    }
+
+    const t0 = performance.now()
+
+    // 1. 获取 Base64 字符串 (Raw RGB)
+    let b64Data: string
+    try {
+      b64Data = await invoke<string>('get_latest_capture_raw')
+    } catch (e) {
+      return null
+    }
+
+    // 2. 解码为 Uint8Array (耗时约 2-5ms)
+    const rawData = base64ToUint8Array(b64Data)
+
+    const t1 = performance.now()
+    // 这次你应该能看到 data transfer 降到 30ms 以内
+    await rustLog(`[Linker] transfer+decode: ${(t1 - t0).toFixed(1)} ms`)
+
     const ir = getImageRecognition()
-    await ir.processImageDirect(img)
-    return processDetectionsToBoard(ir.detectedBoxes.value)
+
+    // 3. 传给模型
+    try {
+      await ir.processRawData(rawData, 640, 640)
+    } catch (e) {
+      await rustLog(`[Linker] processRawData failed: ${String(e)}`)
+      return null
+    }
+
+    const t2 = performance.now()
+    await rustLog(`[Linker] inference: ${(t2 - t1).toFixed(1)} ms`)
+    await rustLog(`[Linker] TOTAL: ${(t2 - t0).toFixed(1)} ms`)
+
+    // ... (坐标还原逻辑保持不变) ...
+    const winW = selectedWindow.value!.width
+    const winH = selectedWindow.value!.height
+    const scaleX = winW / 640
+    const scaleY = winH / 640
+    const result = processDetectionsToBoard(ir.detectedBoxes.value)
+    if (result) {
+      result.boardBox.x *= scaleX
+      result.boardBox.y *= scaleY
+      result.boardBox.width *= scaleX
+      result.boardBox.height *= scaleY
+    }
+    return result
   }
 
   const start = async () => {
@@ -477,14 +619,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
       return
     }
 
-    // 初始化状态
     previousBoard.value = res.board
     recognizedBoard.value = res.board
     boardBounds.value = res.boardBox
     isReversed.value = res.isReversed
-    
-    // 刚连接认为直接稳定
-    stabilityCounter.value = 1 
+
     maxRevealedCounts.value = {}
     lastStableFen.value = boardToSimpleFen(res.board)
     waitingForExternalConfirm.value = false
@@ -495,16 +634,13 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
     state.value = 'connecting'
     isScanning.value = true
-    
-    // 启动递归循环
-    scanLoop()
-    console.log(`[Linker] 连接成功, AI执${res.isReversed ? '黑' : '红'}`)
+    scanTimer = setInterval(scanLoop, settings.value.scanInterval)
   }
 
   const stop = () => {
     state.value = 'idle'
     isScanning.value = false
-    if (scanTimer) clearTimeout(scanTimer) // 清理 timeout
+    if (scanTimer) clearInterval(scanTimer)
     scanTimer = null
     recognizedBoard.value = null
     previousBoard.value = null
@@ -525,17 +661,37 @@ export function useLinker(options: UseLinkerOptions = {}) {
   onUnmounted(stop)
 
   return {
-    state, mode, settings, errorMessage, isScanning,
-    availableWindows, selectedWindowId, selectedWindow,
-    recognizedBoard, boardBounds, isReversed, isMyTurn,
-    isActive, statusText,
-    start, stop, connect,
-    pause: () => { isScanning.value = false },
-    resume: () => { isScanning.value = true; scanLoop() }, // resume 时重新触发
-    refreshWindowList, selectWindow, setCallbacks,
+    state,
+    mode,
+    settings,
+    errorMessage,
+    isScanning,
+    availableWindows,
+    selectedWindowId,
+    selectedWindow,
+    recognizedBoard,
+    boardBounds,
+    isReversed,
+    isMyTurn,
+    isActive,
+    statusText,
+    start,
+    stop,
+    connect,
+    pause: () => {
+      isScanning.value = false
+    },
+    resume: () => {
+      isScanning.value = true
+    },
+    refreshWindowList,
+    selectWindow,
+    setCallbacks,
     updateSettings: (s: any) => (settings.value = { ...settings.value, ...s }),
     resetSettings: () => (settings.value = { ...DEFAULT_SETTINGS }),
-    initializeModel, captureAndProcess, executeExternalMove,
-    boardToFen: generateJieqiFen,
+    initializeModel,
+    captureAndProcess,
+    executeExternalMove,
+    boardToFen: generateJieqiFen, // 导出新的 FEN 生成器供外部调用(如 Capture Preview)
   }
 }
