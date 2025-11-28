@@ -236,20 +236,27 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
   }
 
-  const processDetectionsToBoard = (boxes: DetectionBox[]) => {
+  const processDetectionsToBoard = async (boxes: DetectionBox[]) => {
     const ir = getImageRecognition()
+    const isLocked = ir.isBoardLocked.value
     const grid = ir.updateBoardGrid(boxes)
     const boardBox = boxes
       .filter(b => LABELS[b.labelIndex]?.name === 'Board')
       .sort((a, b) => b.score - a.score)[0]
 
-    if (!boardBox) return null
+    if (!boardBox) {
+      await rustLog(
+        `[Linker] processDetectionsToBoard: No board found in ${boxes.length} detections, isBoardLocked=${isLocked}`
+      )
+      return null
+    }
     const [bx, by, bw, bh] = boardBox.box
 
     const board: BoardGrid = Array(10)
       .fill(null)
       .map(() => Array(9).fill(null))
 
+    let pieceCount = 0
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const piece = grid[r][c]
@@ -257,6 +264,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
           const name = LABELS[piece.labelIndex]?.name
           if (name && PIECE_TO_FEN[name]) {
             board[r][c] = PIECE_TO_FEN[name]
+            pieceCount++
           }
         }
       }
@@ -267,6 +275,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
       for (let c = 3; c < 6; c++) if (board[r][c] === 'K') reversed = true
     for (let r = 7; r < 10; r++)
       for (let c = 3; c < 6; c++) if (board[r][c] === 'k') reversed = true
+
+    await rustLog(
+      `[Linker] processDetectionsToBoard: Found ${pieceCount} pieces, isBoardLocked=${isLocked}, isReversed=${reversed}`
+    )
 
     if (reversed) {
       const flipped: BoardGrid = Array(10)
@@ -603,7 +615,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
     const winH = selectedWindow.value!.height
     const scaleX = winW / 640
     const scaleY = winH / 640
-    const result = processDetectionsToBoard(ir.detectedBoxes.value)
+    const result = await processDetectionsToBoard(ir.detectedBoxes.value)
     if (result) {
       result.boardBox.x *= scaleX
       result.boardBox.y *= scaleY
@@ -645,6 +657,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     // Lock the board after successful detection
     // This reuses the cached board bounding box for subsequent frames
     getImageRecognition().lockBoard(true)
+    await rustLog(
+      `[Linker] Board locked. Cached board box: x=${res.boardBox.x.toFixed(1)}, y=${res.boardBox.y.toFixed(1)}, w=${res.boardBox.width.toFixed(1)}, h=${res.boardBox.height.toFixed(1)}`
+    )
 
     state.value = 'connecting'
     isScanning.value = true
@@ -664,6 +679,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
     // Unlock the board when stopping
     getImageRecognition().lockBoard(false)
+    // Note: rustLog is async but we don't await here to avoid blocking stop()
+    rustLog('[Linker] Board unlocked. Cache cleared.')
   }
 
   const setCallbacks = (cbs: any) => {
