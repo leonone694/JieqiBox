@@ -195,6 +195,7 @@
   import { ref, computed, watch, inject } from 'vue'
   import { useLinker, type WindowInfo } from '../composables/useLinker'
   import { useImageRecognition } from '../composables/image-recognition'
+  import { useConfigManager } from '../composables/useConfigManager'
   import LinkerSettingsDialog from './LinkerSettingsDialog.vue'
 
   const props = defineProps<{ modelValue: boolean }>()
@@ -205,6 +206,7 @@
 
   const gameState = inject('game-state') as any
   const engineState = inject('engine-state') as any
+  const configManager = useConfigManager()
 
   // Use the existing image recognition
   const imageRecognition = useImageRecognition()
@@ -283,10 +285,21 @@
       if (!engineState?.isEngineLoaded?.value) return
       if (engineState.isThinking.value) return
 
-      console.log('[LinkerDialog] 触发引擎分析(3s)...')
-      // 强制思考时间，防止无限思考
+      // Use configured analysis settings instead of hardcoded values
+      const analysisSettings = configManager.getAnalysisSettings()
+      console.log(
+        `[LinkerDialog] 触发引擎分析, movetime=${analysisSettings.movetime}ms, mode=${analysisSettings.analysisMode}`
+      )
+
       if (typeof engineState.startAnalysis === 'function') {
-        engineState.startAnalysis({ movetime: 3000, analysisMode: 'movetime' })
+        engineState.startAnalysis({
+          movetime: analysisSettings.movetime,
+          maxThinkTime: analysisSettings.maxThinkTime,
+          maxDepth: analysisSettings.maxDepth,
+          maxNodes: analysisSettings.maxNodes,
+          analysisMode: analysisSettings.analysisMode,
+          advancedScript: analysisSettings.advancedScript,
+        })
       }
     },
     stopEngine: () => {
