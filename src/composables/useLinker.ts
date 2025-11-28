@@ -98,26 +98,26 @@ const TOTAL_PIECES: { [key: string]: number } = {
 }
 
 //const base64ToImageBitmap = async (base64: string): Promise<ImageBitmap> => {
-  // 更快的解码路径：fetch(dataURL) -> blob -> createImageBitmap
-  // createImageBitmap 在多数平台会更快并且有机会在后台线程处理解码
-  //const res = await fetch(`data:image/jpeg;base64,${base64}`)
-  //const blob = await res.blob()
-  //return await createImageBitmap(blob)
+// 更快的解码路径：fetch(dataURL) -> blob -> createImageBitmap
+// createImageBitmap 在多数平台会更快并且有机会在后台线程处理解码
+//const res = await fetch(`data:image/jpeg;base64,${base64}`)
+//const blob = await res.blob()
+//return await createImageBitmap(blob)
 //}
 
 // 如果需要把 ImageBitmap 转成 HTMLImageElement 的回退（尽量不用）
 // 但我们优先直接传 ImageBitmap 给模型或画到 OffscreenCanvas
 //const imageBitmapToHtmlImage = async (bmp: ImageBitmap): Promise<HTMLImageElement> => {
- // const off = new OffscreenCanvas(bmp.width, bmp.height)
-  //const ctx = off.getContext('2d')!
-  //ctx.drawImage(bmp, 0, 0)
-  //const blob = await off.convertToBlob()
-  //return await new Promise((resolve, reject) => {
-  //  const img = new Image()
-  //  img.onload = () => resolve(img)
-  //  img.onerror = reject
-  //  img.src = URL.createObjectURL(blob)
-  //})
+// const off = new OffscreenCanvas(bmp.width, bmp.height)
+//const ctx = off.getContext('2d')!
+//ctx.drawImage(bmp, 0, 0)
+//const blob = await off.convertToBlob()
+//return await new Promise((resolve, reject) => {
+//  const img = new Image()
+//  img.onload = () => resolve(img)
+//  img.onerror = reject
+//  img.src = URL.createObjectURL(blob)
+//})
 //}
 
 export interface UseLinkerOptions {
@@ -423,7 +423,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     try {
       const result = await captureAndProcess()
       const tAfterCapture = performance.now()
-      await rustLog(`[Linker] frame timings: capture+decode ${(tAfterCapture - tStart).toFixed(1)} ms`)
+      await rustLog(
+        `[Linker] frame timings: capture+decode ${(tAfterCapture - tStart).toFixed(1)} ms`
+      )
       if (!result) {
         isProcessingFrame = false
         return
@@ -460,7 +462,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
         const initFen = generateJieqiFen(result.board, !result.isReversed)
         if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
         isMyTurn.value = !result.isReversed
-        await rustLog(`[Linker] initialized isReversed=${result.isReversed}, isMyTurn=${isMyTurn.value}`)
+        await rustLog(
+          `[Linker] initialized isReversed=${result.isReversed}, isMyTurn=${isMyTurn.value}`
+        )
         isProcessingFrame = false
         return
       }
@@ -497,7 +501,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
         await tryAiAutoMove()
       }
       const tEnd = performance.now()
-      await rustLog(`[Linker] total frame time ${(tEnd - tStart).toFixed(1)} ms`)
+      await rustLog(
+        `[Linker] total frame time ${(tEnd - tStart).toFixed(1)} ms`
+      )
     } catch (e) {
       await rustLog(`[Linker] scanLoop error: ${String(e)}`)
     } finally {
@@ -521,7 +527,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
           // 发送动作后忽略若干帧以避免游戏动画影响识别
           framesToIgnore = 0
           stabilityCounter.value = 0
-          await rustLog(`[Linker] sent move ${bestMove}, ignoring next ${framesToIgnore} frames`)
+          await rustLog(
+            `[Linker] sent move ${bestMove}, ignoring next ${framesToIgnore} frames`
+          )
         }
         return
       }
@@ -534,7 +542,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
   // 标记是否已经初始化过后台线程
   const isCapturerInitialized = ref(false)
-
 
   // 辅助函数：极速 Base64 -> Uint8Array
   // 比 atob 稍微复杂点，但性能更好，且不需要创建 String 对象
@@ -552,7 +559,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
     if (!selectedWindowId.value) return null
 
     if (!isCapturerInitialized.value) {
-      await invoke('init_capturer', { windowId: selectedWindowId.value, fps: 20 })
+      await invoke('init_capturer', {
+        windowId: selectedWindowId.value,
+        fps: 20,
+      })
       isCapturerInitialized.value = true
       await new Promise(r => setTimeout(r, 100))
     }
@@ -632,6 +642,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
     const initFen = generateJieqiFen(res.board, !res.isReversed)
     if (onBoardInitialized) onBoardInitialized(initFen, res.isReversed)
 
+    // Lock the board after successful detection
+    // This reuses the cached board bounding box for subsequent frames
+    getImageRecognition().lockBoard(true)
+
     state.value = 'connecting'
     isScanning.value = true
     scanTimer = setInterval(scanLoop, settings.value.scanInterval)
@@ -647,6 +661,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     lastAutoExecutedMove.value = null
     waitingForExternalConfirm.value = false
     isMyTurn.value = false
+
+    // Unlock the board when stopping
+    getImageRecognition().lockBoard(false)
   }
 
   const setCallbacks = (cbs: any) => {
