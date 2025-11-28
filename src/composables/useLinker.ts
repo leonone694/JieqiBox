@@ -714,9 +714,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
     connect,
     pause: () => {
       isScanning.value = false
+      state.value = 'paused'
     },
     resume: () => {
       isScanning.value = true
+      state.value = 'connecting'
     },
     refreshWindowList,
     selectWindow,
