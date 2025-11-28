@@ -207,24 +207,37 @@ export const useImageRecognition = () => {
     outShape: readonly number[],
     meta: ProcessedImage['meta']
   ): DetectionBox[] => {
-    // Ensure we have Float32Array - avoid Array.from conversion
+    // ONNX Runtime returns Float32Array for float tensors
+    // This is safe because we only use float32 models
     const outputData = outputDataRaw as Float32Array
 
     const num_classes = 34
     const num_coords = 4
+    const expectedChannels = num_coords + num_classes // 38
 
-    const { r, dw, dh, imgW, imgH, newW, newH } = meta
+    const { r, dw, dh, imgW, imgH } = meta
     const confThresh = 0.25
     const iouThresh = 0.7
 
-    // Standard YOLOv8/v11 format: [1, 4 + num_classes, num_predictions]
-    // Shape should be [1, 38, 8400] for 34 classes
+    // Validate output shape matches expected YOLOv8/v11 format
+    // Shape should be [1, 38, num_predictions] for 34 classes
+    if (outShape.length !== 3 || outShape[0] !== 1) {
+      console.warn('Unexpected output shape:', outShape)
+      return []
+    }
+
     const num_channels = outShape[1]
     const num_predictions = outShape[2]
 
+    // Validate channel count matches expected classes
+    if (num_channels !== expectedChannels) {
+      console.warn(`Expected ${expectedChannels} channels, got ${num_channels}`)
+      return []
+    }
+
     const boxes: DetectionBox[] = []
 
-    // Iterate over each of the 8400 predictions
+    // Iterate over each prediction
     for (let i = 0; i < num_predictions; i++) {
       // Read coordinates (center x, center y, width, height)
       const x = outputData[0 * num_predictions + i]
@@ -420,6 +433,8 @@ export const useImageRecognition = () => {
       .map(() => Array(9).fill(null))
 
     // Linear mapping for flat 2D images (no perspective transform needed)
+    // Note: This assumes flat/scanned images without perspective distortion.
+    // For camera images with perspective, bilinear interpolation would be more accurate.
     for (const piece of piecesOnBoard) {
       const [px, py, pw, ph] = piece.box
       const cx = px + pw / 2
@@ -470,9 +485,16 @@ export const useImageRecognition = () => {
   ) => {
     if (!session.value) await initializeModel()
 
+    // Validate input dimensions match expected model size
+    const pixelCount = width * height
+    if (width !== MODEL_SIZE || height !== MODEL_SIZE) {
+      throw new Error(
+        `processRawData expects ${MODEL_SIZE}x${MODEL_SIZE} images, got ${width}x${height}`
+      )
+    }
+
     // Use shared buffer to avoid GC during high-FPS processing
     const float32Data = getSharedInputBuffer()
-    const pixelCount = width * height
 
     // Convert Uint8 [0-255] to Float32 [0-1] in NCHW format
     // Direct write to planar format (R plane, G plane, B plane)
