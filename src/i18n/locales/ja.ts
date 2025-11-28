@@ -714,6 +714,7 @@ prev.prev - 前々の手（無限ネスト対応）`,
     settingsTitle: 'リンク設定',
     uploadScreenshot: 'スクリーンショットをアップロード',
     recognizedFen: '認識された局面',
+    forceMyTurn: '自分の手番にする',
     mode: {
       auto: '自動着手',
       watch: '観戦のみ',
@@ -727,7 +728,8 @@ prev.prev - 前々の手（無限ネスト対応）`,
     },
     instructions: {
       idle: '「リンク開始」をクリックして外部将棋ソフトに接続します。画像認識による局面同期と自動着手をサポートします。',
-      selecting: '将棋盤が含まれるスクリーンショットをアップロードしてください。システムが自動的に局面を認識します。',
+      selecting:
+        '将棋盤が含まれるスクリーンショットをアップロードしてください。システムが自動的に局面を認識します。',
     },
     error: {
       modelInitFailed: '画像認識モデルの初期化に失敗しました',
@@ -742,7 +744,8 @@ prev.prev - 前々の手（無限ネスト対応）`,
       scanInterval: 'スキャン間隔',
       scanIntervalHint: 'スキャン間の間隔（ミリ秒）',
       animationConfirm: 'アニメーション確認待ち',
-      animationConfirmHint: '可能な手を検出した後、駒のアニメーションが完了するのを待ってから確認',
+      animationConfirmHint:
+        '可能な手を検出した後、駒のアニメーションが完了するのを待ってから確認',
       reset: 'デフォルトにリセット',
     },
   },

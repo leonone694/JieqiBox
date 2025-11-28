@@ -726,6 +726,7 @@ prev.prev - Previous-previous move (supports infinite nesting)`,
     boardPreview: 'Board Preview',
     capture: 'Capture',
     recognizedFen: 'Recognized Position',
+    forceMyTurn: 'Force My Turn',
     mode: {
       auto: 'Auto Move',
       watch: 'Watch Only',
@@ -740,8 +741,10 @@ prev.prev - Previous-previous move (supports infinite nesting)`,
     },
     instructions: {
       idle: 'Click "Start Link" to connect to an external chess software. The program will automatically capture the target window, recognize the board position, and sync the game state. In auto-move mode, it will play moves on the external software.',
-      selecting: 'Please select the chess software window from the list below, then click "Connect".',
-      connected: 'Linking... Monitoring board changes. When opponent moves are detected, they will be applied locally, and in auto mode, the engine\'s best move will be sent to the external software.',
+      selecting:
+        'Please select the chess software window from the list below, then click "Connect".',
+      connected:
+        "Linking... Monitoring board changes. When opponent moves are detected, they will be applied locally, and in auto mode, the engine's best move will be sent to the external software.",
       paused: 'Linking is paused. Click "Resume" to continue monitoring.',
     },
     error: {
@@ -760,7 +763,8 @@ prev.prev - Previous-previous move (supports infinite nesting)`,
       scanInterval: 'Scan Interval',
       scanIntervalHint: 'Interval between scans (ms)',
       animationConfirm: 'Wait for Animation',
-      animationConfirmHint: 'After detecting a possible move, wait for piece animation to complete before confirming',
+      animationConfirmHint:
+        'After detecting a possible move, wait for piece animation to complete before confirming',
       reset: 'Reset to Default',
     },
   },

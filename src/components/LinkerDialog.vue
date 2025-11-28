@@ -176,6 +176,17 @@
           @click="handleStop"
           ><v-icon start>mdi-stop</v-icon>{{ $t('linker.stop') }}</v-btn
         >
+        <v-btn
+          v-if="
+            linker.state.value === 'connecting' ||
+            linker.state.value === 'paused'
+          "
+          color="info"
+          variant="text"
+          @click="handleForceMyTurn"
+          ><v-icon start>mdi-account-switch</v-icon
+          >{{ $t('linker.forceMyTurn') }}</v-btn
+        >
         <v-spacer />
         <v-btn variant="text" @click="showSettings = true"
           ><v-icon start>mdi-cog</v-icon>{{ $t('linker.settings') }}</v-btn
@@ -361,6 +372,9 @@
     linker.stop()
     previewImageUrl.value = null
     recognizedFen.value = null
+  }
+  const handleForceMyTurn = () => {
+    linker.forceMyTurn()
   }
 
   const close = () => {

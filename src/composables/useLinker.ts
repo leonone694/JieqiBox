@@ -720,6 +720,10 @@ export function useLinker(options: UseLinkerOptions = {}) {
       isScanning.value = true
       state.value = 'connecting'
     },
+    forceMyTurn: async () => {
+      isMyTurn.value = true
+      await rustLog('[Linker] Force switched to my turn')
+    },
     refreshWindowList,
     selectWindow,
     setCallbacks,
