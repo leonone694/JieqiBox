@@ -421,6 +421,33 @@ export function useLinker(options: UseLinkerOptions = {}) {
     return true
   }
 
+  // 检测是否为新游戏（棋盘状态回到初始状态）
+  // 初始状态特征：大量暗子（X/x），32个棋子，且帅将都是暗的
+  const isNewGameBoard = (board: BoardGrid): boolean => {
+    let totalPieces = 0
+    let darkPieces = 0
+    let revealedPieces = 0
+
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        const piece = board[r][c]
+        if (piece) {
+          totalPieces++
+          if (piece === 'X' || piece === 'x') {
+            darkPieces++
+          } else {
+            revealedPieces++
+          }
+        }
+      }
+    }
+
+    // 如果棋盘有32个棋子且明子数量小于等于2（仅帅将可能是明的），
+    // 则认为是新游戏开始
+    // 通常新游戏开始时，棋盘上全是暗子或者只有极少数明子（帅将可能被识别为明子）
+    return totalPieces === 32 && revealedPieces <= 2
+  }
+
   // 检测棋盘变化是"一次变化"还是"两次变化"
   // 用于处理对手应着极快时，两步棋被合并检测为一次变化的情况
   // 比较时暗子('X'/'x')视为空位
@@ -528,6 +555,17 @@ export function useLinker(options: UseLinkerOptions = {}) {
         // 检测变化类型（单次变化/两次变化）
         const changeType = detectChangeType(recognizedBoard.value, result.board)
 
+        // 检测是否为新游戏开始（棋盘重置为初始状态）
+        // 如果检测到新游戏，重置暗子池计数
+        if (isNewGameBoard(result.board)) {
+          await rustLog(
+            `[Linker] New game detected! Resetting maxRevealedCounts.`
+          )
+          maxRevealedCounts.value = {}
+          lastAutoExecutedMove.value = null
+          waitingForExternalConfirm.value = false
+        }
+
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
 
@@ -602,6 +640,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
         }
         return
       }
+      // If best move was already executed (bestMove === lastAutoExecutedMove.value)
+      // or there is no best move, we need to trigger the engine to start thinking
+      // This fixes the issue where the engine gets stuck after executing a move
     }
 
     if (requestEngineStart) {
