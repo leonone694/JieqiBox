@@ -97,28 +97,14 @@ const TOTAL_PIECES: { [key: string]: number } = {
   p: 5,
 }
 
-//const base64ToImageBitmap = async (base64: string): Promise<ImageBitmap> => {
-// 更快的解码路径：fetch(dataURL) -> blob -> createImageBitmap
-// createImageBitmap 在多数平台会更快并且有机会在后台线程处理解码
-//const res = await fetch(`data:image/jpeg;base64,${base64}`)
-//const blob = await res.blob()
-//return await createImageBitmap(blob)
-//}
-
-// 如果需要把 ImageBitmap 转成 HTMLImageElement 的回退（尽量不用）
-// 但我们优先直接传 ImageBitmap 给模型或画到 OffscreenCanvas
-//const imageBitmapToHtmlImage = async (bmp: ImageBitmap): Promise<HTMLImageElement> => {
-// const off = new OffscreenCanvas(bmp.width, bmp.height)
-//const ctx = off.getContext('2d')!
-//ctx.drawImage(bmp, 0, 0)
-//const blob = await off.convertToBlob()
-//return await new Promise((resolve, reject) => {
-//  const img = new Image()
-//  img.onload = () => resolve(img)
-//  img.onerror = reject
-//  img.src = URL.createObjectURL(blob)
-//})
-//}
+const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = `data:image/png;base64,${base64}`
+  })
+}
 
 export interface UseLinkerOptions {
   imageRecognition?: ImageRecognitionInstance
@@ -161,11 +147,14 @@ export function useLinker(options: UseLinkerOptions = {}) {
   const lastStableFen = ref('') // 这个 FEN 包含暗子池信息
   const lastAutoExecutedMove = ref<string | null>(null)
 
-  // 新架构变量
+  // ★★★ 新架构：通过轮次控制 ★★★
+  // isMyTurn: true表示轮到己方(AI)走棋，false表示对方走棋(仅观察)
   const isMyTurn = ref(false)
+  // waitingForExternalConfirm: AI已发送点击指令，等待外部棋盘确认变化
   const waitingForExternalConfirm = ref(false)
 
-  // 新增：历史最大明子数量记录 (用于计算暗子池)
+  // ★★★ 新增：历史最大明子数量记录 (用于计算暗子池) ★★★
+  // 键是 FEN 字符 (如 'R', 'c'), 值是该子同时在场过的最大数量
   const maxRevealedCounts = ref<Record<string, number>>({})
 
   // 回调接口
@@ -187,28 +176,13 @@ export function useLinker(options: UseLinkerOptions = {}) {
     return t(`linker.status.${state.value}`)
   })
 
-  // --- 新的控制量：用于忽略发送动作后若干帧（避免动画干扰） ---
-  let framesToIgnore = 0
-  const STABLE_THRESHOLD = 1 // 连续帧数阈值，1 表示 1 帧即可认为稳定
-
   // --- 核心逻辑 ---
-
-  const rustLog = async (msg: string) => {
-    // 把调试信息发回 Rust 日志（因为你说浏览器控制台不可见）
-    try {
-      await invoke('rust_log', { msg })
-    } catch (e) {
-      // 如果发送失败也别中断流程
-      // console.warn('rust_log failed', e)
-    }
-  }
 
   const refreshWindowList = async () => {
     try {
       availableWindows.value = await invoke<WindowInfo[]>('list_windows')
     } catch (e) {
       errorMessage.value = t('linker.error.listWindowsFailed')
-      await rustLog(`[Linker] list_windows error: ${String(e)}`)
     }
   }
 
@@ -220,7 +194,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
     } catch (e) {
       errorMessage.value = t('linker.error.windowNotFound')
-      await rustLog(`[Linker] get_window_info error: ${String(e)}`)
     }
   }
 
@@ -231,32 +204,24 @@ export function useLinker(options: UseLinkerOptions = {}) {
     } catch (e) {
       state.value = 'error'
       errorMessage.value = t('linker.error.modelInitFailed')
-      await rustLog(`[Linker] model init failed: ${String(e)}`)
       return false
     }
   }
 
-  const processDetectionsToBoard = async (boxes: DetectionBox[]) => {
+  const processDetectionsToBoard = (boxes: DetectionBox[]) => {
     const ir = getImageRecognition()
-    const isLocked = ir.isBoardLocked.value
     const grid = ir.updateBoardGrid(boxes)
     const boardBox = boxes
       .filter(b => LABELS[b.labelIndex]?.name === 'Board')
       .sort((a, b) => b.score - a.score)[0]
 
-    if (!boardBox) {
-      await rustLog(
-        `[Linker] processDetectionsToBoard: No board found in ${boxes.length} detections, isBoardLocked=${isLocked}`
-      )
-      return null
-    }
+    if (!boardBox) return null
     const [bx, by, bw, bh] = boardBox.box
 
     const board: BoardGrid = Array(10)
       .fill(null)
       .map(() => Array(9).fill(null))
 
-    let pieceCount = 0
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const piece = grid[r][c]
@@ -264,7 +229,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
           const name = LABELS[piece.labelIndex]?.name
           if (name && PIECE_TO_FEN[name]) {
             board[r][c] = PIECE_TO_FEN[name]
-            pieceCount++
           }
         }
       }
@@ -275,10 +239,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
       for (let c = 3; c < 6; c++) if (board[r][c] === 'K') reversed = true
     for (let r = 7; r < 10; r++)
       for (let c = 3; c < 6; c++) if (board[r][c] === 'k') reversed = true
-
-    await rustLog(
-      `[Linker] processDetectionsToBoard: Found ${pieceCount} pieces, isBoardLocked=${isLocked}, isReversed=${reversed}`
-    )
 
     if (reversed) {
       const flipped: BoardGrid = Array(10)
@@ -299,8 +259,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     }
   }
 
-  // 生成 Jieqi FEN（保持原逻辑）
+  // ★★★ 核心修复：生成带有暗子池的 Jieqi FEN ★★★
   const generateJieqiFen = (board: BoardGrid, isRedTurn: boolean): string => {
+    // 1. 生成棋盘部分
     const boardFen = board
       .map(row => {
         let empty = 0,
@@ -319,16 +280,19 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
       .join('/')
 
+    // 2. 统计当前盘面上所有的明子
     const currentCounts: Record<string, number> = {}
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const p = board[r][c]
+        // 只有明子(非X, x)才参与计数
         if (p && p !== 'X' && p !== 'x' && p !== 'K' && p !== 'k') {
           currentCounts[p] = (currentCounts[p] || 0) + 1
         }
       }
     }
 
+    // 3. 更新历史最大明子数 (单调递增，防止死子复活)
     Object.keys(TOTAL_PIECES).forEach(key => {
       const current = currentCounts[key] || 0
       const max = maxRevealedCounts.value[key] || 0
@@ -337,6 +301,8 @@ export function useLinker(options: UseLinkerOptions = {}) {
       }
     })
 
+    // 4. 计算暗子池 (总量 - 历史最大明子数)
+    // 顺序：R r N n B b A a C c P p
     const order = ['R', 'r', 'N', 'n', 'B', 'b', 'A', 'a', 'C', 'c', 'P', 'p']
     let poolStr = ''
 
@@ -344,15 +310,24 @@ export function useLinker(options: UseLinkerOptions = {}) {
       const total = TOTAL_PIECES[key]
       const revealed = maxRevealedCounts.value[key] || 0
       const remainingInPool = Math.max(0, total - revealed)
+
+      // 只有当暗子池里还有该类棋子时，才写入FEN
       if (remainingInPool > 0) {
         poolStr += key + remainingInPool
       }
     })
 
-    const turn = isRedTurn ? 'w' : 'b'
+    // 5. 拼接完整 FEN
+    // 格式: [board] [turn] [pool] - [half] [full]
+    const turn = isRedTurn ? 'w' : 'b' // 假设 AI 总是执红先行，或者根据 isReversed 判断?
+    // 这里的 turn 逻辑可能需要根据实际情况调整。
+    // 如果 isReversed=true (AI执黑)，通常意味着黑方在下方。如果此时轮到下方走，那就是 b。
+    // 简单起见，我们暂定: 如果棋盘有变动，由 UI 决定轮次；如果是初始化，默认 w。
+
     return `${boardFen} ${turn} ${poolStr} - 0 1`
   }
 
+  // 原来的 boardToFen 改名为简单版，仅内部对比用
   const boardToSimpleFen = (board: BoardGrid) => {
     return board
       .map(row => {
@@ -395,6 +370,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
     const winY = selectedWindow.value.y + boardBounds.value.y
 
     try {
+      console.log(`[Linker] 发送点击指令: ${move}`)
       await invoke('simulate_move', {
         fromX: Math.round(winX + start.x),
         fromY: Math.round(winY + start.y),
@@ -405,68 +381,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
       })
       return true
     } catch (e) {
-      await rustLog(`[Linker] simulate_move error: ${String(e)}`)
+      console.error(e)
       return false
     }
-  }
-
-  // 快速比较两个 board（逐格早退），替代 JSON.stringify 全量比较
-  const boardsEqualFast = (a: BoardGrid | null, b: BoardGrid | null) => {
-    if (!a || !b) return false
-    for (let r = 0; r < 10; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (a[r][c] !== b[r][c]) return false
-      }
-    }
-    return true
-  }
-
-  // 检测棋盘变化是"一次变化"、"两次变化"还是"重置"
-  // 用于处理对手应着极快时，两步棋被合并检测为一次变化的情况
-  // 比较时暗子('X'/'x')视为空位
-  // 返回: 'single' 表示一次变化, 'double' 表示两次变化, 'reset' 表示新游戏
-  //
-  // 判定逻辑说明：
-  // - 单次着法（包括吃子）只改变2个位点：起点变空，终点变成棋子
-  // - 如果>4个位点变化，说明是新游戏（重置）
-  // - 如果>2且<=4个位点变化，说明是两步棋合并
-  // - 如果恰好2个位点变化但末状态均为空，说明是两步棋合并（例如A→B，然后B被吃掉移走）
-  const detectChangeType = (
-    prevBoard: BoardGrid | null,
-    currBoard: BoardGrid
-  ): 'single' | 'double' | 'reset' => {
-    if (!prevBoard) return 'single'
-
-    // 将暗子视为空位的转换函数
-    let changedCount = 0
-    let allChangedToEmpty = true
-
-    for (let r = 0; r < 10; r++) {
-      for (let c = 0; c < 9; c++) {
-        const prev = prevBoard[r][c]
-        const curr = currBoard[r][c]
-        if (prev !== curr) {
-          changedCount++
-          if (curr !== null) {
-            allChangedToEmpty = false
-          }
-        }
-      }
-    }
-
-    // 超过4个位点变化，判定为新游戏（重置）
-    // 理由：正常单步棋最多改变2个位点，两步棋合并最多改变4个位点
-    // 超过4个位点变化说明棋盘发生了重大改变，很可能是开始了新游戏
-    if (changedCount > 4) return 'reset'
-
-    // 超过2个位点变化，判定为两次变化
-    if (changedCount > 2) return 'double'
-
-    // 恰好2个位点变化，且末状态均为空，判定为两次变化
-    // （正常单步棋的终点不可能为空，因为棋子会占据终点位置）
-    if (changedCount === 2 && allChangedToEmpty) return 'double'
-
-    return 'single'
   }
 
   const scanLoop = async () => {
@@ -474,122 +391,91 @@ export function useLinker(options: UseLinkerOptions = {}) {
     if (isProcessingFrame) {
       return
     }
-    if (framesToIgnore > 0) {
-      framesToIgnore--
-      return
-    }
     isProcessingFrame = true
-    const tStart = performance.now()
     try {
       const result = await captureAndProcess()
-      const tAfterCapture = performance.now()
-      await rustLog(
-        `[Linker] frame timings: capture+decode ${(tAfterCapture - tStart).toFixed(1)} ms`
-      )
-      if (!result) {
-        isProcessingFrame = false
-        return
-      }
+      if (!result) return
 
-      // 如果与 previousBoard 不同，则重置稳定计数
+      const currentBoardJson = JSON.stringify(result.board)
       if (
         previousBoard.value &&
-        boardsEqualFast(previousBoard.value, result.board)
+        JSON.stringify(previousBoard.value) === currentBoardJson
       ) {
-        stabilityCounter.value++
+        stabilityCounter.value=1
       } else {
         stabilityCounter.value = 0
         previousBoard.value = result.board
-        isProcessingFrame = false
         return
       }
 
-      if (stabilityCounter.value < STABLE_THRESHOLD) {
-        isProcessingFrame = false
-        return
-      }
+      if (stabilityCounter.value < 1) return
 
       boardBounds.value = result.boardBox
       isReversed.value = result.isReversed
 
+      // 用于对比变化的简单 FEN
       const simpleFen = boardToSimpleFen(result.board)
 
-      // 初始化逻辑
+      // ★★★ 初始化逻辑 ★★★
       if (!recognizedBoard.value) {
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
+        // 初始化时，重置最大明子计数
         maxRevealedCounts.value = {}
+        // 重新生成一次以确保 maxRevealedCounts 正确
         const initFen = generateJieqiFen(result.board, !result.isReversed)
         if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
+        // 初始化后，根据isReversed决定谁先手
+        // 如果isReversed=true(AI在下方=AI执黑)，则红方先行，AI要等待对方走完
+        // 如果isReversed=false(AI在上方=AI执红)，则AI先行
         isMyTurn.value = !result.isReversed
-        await rustLog(
-          `[Linker] initialized isReversed=${result.isReversed}, isMyTurn=${isMyTurn.value}`
+        console.log(
+          `[Linker] 初始化完成, AI执${result.isReversed ? '黑' : '红'}, isMyTurn=${isMyTurn.value}`
         )
-        isProcessingFrame = false
         return
       }
 
-      // 检测棋盘变化
+      // ★★★ 新架构：检测棋盘变化 ★★★
       if (simpleFen !== lastStableFen.value) {
-        // 检测变化类型（单次变化/两次变化/重置）
-        const changeType = detectChangeType(recognizedBoard.value, result.board)
-
-        // 如果检测到重置（新游戏），重新初始化连线状态
-        if (changeType === 'reset') {
-          await rustLog(
-            `[Linker] reset detected: new game started, reinitializing linker state`
-          )
-          // 停止引擎分析
-          if (stopEngine) stopEngine()
-          // 重置暗子池
-          maxRevealedCounts.value = {}
-          // 重置其他状态
-          waitingForExternalConfirm.value = false
-          lastAutoExecutedMove.value = null
-          // 重新初始化棋盘
-          recognizedBoard.value = result.board
-          lastStableFen.value = simpleFen
-          const initFen = generateJieqiFen(result.board, !result.isReversed)
-          if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
-          isMyTurn.value = !result.isReversed
-          isProcessingFrame = false
-          return
-        }
-
+        console.log(`[Linker] 检测到棋盘变化`)
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
 
+        // 如果之前在等待AI移动确认，现在棋盘变化了，说明移动成功
+        // 先切换轮次，再生成FEN（FEN的turn应该是切换后的下一位行棋方）
         let nextTurnIsRed: boolean
         if (waitingForExternalConfirm.value) {
+          console.log(`[Linker] AI移动已确认，切换到对方回合`)
           waitingForExternalConfirm.value = false
-
-          if (changeType === 'double') {
-            // 检测到两次变化：己方应着 + 对方应着 合并为一次检测
-            // 此时轮到己方
-            isMyTurn.value = true
-            nextTurnIsRed = !isReversed.value
-            await rustLog(
-              `[Linker] double change detected: AI + opponent moves merged -> our turn`
-            )
-          } else {
-            // 单次变化：仅己方应着被确认
-            isMyTurn.value = false
-            nextTurnIsRed = isReversed.value
-            if (stopEngine) stopEngine()
-            await rustLog(`[Linker] external confirm: AI move validated`)
-          }
+          isMyTurn.value = false
+          // AI刚走完，下一步是对方走
+          // isReversed=false → AI执红，对方执黑，下一步黑方走 (nextTurnIsRed=false)
+          // isReversed=true → AI执黑，对方执红，下一步红方走 (nextTurnIsRed=true)
+          nextTurnIsRed = isReversed.value
+          // 停止引擎，等待对方走完
+          if (stopEngine) stopEngine()
         } else {
+          // 对方走了一步，切换到己方回合
+          console.log(`[Linker] 对方已走棋，切换到己方回合`)
           isMyTurn.value = true
+          // 对方刚走完，下一步是AI走
+          // isReversed=false → AI执红，下一步红方走 (nextTurnIsRed=true)
+          // isReversed=true → AI执黑，下一步黑方走 (nextTurnIsRed=false)
           nextTurnIsRed = !isReversed.value
-          await rustLog(`[Linker] opponent moved -> our turn`)
         }
 
+        // 生成新的FEN，turn字段表示下一位行棋方
         const newFen = generateJieqiFen(result.board, nextTurnIsRed)
-        if (onBoardUpdated) onBoardUpdated(newFen)
+
+        // 通知外部更新棋盘状态
+        if (onBoardUpdated) {
+          onBoardUpdated(newFen)
+        }
+
         lastAutoExecutedMove.value = null
       }
 
-      // auto 模式下且轮到己方时尝试自动下棋
+      // ★★★ 只有在auto模式且轮到己方时才执行AI移动 ★★★
       if (
         mode.value === 'auto' &&
         isMyTurn.value &&
@@ -597,117 +483,57 @@ export function useLinker(options: UseLinkerOptions = {}) {
       ) {
         await tryAiAutoMove()
       }
-      const tEnd = performance.now()
-      await rustLog(
-        `[Linker] total frame time ${(tEnd - tStart).toFixed(1)} ms`
-      )
     } catch (e) {
-      await rustLog(`[Linker] scanLoop error: ${String(e)}`)
+      console.error('Scan Error:', e)
     } finally {
       isProcessingFrame = false
     }
   }
 
   const tryAiAutoMove = async () => {
+    // 不是己方回合，不执行
     if (!isMyTurn.value) return
+    // 正在等待外部确认，不重复执行
     if (waitingForExternalConfirm.value) return
+    // 引擎正在思考，等待
     if (isEngineThinking && isEngineThinking()) return
 
     if (getEngineBestMove) {
       const bestMove = getEngineBestMove()
       if (bestMove && bestMove !== lastAutoExecutedMove.value) {
+        console.log(`[Linker] 执行 AI 招法: ${bestMove}`)
         lastAutoExecutedMove.value = bestMove
 
+        // ★★★ 关键改变：只操作外部软件，不更新内部棋盘 ★★★
+        // 不调用 playMove，等待扫描外部棋盘后统一更新
         const success = await executeExternalMove(bestMove)
         if (success) {
+          // 设置等待确认标志
           waitingForExternalConfirm.value = true
-          // 发送动作后忽略若干帧以避免游戏动画影响识别
-          framesToIgnore = 0
-          stabilityCounter.value = 0
-          await rustLog(
-            `[Linker] sent move ${bestMove}, ignoring next ${framesToIgnore} frames`
-          )
+          stabilityCounter.value = -3
+          console.log(`[Linker] 已发送移动指令，等待外部棋盘确认`)
         }
         return
       }
     }
 
+    // 没有bestMove，请求引擎开始计算
     if (requestEngineStart) {
       requestEngineStart()
     }
   }
 
-  // 标记是否已经初始化过后台线程
-  const isCapturerInitialized = ref(false)
-
-  // 辅助函数：极速 Base64 -> Uint8Array
-  // 比 atob 稍微复杂点，但性能更好，且不需要创建 String 对象
-  const base64ToUint8Array = (base64: string): Uint8Array => {
-    const binary_string = window.atob(base64)
-    const len = binary_string.length
-    const bytes = new Uint8Array(len)
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary_string.charCodeAt(i)
-    }
-    return bytes
-  }
-
   const captureAndProcess = async () => {
     if (!selectedWindowId.value) return null
-
-    if (!isCapturerInitialized.value) {
-      await invoke('init_capturer', {
-        windowId: selectedWindowId.value,
-        fps: 20,
-      })
-      isCapturerInitialized.value = true
-      await new Promise(r => setTimeout(r, 100))
-    }
-
-    const t0 = performance.now()
-
-    // 1. 获取 Base64 字符串 (Raw RGB)
-    let b64Data: string
-    try {
-      b64Data = await invoke<string>('get_latest_capture_raw')
-    } catch (e) {
-      return null
-    }
-
-    // 2. 解码为 Uint8Array (耗时约 2-5ms)
-    const rawData = base64ToUint8Array(b64Data)
-
-    const t1 = performance.now()
-    // 这次你应该能看到 data transfer 降到 30ms 以内
-    await rustLog(`[Linker] transfer+decode: ${(t1 - t0).toFixed(1)} ms`)
-
+    const res = await invoke<CaptureResult>('capture_window', {
+      windowId: selectedWindowId.value,
+    })
+    // Direct base64 to image conversion, skip unnecessary File/Blob conversions
+    const img = await base64ToImage(res.image_base64)
     const ir = getImageRecognition()
-
-    // 3. 传给模型
-    try {
-      await ir.processRawData(rawData, 640, 640)
-    } catch (e) {
-      await rustLog(`[Linker] processRawData failed: ${String(e)}`)
-      return null
-    }
-
-    const t2 = performance.now()
-    await rustLog(`[Linker] inference: ${(t2 - t1).toFixed(1)} ms`)
-    await rustLog(`[Linker] TOTAL: ${(t2 - t0).toFixed(1)} ms`)
-
-    // ... (坐标还原逻辑保持不变) ...
-    const winW = selectedWindow.value!.width
-    const winH = selectedWindow.value!.height
-    const scaleX = winW / 640
-    const scaleY = winH / 640
-    const result = await processDetectionsToBoard(ir.detectedBoxes.value)
-    if (result) {
-      result.boardBox.x *= scaleX
-      result.boardBox.y *= scaleY
-      result.boardBox.width *= scaleX
-      result.boardBox.height *= scaleY
-    }
-    return result
+    // Use the faster direct processing path
+    await ir.processImageDirect(img)
+    return processDetectionsToBoard(ir.detectedBoxes.value)
   }
 
   const start = async () => {
@@ -731,20 +557,21 @@ export function useLinker(options: UseLinkerOptions = {}) {
     boardBounds.value = res.boardBox
     isReversed.value = res.isReversed
 
+    // 初始化时重置计数器和状态
     maxRevealedCounts.value = {}
     lastStableFen.value = boardToSimpleFen(res.board)
     waitingForExternalConfirm.value = false
+    // 根据isReversed决定谁先手
+    // 如果isReversed=true(AI在下方=AI执黑)，则红方先行，AI要等待对方走完
+    // 如果isReversed=false(AI在上方=AI执红)，则AI先行
     isMyTurn.value = !res.isReversed
+    console.log(
+      `[Linker] 连接成功, AI执${res.isReversed ? '黑' : '红'}, isMyTurn=${isMyTurn.value}`
+    )
 
     const initFen = generateJieqiFen(res.board, !res.isReversed)
-    if (onBoardInitialized) onBoardInitialized(initFen, res.isReversed)
 
-    // Lock the board after successful detection
-    // This reuses the cached board bounding box for subsequent frames
-    getImageRecognition().lockBoard(true)
-    await rustLog(
-      `[Linker] Board locked. Cached board box: x=${res.boardBox.x.toFixed(1)}, y=${res.boardBox.y.toFixed(1)}, w=${res.boardBox.width.toFixed(1)}, h=${res.boardBox.height.toFixed(1)}`
-    )
+    if (onBoardInitialized) onBoardInitialized(initFen, res.isReversed)
 
     state.value = 'connecting'
     isScanning.value = true
@@ -756,20 +583,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
     isScanning.value = false
     if (scanTimer) clearInterval(scanTimer)
     scanTimer = null
-    maxRevealedCounts.value = {}
     recognizedBoard.value = null
     previousBoard.value = null
     lastAutoExecutedMove.value = null
     waitingForExternalConfirm.value = false
     isMyTurn.value = false
-
-    // Stop the engine analysis if it's running
-    if (stopEngine) stopEngine()
-
-    // Unlock the board when stopping
-    getImageRecognition().lockBoard(false)
-    // Note: rustLog is async but we don't await here to avoid blocking stop()
-    rustLog('[Linker] Board unlocked. Cache cleared.')
   }
 
   const setCallbacks = (cbs: any) => {
@@ -803,32 +621,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     connect,
     pause: () => {
       isScanning.value = false
-      state.value = 'paused'
     },
     resume: () => {
       isScanning.value = true
-      state.value = 'connecting'
-    },
-    forceMyTurn: async () => {
-      isMyTurn.value = true
-      waitingForExternalConfirm.value = false
-      lastAutoExecutedMove.value = null
-
-      // Regenerate FEN with correct turn side and update game state
-      // When forcing my turn: if isReversed=false (Red at bottom), program plays Red -> isRedTurn=true
-      //                       if isReversed=true (Black at bottom), program plays Black -> isRedTurn=false
-      if (recognizedBoard.value && onBoardUpdated) {
-        const isRedTurn = !isReversed.value
-        const newFen = generateJieqiFen(recognizedBoard.value, isRedTurn)
-        onBoardUpdated(newFen)
-        await rustLog(
-          `[Linker] Force switched to my turn. isReversed=${isReversed.value}, isRedTurn=${isRedTurn}, FEN updated`
-        )
-      } else {
-        await rustLog(
-          '[Linker] Force switched to my turn (no board to update FEN)'
-        )
-      }
     },
     refreshWindowList,
     selectWindow,
