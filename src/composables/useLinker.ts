@@ -421,6 +421,44 @@ export function useLinker(options: UseLinkerOptions = {}) {
     return true
   }
 
+  // 检测棋盘变化是"一次变化"还是"两次变化"
+  // 用于处理对手应着极快时，两步棋被合并检测为一次变化的情况
+  // 比较时暗子('X'/'x')视为空位
+  // 返回: 'single' 表示一次变化, 'double' 表示两次变化
+  const detectChangeType = (
+    prevBoard: BoardGrid | null,
+    currBoard: BoardGrid
+  ): 'single' | 'double' => {
+    if (!prevBoard) return 'single'
+
+    // 将暗子视为空位的转换函数
+    const normalize = (p: string | null) => (p === 'X' || p === 'x' ? null : p)
+
+    let changedCount = 0
+    let allChangedToEmpty = true
+
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        const prev = normalize(prevBoard[r][c])
+        const curr = normalize(currBoard[r][c])
+        if (prev !== curr) {
+          changedCount++
+          if (curr !== null) {
+            allChangedToEmpty = false
+          }
+        }
+      }
+    }
+
+    // 超过2个位点变化，判定为两次变化
+    if (changedCount > 2) return 'double'
+
+    // 恰好2个位点变化，且末状态均为空，判定为两次变化
+    if (changedCount === 2 && allChangedToEmpty) return 'double'
+
+    return 'single'
+  }
+
   const scanLoop = async () => {
     if (state.value !== 'connecting' || !isScanning.value) return
     if (isProcessingFrame) {
@@ -483,16 +521,31 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
       // 检测棋盘变化
       if (simpleFen !== lastStableFen.value) {
+        // 检测变化类型（单次变化/两次变化）
+        const changeType = detectChangeType(recognizedBoard.value, result.board)
+
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
 
         let nextTurnIsRed: boolean
         if (waitingForExternalConfirm.value) {
           waitingForExternalConfirm.value = false
-          isMyTurn.value = false
-          nextTurnIsRed = isReversed.value
-          if (stopEngine) stopEngine()
-          await rustLog(`[Linker] external confirm: AI move validated`)
+
+          if (changeType === 'double') {
+            // 检测到两次变化：己方应着 + 对方应着 合并为一次检测
+            // 此时轮到己方
+            isMyTurn.value = true
+            nextTurnIsRed = !isReversed.value
+            await rustLog(
+              `[Linker] double change detected: AI + opponent moves merged -> our turn`
+            )
+          } else {
+            // 单次变化：仅己方应着被确认
+            isMyTurn.value = false
+            nextTurnIsRed = isReversed.value
+            if (stopEngine) stopEngine()
+            await rustLog(`[Linker] external confirm: AI move validated`)
+          }
         } else {
           isMyTurn.value = true
           nextTurnIsRed = !isReversed.value
