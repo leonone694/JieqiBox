@@ -437,15 +437,13 @@ export function useLinker(options: UseLinkerOptions = {}) {
     if (!prevBoard) return 'single'
 
     // 将暗子视为空位的转换函数
-    const normalize = (p: string | null) => (p === 'X' || p === 'x' ? null : p)
-
     let changedCount = 0
     let allChangedToEmpty = true
 
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
-        const prev = normalize(prevBoard[r][c])
-        const curr = normalize(currBoard[r][c])
+        const prev = prevBoard[r][c]
+        const curr = currBoard[r][c]
         if (prev !== curr) {
           changedCount++
           if (curr !== null) {
