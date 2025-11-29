@@ -734,6 +734,9 @@ export function useLinker(options: UseLinkerOptions = {}) {
     waitingForExternalConfirm.value = false
     isMyTurn.value = false
 
+    // Stop the engine analysis if it's running
+    if (stopEngine) stopEngine()
+
     // Unlock the board when stopping
     getImageRecognition().lockBoard(false)
     // Note: rustLog is async but we don't await here to avoid blocking stop()
