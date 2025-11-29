@@ -421,19 +421,20 @@ export function useLinker(options: UseLinkerOptions = {}) {
     return true
   }
 
-  // 检测棋盘变化是"一次变化"还是"两次变化"
+  // 检测棋盘变化是"一次变化"、"两次变化"还是"重置"
   // 用于处理对手应着极快时，两步棋被合并检测为一次变化的情况
   // 比较时暗子('X'/'x')视为空位
-  // 返回: 'single' 表示一次变化, 'double' 表示两次变化
+  // 返回: 'single' 表示一次变化, 'double' 表示两次变化, 'reset' 表示新游戏
   //
   // 判定逻辑说明：
   // - 单次着法（包括吃子）只改变2个位点：起点变空，终点变成棋子
-  // - 如果>2个位点变化，说明是两步棋合并
+  // - 如果>4个位点变化，说明是新游戏（重置）
+  // - 如果>2且<=4个位点变化，说明是两步棋合并
   // - 如果恰好2个位点变化但末状态均为空，说明是两步棋合并（例如A→B，然后B被吃掉移走）
   const detectChangeType = (
     prevBoard: BoardGrid | null,
     currBoard: BoardGrid
-  ): 'single' | 'double' => {
+  ): 'single' | 'double' | 'reset' => {
     if (!prevBoard) return 'single'
 
     // 将暗子视为空位的转换函数
@@ -452,6 +453,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
         }
       }
     }
+
+    // 超过4个位点变化，判定为新游戏（重置）
+    // 理由：正常单步棋最多改变2个位点，两步棋合并最多改变4个位点
+    // 超过4个位点变化说明棋盘发生了重大改变，很可能是开始了新游戏
+    if (changedCount > 4) return 'reset'
 
     // 超过2个位点变化，判定为两次变化
     if (changedCount > 2) return 'double'
@@ -525,8 +531,30 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
       // 检测棋盘变化
       if (simpleFen !== lastStableFen.value) {
-        // 检测变化类型（单次变化/两次变化）
+        // 检测变化类型（单次变化/两次变化/重置）
         const changeType = detectChangeType(recognizedBoard.value, result.board)
+
+        // 如果检测到重置（新游戏），重新初始化连线状态
+        if (changeType === 'reset') {
+          await rustLog(
+            `[Linker] reset detected: new game started, reinitializing linker state`
+          )
+          // 停止引擎分析
+          if (stopEngine) stopEngine()
+          // 重置暗子池
+          maxRevealedCounts.value = {}
+          // 重置其他状态
+          waitingForExternalConfirm.value = false
+          lastAutoExecutedMove.value = null
+          // 重新初始化棋盘
+          recognizedBoard.value = result.board
+          lastStableFen.value = simpleFen
+          const initFen = generateJieqiFen(result.board, !result.isReversed)
+          if (onBoardInitialized) onBoardInitialized(initFen, result.isReversed)
+          isMyTurn.value = !result.isReversed
+          isProcessingFrame = false
+          return
+        }
 
         recognizedBoard.value = result.board
         lastStableFen.value = simpleFen
