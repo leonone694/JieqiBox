@@ -425,6 +425,11 @@ export function useLinker(options: UseLinkerOptions = {}) {
   // 用于处理对手应着极快时，两步棋被合并检测为一次变化的情况
   // 比较时暗子('X'/'x')视为空位
   // 返回: 'single' 表示一次变化, 'double' 表示两次变化
+  //
+  // 判定逻辑说明：
+  // - 单次着法（包括吃子）只改变2个位点：起点变空，终点变成棋子
+  // - 如果>2个位点变化，说明是两步棋合并
+  // - 如果恰好2个位点变化但末状态均为空，说明是两步棋合并（例如A→B，然后B被吃掉移走）
   const detectChangeType = (
     prevBoard: BoardGrid | null,
     currBoard: BoardGrid
@@ -454,6 +459,7 @@ export function useLinker(options: UseLinkerOptions = {}) {
     if (changedCount > 2) return 'double'
 
     // 恰好2个位点变化，且末状态均为空，判定为两次变化
+    // （正常单步棋的终点不可能为空，因为棋子会占据终点位置）
     if (changedCount === 2 && allChangedToEmpty) return 'double'
 
     return 'single'
