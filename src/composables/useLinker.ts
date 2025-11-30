@@ -191,6 +191,13 @@ export function useLinker(options: UseLinkerOptions = {}) {
   let framesToIgnore = 0
   const STABLE_THRESHOLD = 1 // 连续帧数阈值，1 表示 1 帧即可认为稳定
 
+  // 最小棋子数阈值：用于过滤空棋盘或棋子过少的误检测帧
+  // 此阈值设为2，代表任何有效对局的绝对最小棋子数（至少双方各有一个将/帅）
+  // 实际正常对局通常有更多棋子，但设置较低阈值可以:
+  // 1. 过滤游戏切换过程中完全空棋盘的误识别
+  // 2. 同时允许残局等棋子较少的正常局面通过验证
+  const MIN_PIECE_COUNT = 2
+
   // --- 核心逻辑 ---
 
   const rustLog = async (msg: string) => {
@@ -290,12 +297,14 @@ export function useLinker(options: UseLinkerOptions = {}) {
         board: flipped,
         boardBox: { x: bx, y: by, width: bw, height: bh },
         isReversed: reversed,
+        pieceCount,
       }
     }
     return {
       board,
       boardBox: { x: bx, y: by, width: bw, height: bh },
       isReversed: reversed,
+      pieceCount,
     }
   }
 
@@ -487,6 +496,27 @@ export function useLinker(options: UseLinkerOptions = {}) {
         `[Linker] frame timings: capture+decode ${(tAfterCapture - tStart).toFixed(1)} ms`
       )
       if (!result) {
+        isProcessingFrame = false
+        return
+      }
+
+      // 检查棋盘数据是否有效
+      // 如果 board 为空或未定义，跳过此帧
+      if (!result.board) {
+        await rustLog(
+          `[Linker] frame skipped: result.board is null or undefined`
+        )
+        isProcessingFrame = false
+        return
+      }
+
+      // 检查棋子数量是否足够
+      // 如果检测到的棋子数量低于阈值，说明可能是游戏切换过程中的空棋盘
+      // 跳过此帧以避免向引擎发送无效的棋盘状态导致引擎卡死
+      if (result.pieceCount < MIN_PIECE_COUNT) {
+        await rustLog(
+          `[Linker] frame skipped: pieceCount=${result.pieceCount} < MIN_PIECE_COUNT=${MIN_PIECE_COUNT}, likely empty board during game transition`
+        )
         isProcessingFrame = false
         return
       }
