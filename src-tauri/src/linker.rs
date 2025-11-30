@@ -58,15 +58,10 @@ pub async fn init_capturer(window_id: u32, fps: u32) -> Result<(), String> {
                 for window in windows {
                     if window.id() == window_id_clone {
                         if let Ok(image_buffer) = window.capture_image() {
-                            // 1. 转 DynamicImage
                             let img = DynamicImage::ImageRgba8(image_buffer);
                             
-                            // 2. ★核心：强制缩放到 640x640★
-                            // resize_exact 保证输出尺寸恒定，方便前端处理
-                            // Triangle 速度快质量好
                             let scaled = img.resize_exact(640, 640, FilterType::Triangle);
                             
-                            // 3. 转 RGB8 (丢弃 Alpha，每个像素 3 字节)
                             let rgb_img = scaled.to_rgb8();
                             let width = rgb_img.width();
                             let height = rgb_img.height();
@@ -81,7 +76,6 @@ pub async fn init_capturer(window_id: u32, fps: u32) -> Result<(), String> {
                                 ts: Instant::now(),
                             };
 
-                            // 5. 写入全局缓存 (非阻塞，极快)
                             if let Ok(mut guard) = container_clone.lock() {
                                 *guard = Some(latest);
                             }
@@ -91,7 +85,6 @@ pub async fn init_capturer(window_id: u32, fps: u32) -> Result<(), String> {
                 }
             }
 
-            // 简单的性能监控日志 (每5秒打印一次)
             if last_log.elapsed().as_secs() > 5 {
                 if !captured {
                     println!("[Rust Capturer] 警告：未找到窗口 {}", window_id_clone);
@@ -112,14 +105,11 @@ pub async fn init_capturer(window_id: u32, fps: u32) -> Result<(), String> {
     Ok(())
 }
 
-/// ★★★ 极速接口：前端获取最新 Raw 数据 ★★★
-/// 不返回 JSON/Base64，直接返回二进制数组
 #[tauri::command]
 pub async fn get_latest_capture_raw() -> Result<String, String> {
     let container = get_latest_container();
     if let Ok(guard) = container.lock() {
         if let Some(latest) = &*guard {
-            // 直接克隆内存，几微秒的事
             let b64 = STANDARD.encode(&latest.buffer);
             return Ok(b64);
         }

@@ -105,20 +105,6 @@ const TOTAL_PIECES: { [key: string]: number } = {
 //return await createImageBitmap(blob)
 //}
 
-// 如果需要把 ImageBitmap 转成 HTMLImageElement 的回退（尽量不用）
-// 但我们优先直接传 ImageBitmap 给模型或画到 OffscreenCanvas
-//const imageBitmapToHtmlImage = async (bmp: ImageBitmap): Promise<HTMLImageElement> => {
-// const off = new OffscreenCanvas(bmp.width, bmp.height)
-//const ctx = off.getContext('2d')!
-//ctx.drawImage(bmp, 0, 0)
-//const blob = await off.convertToBlob()
-//return await new Promise((resolve, reject) => {
-//  const img = new Image()
-//  img.onload = () => resolve(img)
-//  img.onerror = reject
-//  img.src = URL.createObjectURL(blob)
-//})
-//}
 
 export interface UseLinkerOptions {
   imageRecognition?: ImageRecognitionInstance
@@ -446,7 +432,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
   ): 'single' | 'double' | 'reset' => {
     if (!prevBoard) return 'single'
 
-    // 将暗子视为空位的转换函数
     let changedCount = 0
     let allChangedToEmpty = true
 
@@ -670,8 +655,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
   // 标记是否已经初始化过后台线程
   const isCapturerInitialized = ref(false)
 
-  // 辅助函数：极速 Base64 -> Uint8Array
-  // 比 atob 稍微复杂点，但性能更好，且不需要创建 String 对象
   const base64ToUint8Array = (base64: string): Uint8Array => {
     const binary_string = window.atob(base64)
     const len = binary_string.length
@@ -696,7 +679,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
 
     const t0 = performance.now()
 
-    // 1. 获取 Base64 字符串 (Raw RGB)
     let b64Data: string
     try {
       b64Data = await invoke<string>('get_latest_capture_raw')
@@ -704,16 +686,13 @@ export function useLinker(options: UseLinkerOptions = {}) {
       return null
     }
 
-    // 2. 解码为 Uint8Array (耗时约 2-5ms)
     const rawData = base64ToUint8Array(b64Data)
 
     const t1 = performance.now()
-    // 这次你应该能看到 data transfer 降到 30ms 以内
     await rustLog(`[Linker] transfer+decode: ${(t1 - t0).toFixed(1)} ms`)
 
     const ir = getImageRecognition()
 
-    // 3. 传给模型
     try {
       await ir.processRawData(rawData, 640, 640)
     } catch (e) {
@@ -725,7 +704,6 @@ export function useLinker(options: UseLinkerOptions = {}) {
     await rustLog(`[Linker] inference: ${(t2 - t1).toFixed(1)} ms`)
     await rustLog(`[Linker] TOTAL: ${(t2 - t0).toFixed(1)} ms`)
 
-    // ... (坐标还原逻辑保持不变) ...
     const winW = selectedWindow.value!.width
     const winH = selectedWindow.value!.height
     const scaleX = winW / 640
