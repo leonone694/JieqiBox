@@ -500,6 +500,16 @@ export function useLinker(options: UseLinkerOptions = {}) {
         return
       }
 
+      // 检查棋盘数据是否有效
+      // 如果 board 为空或未定义，跳过此帧
+      if (!result.board) {
+        await rustLog(
+          `[Linker] frame skipped: result.board is null or undefined`
+        )
+        isProcessingFrame = false
+        return
+      }
+
       // 检查棋子数量是否足够
       // 如果检测到的棋子数量低于阈值，说明可能是游戏切换过程中的空棋盘
       // 跳过此帧以避免向引擎发送无效的棋盘状态导致引擎卡死
