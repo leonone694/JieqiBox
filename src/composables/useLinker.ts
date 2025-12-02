@@ -7,6 +7,7 @@ import {
   LABELS,
   type DetectionBox,
 } from './image-recognition'
+import { isStandardDarkPiecePosition } from '@/utils/constants'
 
 type ImageRecognitionInstance = ReturnType<typeof useImageRecognition>
 export type LinkerMode = 'auto' | 'watch'
@@ -104,7 +105,6 @@ const TOTAL_PIECES: { [key: string]: number } = {
 //const blob = await res.blob()
 //return await createImageBitmap(blob)
 //}
-
 
 export interface UseLinkerOptions {
   imageRecognition?: ImageRecognitionInstance
@@ -256,7 +256,16 @@ export function useLinker(options: UseLinkerOptions = {}) {
         if (piece) {
           const name = LABELS[piece.labelIndex]?.name
           if (name && PIECE_TO_FEN[name]) {
-            board[r][c] = PIECE_TO_FEN[name]
+            const fenChar = PIECE_TO_FEN[name]
+            // If the piece is a dark piece (X/x) at a non-standard position, treat it as empty
+            if (
+              (fenChar === 'X' || fenChar === 'x') &&
+              !isStandardDarkPiecePosition(r, c)
+            ) {
+              // Skip this dark piece - it's at an invalid position
+              continue
+            }
+            board[r][c] = fenChar
             pieceCount++
           }
         }

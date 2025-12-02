@@ -138,3 +138,62 @@ export const JIEQI_MODEL_SCALER_SCALES = [
   5.8311527974946875, 5.820767759163146, 5.855302986745835, 5.786105625793965,
   3.626781358558223, 8.18111371795009,
 ]
+
+/**
+ * Standard positions for dark pieces (暗子) in Jieqi.
+ * Dark pieces detected outside these positions during image recognition
+ * should be treated as empty positions.
+ *
+ * Based on START_FEN: xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX
+ */
+export const STANDARD_DARK_PIECE_POSITIONS: Set<string> = new Set([
+  // Row 0 (black back row): cols 0-3, 5-8 (col 4 is king position)
+  '0,0',
+  '0,1',
+  '0,2',
+  '0,3',
+  '0,5',
+  '0,6',
+  '0,7',
+  '0,8',
+  // Row 2 (black cannons): cols 1 and 7
+  '2,1',
+  '2,7',
+  // Row 3 (black pawns): even columns
+  '3,0',
+  '3,2',
+  '3,4',
+  '3,6',
+  '3,8',
+  // Row 6 (red pawns): even columns
+  '6,0',
+  '6,2',
+  '6,4',
+  '6,6',
+  '6,8',
+  // Row 7 (red cannons): cols 1 and 7
+  '7,1',
+  '7,7',
+  // Row 9 (red back row): cols 0-3, 5-8 (col 4 is king position)
+  '9,0',
+  '9,1',
+  '9,2',
+  '9,3',
+  '9,5',
+  '9,6',
+  '9,7',
+  '9,8',
+])
+
+/**
+ * Check if a position is a valid standard position for a dark piece.
+ * @param row Row index (0-9)
+ * @param col Column index (0-8)
+ * @returns true if the position is a valid standard dark piece position
+ */
+export const isStandardDarkPiecePosition = (
+  row: number,
+  col: number
+): boolean => {
+  return STANDARD_DARK_PIECE_POSITIONS.has(`${row},${col}`)
+}
