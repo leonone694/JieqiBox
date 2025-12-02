@@ -385,7 +385,12 @@
   import { useI18n } from 'vue-i18n'
   import MersenneTwister from 'mersenne-twister'
   import type { Piece } from '@/composables/useChessGame'
-  import { START_FEN, INITIAL_PIECE_COUNTS, FEN_MAP } from '@/utils/constants'
+  import {
+    START_FEN,
+    INITIAL_PIECE_COUNTS,
+    FEN_MAP,
+    isStandardDarkPiecePosition,
+  } from '@/utils/constants'
   import {
     useImageRecognition,
     type DetectionBox,
@@ -1236,6 +1241,14 @@
         if (detection) {
           const pieceName = convertDetectionToPieceName(detection)
           if (pieceName) {
+            // If the piece is a dark piece (unknown) at a non-standard position, treat it as empty
+            if (
+              (pieceName === 'red_unknown' || pieceName === 'black_unknown') &&
+              !isStandardDarkPiecePosition(row, col)
+            ) {
+              // Skip this dark piece - it's at an invalid position
+              continue
+            }
             const piece: Piece = {
               id: Date.now() + mtRandom(),
               name: pieceName,
