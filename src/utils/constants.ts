@@ -147,7 +147,7 @@ export const JIEQI_MODEL_SCALER_SCALES = [
  * Based on START_FEN: xxxxkxxxx/9/1x5x1/x1x1x1x1x/9/9/X1X1X1X1X/1X5X1/9/XXXXKXXXX
  */
 export const STANDARD_DARK_PIECE_POSITIONS: Set<string> = new Set([
-  // Row 0 (black back row): all except king position (col 4)
+  // Row 0 (black back row): cols 0-3, 5-8 (col 4 is king position)
   '0,0',
   '0,1',
   '0,2',
@@ -174,7 +174,7 @@ export const STANDARD_DARK_PIECE_POSITIONS: Set<string> = new Set([
   // Row 7 (red cannons): cols 1 and 7
   '7,1',
   '7,7',
-  // Row 9 (red back row): all except king position (col 4)
+  // Row 9 (red back row): cols 0-3, 5-8 (col 4 is king position)
   '9,0',
   '9,1',
   '9,2',
